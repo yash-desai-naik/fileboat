@@ -2,6 +2,7 @@ import { fmtShortcut } from "../lib/platform";
 import { setFolderView, useFolderView } from "../lib/folderViews";
 import { goBack, goForward, goUp, navigate, parentOf, useTabs } from "../lib/tabs";
 import { AddressBar } from "../views/AddressBar";
+import { SearchBox } from "../views/SearchBox";
 import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, ListIcon } from "./Icons";
 
 /** Under the title bar: Back, Forward, Up, the address bar and the view switch. */
@@ -24,6 +25,7 @@ export function Toolbar() {
         </button>
       </div>
       <AddressBar path={tab.path} onNavigate={(p, select) => navigate(p, select ?? null)} />
+      <SearchBox />
       <div className="segmented view-switch" role="radiogroup" aria-label="View">
         <button
           className={`seg${view.viewMode === "columns" ? " active" : ""}`}

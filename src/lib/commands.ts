@@ -3,6 +3,8 @@ import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
+import { openSearch } from "./search";
+import { invoke } from "@tauri-apps/api/core";
 import { checkForUpdates } from "./update";
 import { addFavourite, removeFavourite } from "./favourites";
 import { hasOwnView, makeDefaultView, resetFolderView, setFolderView, viewFor } from "./folderViews";
@@ -170,6 +172,9 @@ export function buildCommands(): Command[] {
     { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
     { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: () => goUp() },
     { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
+    { id: "search.here", category: "Search", title: "Search Here", keys: ["Ctrl+F"], run: () => openSearch(activeTab().id, activeTab().path, "here") },
+    { id: "search.everywhere", category: "Search", title: "Search Everywhere", keys: ["Ctrl+Shift+F"], run: () => openSearch(activeTab().id, activeTab().path, "everywhere") },
+    { id: "search.rebuild", category: "Search", title: "Rebuild the Index", run: () => void invoke("index_rebuild") },
     { id: "edit.undo", category: "Edit", title: "Undo", keys: ["Ctrl+Z"], run: () => void undoLast() },
     { id: "file.newFolder", category: "File", title: "New Folder", keys: ["Ctrl+Shift+N"], run: () => paneActions.newFolder() },
     { id: "file.newFile", category: "File", title: "New File", keys: ["Ctrl+Alt+N"], run: () => paneActions.newFile() },

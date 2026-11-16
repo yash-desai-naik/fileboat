@@ -47,6 +47,14 @@ export interface Settings {
   /** Terminal id for "Terminal here", "" for the first found. */
   terminal: string;
   checkUpdates: boolean;
+  indexEnabled: boolean;
+  /** Folders to index; empty = the home folder. */
+  indexRoots: string[];
+  indexRulesOff: string[];
+  indexExcludes: string[];
+  indexIncludes: string[];
+  indexHidden: boolean;
+  indexGitignore: boolean;
   skippedUpdate: string;
 }
 

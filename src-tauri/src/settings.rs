@@ -52,11 +52,17 @@ pub fn get_settings(store: State<'_, SettingsStore>) -> Settings {
 
 /// Merge `patch` (a partial settings object) into the current settings and save.
 #[tauri::command]
-pub fn update_settings(store: State<'_, SettingsStore>, patch: Value) -> Result<Settings, String> {
+pub fn update_settings(app: tauri::AppHandle, store: State<'_, SettingsStore>, patch: Value) -> Result<Settings, String> {
+    use tauri::Manager;
     let mut guard = store.lock();
     let next = guard.0.merged(&patch)?;
     prefs::save(&store.path, &next)?;
     *guard = (next.clone(), modified(&store.path));
+    drop(guard);
+    // The index follows its settings (it rebuilds only when what's indexed changed).
+    if let Some(indexer) = app.try_state::<std::sync::Arc<crate::indexer::Indexer>>() {
+        indexer.configure(&next);
+    }
     Ok(next)
 }
 

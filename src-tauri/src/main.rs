@@ -5,6 +5,7 @@ mod clipboard;
 mod desktop;
 mod dnd;
 mod folders;
+mod indexer;
 mod git_cmd;
 mod jobs;
 mod launch;
@@ -56,6 +57,8 @@ fn main() {
             }
             app.manage(settings::SettingsStore::load()?);
             app.state::<folders::Folders>().set_app(app.handle().clone());
+            let settings = app.state::<settings::SettingsStore>().current();
+            app.manage(indexer::Indexer::start(app.handle().clone(), &settings));
             update::start_background_checks(app.handle().clone());
             Ok(())
         })
@@ -81,6 +84,11 @@ fn main() {
             native_menu::native_menu,
             preview_cmd::preview_info,
             git_cmd::git_info,
+            indexer::index_search,
+            indexer::index_status,
+            indexer::index_rebuild,
+            indexer::index_pause,
+            indexer::index_rules,
             git_cmd::git_status,
             git_cmd::git_paths,
             git_cmd::git_ignore,

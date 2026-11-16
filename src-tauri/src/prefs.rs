@@ -89,6 +89,20 @@ pub struct Settings {
     pub check_updates: bool,
     /// A version the user chose to skip (no notice for it; a manual check still shows it).
     pub skipped_update: String,
+    /// Keep a search index of the folders below.
+    pub index_enabled: bool,
+    /// Folders to index; empty means the home folder.
+    pub index_roots: Vec<String>,
+    /// Built-in rules switched off (by id: "node_modules", "system"…).
+    pub index_rules_off: Vec<String>,
+    /// More to leave out: folder or file names, or absolute paths.
+    pub index_excludes: Vec<String>,
+    /// Paths to index even where a rule would leave them out.
+    pub index_includes: Vec<String>,
+    /// Index files and folders the system marks hidden.
+    pub index_hidden: bool,
+    /// Honour .gitignore, .ignore and .fbignore inside projects.
+    pub index_gitignore: bool,
 }
 
 impl Default for Settings {
@@ -120,6 +134,13 @@ impl Default for Settings {
             terminal: String::new(),
             check_updates: true,
             skipped_update: String::new(),
+            index_enabled: true,
+            index_roots: Vec::new(),
+            index_rules_off: Vec::new(),
+            index_excludes: Vec::new(),
+            index_includes: Vec::new(),
+            index_hidden: false,
+            index_gitignore: true,
         }
     }
 }
@@ -168,6 +189,11 @@ impl Settings {
         let mut seen = std::collections::HashSet::new();
         self.favourites.retain(|p| !p.trim().is_empty() && seen.insert(p.to_lowercase()));
         self.favourites.truncate(200);
+        for list in [&mut self.index_roots, &mut self.index_rules_off, &mut self.index_excludes, &mut self.index_includes] {
+            let mut seen = std::collections::HashSet::new();
+            list.retain(|p| !p.trim().is_empty() && seen.insert(p.to_lowercase()));
+            list.truncate(500);
+        }
         self
     }
 
@@ -198,6 +224,9 @@ uiZoom: 0.5 to 3.0 (whole window zoom)
 showSidebar, showPreview (the preview pane), previewWrap (wrap long lines in the preview): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 sidebarView: \"places\" | \"git\" (what the sidebar shows; the git panel is Ctrl+Shift+G)
+indexEnabled: true | false (keep a search index); indexRoots: [\"D:\\projects\"] (folders to index; [] = the home folder)
+indexRulesOff: [\"node_modules\", \"system\"…] (built-in rules switched off); indexExcludes: [\"photos\", \"D:\\big\"] (names or paths to leave out); indexIncludes: [paths indexed anyway]
+indexHidden: true | false (index files the system marks hidden); indexGitignore: true | false (honour .gitignore inside projects)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" | \"git\" (group rows under headers)

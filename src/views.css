@@ -408,3 +408,136 @@
 .status-git .git-conflicted-count {
   color: var(--git-conflicted);
 }
+
+/* ---------- Search ---------- */
+
+.pane-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pane-list[hidden] {
+  display: none;
+}
+.search-box {
+  flex: 0 1 260px;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text-3);
+}
+.search-box.open {
+  flex-basis: 340px;
+  border-color: var(--focus-ring);
+}
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+}
+.search-scope .seg {
+  padding: 0 7px;
+  height: 20px;
+  font-size: var(--fs-sm);
+}
+.search-spin {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: search-spin 0.8s linear infinite;
+}
+@keyframes search-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.search-results {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sr-head,
+.sr-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(120px, 3fr) 150px 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+}
+.sr-head {
+  flex: none;
+  height: 30px;
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.sr-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+}
+.sr-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  cursor: default;
+  white-space: nowrap;
+}
+.sr-row:hover {
+  background: var(--bg-hover);
+}
+.sr-row.cursor {
+  background: var(--selection);
+}
+.sr-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sr-name .fl-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sr-name mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+.sr-where {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.sr-head .right,
+.sr-row .right {
+  text-align: right;
+}
+.sr-foot {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 4px 14px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  border-top: 1px solid var(--border);
+}
+.sr-foot .spacer {
+  flex: 1;
+}

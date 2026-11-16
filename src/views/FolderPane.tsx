@@ -14,6 +14,8 @@ import { folderMenu, itemMenu } from "./contextMenu";
 import { showToast } from "../shell/Toast";
 import { goUp, navigate, newTab, parentOf, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
+import { SearchResults } from "./SearchResults";
+import { getSearch, useSearch } from "../lib/search";
 import { ColumnsView } from "./ColumnsView";
 import { StatusBar } from "./StatusBar";
 import { Selection } from "./selection";
@@ -58,6 +60,8 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy, folderSizes, gitIgnored, active]);
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
+  const search = useSearch(tab.id);
+  const searching = search.open && search.query.trim() !== "";
 
   // The active pane tells the preview what it's on: after a short pause (arrowing through a
   // list doesn't preview every file on the way), and again when the folder changes on disk.
@@ -68,6 +72,9 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
     const update = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
+        // While results show, the preview follows them instead.
+        const s = getSearch(tab.id);
+        if (s.open && s.query.trim()) return;
         const count = selection.size;
         if (count !== 1) return setCurrent({ folder: model.path, entry: null, count });
         void model.entries([...selection.names]).then(([entry]) => {
@@ -84,7 +91,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       offSelection();
       offModel();
     };
-  }, [active, model, selection]);
+  }, [active, model, selection, searching]);
 
   // The context menu showing, if any.
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[]; keyboard: boolean } | null>(null);
@@ -288,7 +295,11 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
           </button>
         </div>
       )}
-      {columnsMode ? <ColumnsView model={model} selection={selection}>{list}</ColumnsView> : list}
+      {searching && <SearchResults tabId={tab.id} search={search} active={active} />}
+      {/* The folder stays loaded under the results (selection and scroll kept). */}
+      <div className="pane-list" hidden={searching}>
+        {columnsMode ? <ColumnsView model={model} selection={selection}>{list}</ColumnsView> : list}
+      </div>
       {menu && <Menu x={menu.x} y={menu.y} items={menu.items} keyboard={menu.keyboard} onClose={() => setMenu(null)} />}
       <StatusBar model={model} selection={selection} active={active} />
     </div>
