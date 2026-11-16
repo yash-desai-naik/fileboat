@@ -8,6 +8,19 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Columns view** (`Ctrl+Shift+1`), as in Finder: the folders on the way down to the open one,
+  and a peek into the selected folder. → goes into a folder, ← goes up, a click in any column
+  goes there; moving around in columns doesn't fill Back's history.
+- **Group by** type, date modified (Today, Yesterday, Earlier this week…), size or first letter.
+  Headers show the count and total size; click one to collapse it.
+- **Each folder remembers its view**, sort and grouping; the Settings values are the defaults for
+  the rest. "Reset to Default View" and "Use as Default View" in the View menu; turn it off for
+  one view everywhere.
+- **Folder sizes** ("Show folder sizes", or "Calculate Folder Sizes Here" for one folder): worked
+  out in the background for the folder in front, shown in the Size column, the selection's total
+  and group totals, and sortable. Links and junctions aren't followed and cloud-only folders
+  aren't entered, so nothing is downloaded. Sizes are worked out again on F5, when the folder's
+  own items change, and after copies and moves into it.
 - **File operations:** new folder (`Ctrl+Shift+N`) and file (`Ctrl+Alt+N`), rename in place (`F2`;
   names Windows refuses are explained as you type), duplicate, delete to the Recycle Bin / Trash
   (`Del`) or permanently (`Shift+Del`, asks first).

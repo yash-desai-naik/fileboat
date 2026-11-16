@@ -34,8 +34,10 @@ Rust, `src-tauri/src/`:
   - `paths`: the data folder (`%APPDATA%\Fileboat`, `~/Library/Application Support/Fileboat`) and
     the cache folder (`%LOCALAPPDATA%\Fileboat`, `~/Library/Caches/Fileboat`);
   - `fs`: listing folders (`entry.rs`: one file's metadata in one pass), the folder model views
-    read from (`model.rs`: sort, folders first, hidden files, changes), natural order
-    (`natural.rs`), and typed paths (`~`, `%VAR%`, `$VAR`, completion);
+    read from (`model.rs`: sort, folders first, hidden files, changes, groups, folder sizes),
+    grouping (`group.rs`), folder sizes (`size.rs`: a walk that never follows links or enters
+    cloud-only folders), natural order (`natural.rs`), and typed paths (`~`, `%VAR%`, `$VAR`,
+    completion);
   - `ops`: creating and renaming (`mod.rs`), deleting (`delete.rs`), copying and moving with
     progress, name clashes and cancel (`transfer.rs`), and the undo log (`undo.rs`);
   - `tools`: the editors and terminals installed, and opening them;
@@ -46,8 +48,10 @@ Rust, `src-tauri/src/`:
   - `folders`: open folders, one model per view, kept in Rust; the view reads only the rows on
     screen (`folder_rows`) and hears about changes on its channel;
   - `watch`: one file system watcher for the app (open folders only, events batched);
+  - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
+    recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
-    line or from a second launch), `state` (tabs kept between runs);
+    line or from a second launch), `state` (tabs and folder views kept between runs);
   - `ops_cmd` (new, rename, delete, undo), `jobs` (copies and moves on their own threads, with
     progress events and name-clash questions), `clipboard` (files on the clipboard, shared with
     Explorer), `dnd` (drag and drop), `tools_cmd` (editor, terminal), `native_menu` (Explorer's own
@@ -61,9 +65,12 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
   the window.
 - `shell/`: title bar and tabs, toolbar, icons (`FileTypeIcon.tsx`: the built-in file icons),
   menus, splitter, dialogs, About, the update notice.
-- `views/`: a tab's folder (`FolderPane`), the Details and List views (`FileList`, virtualised),
-  selection, the address bar and the status bar. `lib/folder.ts` is the view's side of a folder
-  model (rows fetched in blocks of 200); `lib/tabs.ts` holds tabs and their history.
+- `views/`: a tab's folder (`FolderPane`), the Details and List views (`FileList`, virtualised;
+  `layout.ts` places group headers among the rows), the Columns view (`ColumnsView`: read-only
+  `FileList`s either side of the open folder's), selection, the address bar and the status bar.
+  `lib/folder.ts` is the view's side of a folder model (rows fetched in blocks of 200);
+  `lib/tabs.ts` holds tabs and their history; `lib/folderViews.ts` holds each folder's own view
+  (`state/views.json`, the 1000 most recently changed).
 - `sidebar/`: favourites, home folders and drives.
 - `jobs/`: the copy and move cards and the name-clash dialog. `lib/clipboard.ts`, `lib/dnd.ts`,
   `lib/jobs.ts` and `lib/tools.ts` are the UI's side of those; `lib/pane.ts` holds what the active

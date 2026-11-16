@@ -8,8 +8,9 @@ Built with [Tauri 2](https://tauri.app) (Rust backend, and the WebView your syst
 WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 [Tableboat](https://github.com/yash-desai-naik/tableboat). No Electron and no Node.js at runtime.
 
-> Status: **in development.** You can browse folders in tabs and work with files: copy, move,
-> rename, delete, undo, the clipboard and drag and drop (shared with Explorer), and context menus.
+> Status: **in development.** You can browse folders in tabs (Columns, List and Details views,
+> grouping, folder sizes, a view remembered per folder) and work with files: copy, move, rename,
+> delete, undo, the clipboard and drag and drop (shared with Explorer), and context menus.
 > Previews, git, search and the Claude pane come next. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
 > how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
 
