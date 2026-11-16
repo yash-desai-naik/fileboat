@@ -36,6 +36,9 @@ Rust, `src-tauri/src/`:
   - `fs`: listing folders (`entry.rs`: one file's metadata in one pass), the folder model views
     read from (`model.rs`: sort, folders first, hidden files, changes), natural order
     (`natural.rs`), and typed paths (`~`, `%VAR%`, `$VAR`, completion);
+  - `ops`: creating and renaming (`mod.rs`), deleting (`delete.rs`), copying and moving with
+    progress, name clashes and cancel (`transfer.rs`), and the undo log (`undo.rs`);
+  - `tools`: the editors and terminals installed, and opening them;
   - `places`: home folders and drives with their free space;
   - `prefs`: `settings.json`, with validation and the help text Claude will use;
   - `themes`: the theme ids from `src/themes/themes.json`, and the contrast tests.
@@ -45,6 +48,10 @@ Rust, `src-tauri/src/`:
   - `watch`: one file system watcher for the app (open folders only, events batched);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
     line or from a second launch), `state` (tabs kept between runs);
+  - `ops_cmd` (new, rename, delete, undo), `jobs` (copies and moves on their own threads, with
+    progress events and name-clash questions), `clipboard` (files on the clipboard, shared with
+    Explorer), `dnd` (drag and drop), `tools_cmd` (editor, terminal), `native_menu` (Explorer's own
+    context menu);
   - `settings`, `window` (size and place), `desktop` (Fileboat's folders, opening files with
     their app) and `update` (updates).
 
@@ -58,6 +65,10 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
   selection, the address bar and the status bar. `lib/folder.ts` is the view's side of a folder
   model (rows fetched in blocks of 200); `lib/tabs.ts` holds tabs and their history.
 - `sidebar/`: favourites, home folders and drives.
+- `jobs/`: the copy and move cards and the name-clash dialog. `lib/clipboard.ts`, `lib/dnd.ts`,
+  `lib/jobs.ts` and `lib/tools.ts` are the UI's side of those; `lib/pane.ts` holds what the active
+  folder can do for commands (new, rename, delete, copy, paste…); `views/contextMenu.ts` builds
+  the context menus.
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.

@@ -8,6 +8,22 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **File operations:** new folder (`Ctrl+Shift+N`) and file (`Ctrl+Alt+N`), rename in place (`F2`;
+  names Windows refuses are explained as you type), duplicate, delete to the Recycle Bin / Trash
+  (`Del`) or permanently (`Shift+Del`, asks first).
+- **Copy and move** in the background with progress and Cancel. When a name is taken, choose
+  Replace, Skip or Keep both (for one or all); replaced files go to the Recycle Bin.
+- **Undo** (`Ctrl+Z`) for new items, renames, deletes to the Recycle Bin, copies and moves.
+- **Clipboard shared with Explorer:** `Ctrl+C`, `Ctrl+X`, `Ctrl+V` between Fileboat and Explorer
+  both ways; `Ctrl+Shift+C` copies paths as text.
+- **Drag and drop:** drag files out to Explorer, editors, browsers and chat apps; drop files on a
+  folder, a tab, a sidebar place or a breadcrumb part (same drive moves, another drive copies; Ctrl
+  copies, Shift moves).
+- **Context menus** for files, folders and empty space: open with, open in your editor, terminal
+  here, copy path in every form, new from templates (`.gitignore`, `README.md`, `.editorconfig`,
+  `.env`), view and sort, Properties, and on Windows "Show More Options" for Explorer's own menu.
+- **Open in editor** (`Ctrl+Shift+E`) and **terminal here** (`` Ctrl+` ``), with the editors and
+  terminals installed on your computer found automatically.
 - **Browse folders** in a Details view (Name, Modified, Type, Size: click a header to sort,
   drag to resize) or a List view. Huge folders open at once: the first rows show in milliseconds
   and only the rows on screen are drawn, so 200,000 files scroll smoothly.
