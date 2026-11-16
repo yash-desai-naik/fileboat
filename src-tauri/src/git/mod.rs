@@ -7,8 +7,10 @@
 //! the index lock away from a `git` command the user runs at the same moment.
 
 mod status;
+mod write;
 
 pub use status::{parse_status, Branch, FileStatus, Mark, Status, StatusIndex};
+pub use write::*;
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -196,6 +198,10 @@ pub(crate) mod tests {
         if git(&["init", "-q"]).is_err() {
             return None;
         }
+        // An identity of its own (CI machines have none).
+        git(&["config", "user.name", "t"]).unwrap();
+        git(&["config", "user.email", "t@t"]).unwrap();
+        git(&["config", "core.autocrlf", "false"]).unwrap();
         std::fs::write(dir.join("a.txt"), "one\n").unwrap();
         std::fs::create_dir_all(dir.join("src/deep")).unwrap();
         std::fs::write(dir.join("src/deep/lib.rs"), "fn x() {}\n").unwrap();

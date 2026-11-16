@@ -39,6 +39,7 @@ fn main() {
         .manage(jobs::Jobs::default())
         .manage(clipboard::AppClipboard::default())
         .manage(preview_cmd::PreviewFiles::default())
+        .manage(git_cmd::Syncing::default())
         // Images, media, PDFs and fonts for the preview, read off the main thread.
         .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -80,6 +81,15 @@ fn main() {
             native_menu::native_menu,
             preview_cmd::preview_info,
             git_cmd::git_info,
+            git_cmd::git_status,
+            git_cmd::git_paths,
+            git_cmd::git_commit,
+            git_cmd::git_branches,
+            git_cmd::git_branch_op,
+            git_cmd::git_log,
+            git_cmd::git_sync,
+            git_cmd::git_diff,
+            git_cmd::git_web_url,
             preview_cmd::preview_text,
             preview_cmd::preview_bytes,
             preview_cmd::preview_archive,
