@@ -73,7 +73,7 @@ const ENTRIES: Entry[] = [
     section: "Folders",
     key: "viewMode",
     type: "select",
-    label: "View",
+    label: "Default view",
     help: `${fmtShortcut("Ctrl+Shift+1")} Columns, ${fmtShortcut("Ctrl+Shift+2")} List, ${fmtShortcut("Ctrl+Shift+3")} Details`,
     options: [
       ["details", "Details"],
@@ -85,7 +85,7 @@ const ENTRIES: Entry[] = [
     section: "Folders",
     key: "sortBy",
     type: "select",
-    label: "Sort by",
+    label: "Default sort",
     help: "Or click a column header in the Details view.",
     options: [
       ["name", "Name"],
@@ -100,7 +100,7 @@ const ENTRIES: Entry[] = [
     section: "Folders",
     key: "groupBy",
     type: "select",
-    label: "Group by",
+    label: "Default grouping",
     help: "Rows under headers you can collapse.",
     options: [
       ["none", "None"],
@@ -109,6 +109,13 @@ const ENTRIES: Entry[] = [
       ["size", "Size"],
       ["letter", "First letter"],
     ],
+  },
+  {
+    section: "Folders",
+    key: "rememberViews",
+    type: "toggle",
+    label: "Remember each folder's view",
+    help: "A folder keeps the view, sort and grouping you choose in it. Off: one view for all folders.",
   },
   { section: "Folders", key: "foldersFirst", type: "toggle", label: "Folders before files" },
   {

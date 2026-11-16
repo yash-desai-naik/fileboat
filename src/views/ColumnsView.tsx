@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/folder";
-import { getSettings, useSettings } from "../lib/settings";
+import { childPath, FolderModel, viewSpec, type Entry } from "../lib/folder";
+import { keepColumns, useFolderView } from "../lib/folderViews";
+import { useSettings } from "../lib/settings";
 import { navigate, parentOf } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { Selection } from "./selection";
@@ -26,14 +27,16 @@ function SideColumn({ path, highlight, onPick }: { path: string; highlight: stri
   const selection = useMemo(() => new Selection(), [model]);
 
   useEffect(() => {
-    model.open(viewFromSettings(getSettings())).catch((err) => model.fail(String(err)));
+    model.open(viewSpec(path)).catch((err) => model.fail(String(err)));
     return () => model.close();
   }, [model]);
 
-  const { sortBy, sortDescending, foldersFirst, showHidden, groupBy } = settings;
+  // Each column is sorted and grouped as its folder is.
+  const { foldersFirst, showHidden } = settings;
+  const { sortBy, sortDescending, groupBy } = useFolderView(path);
   useEffect(() => {
-    void model.setView(viewFromSettings(getSettings()));
-  }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
+    void model.setView(viewSpec(path));
+  }, [model, path, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
 
   return (
     <div className="column">
@@ -99,8 +102,9 @@ export function ColumnsView({ model, selection, children }: Props) {
 
   /** Go to `folder`, with `name` selected in it (a click in a side column). */
   const goTo = (folder: string, entry: Entry) => {
-    if (entry.kind === "folder") navigate(childPath(folder, entry.name), null, { replace: true });
-    else navigate(folder, entry.name, { replace: true });
+    const target = entry.kind === "folder" ? childPath(folder, entry.name) : folder;
+    keepColumns(target);
+    navigate(target, entry.kind === "folder" ? null : entry.name, { replace: true });
   };
 
   return (

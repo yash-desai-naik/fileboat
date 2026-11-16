@@ -1,7 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/folder";
-import { getSettings, useSettings } from "../lib/settings";
+import { childPath, FolderModel, viewSpec, type Entry } from "../lib/folder";
+import { keepColumns, useFolderView } from "../lib/folderViews";
+import { useSettings } from "../lib/settings";
 import { paneActions } from "../lib/pane";
 import { IS_MAC } from "../lib/platform";
 import { askConfirm } from "../shell/Confirm";
@@ -11,7 +12,7 @@ import { loadTools, openInEditor, openTerminal, type Tools } from "../lib/tools"
 import { Menu, type MenuItem } from "../shell/Menu";
 import { folderMenu, itemMenu } from "./contextMenu";
 import { showToast } from "../shell/Toast";
-import { goUp, navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
+import { goUp, navigate, newTab, parentOf, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { ColumnsView } from "./ColumnsView";
 import { StatusBar } from "./StatusBar";
@@ -27,6 +28,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   const [notice, setNotice] = useState<string | null>(null);
   const modelRef = useRef<FolderModel | null>(null);
   const selection = useMemo(() => new Selection(), [model]);
+  const view = useFolderView(tab.path);
 
   // A new path opens a new folder; the same folder under its real name ("~" becomes the home
   // folder's path once opened) doesn't.
@@ -38,16 +40,17 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
     modelRef.current = m;
     setModel(m);
     setNotice(null);
-    m.open(viewFromSettings(getSettings()))
+    m.open(viewSpec(m.path))
       .then(() => settlePath(tab.id, m.path))
       .catch((err) => m.fail(String(err)));
   }, [tab.id, tab.path]);
 
   useEffect(() => () => modelRef.current?.close(), []);
 
-  const { sortBy, sortDescending, foldersFirst, showHidden, groupBy } = settings;
+  const { foldersFirst, showHidden } = settings;
+  const { sortBy, sortDescending, groupBy } = view;
   useEffect(() => {
-    void model?.setView(viewFromSettings(getSettings()));
+    if (model) void model.setView(viewSpec(model.path));
   }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
@@ -192,13 +195,23 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   );
 
   if (!model) return null;
-  const columnsMode = settings.viewMode === "columns";
+  const columnsMode = view.viewMode === "columns";
 
   /** Columns: → goes into the selected folder. */
   const enterSelected = async () => {
     if (selection.size !== 1) return;
     const [entry] = await model.entries([...selection.names]);
-    if (entry?.kind === "folder") navigate(childPath(model.path, entry.name), null, { replace: true });
+    if (entry?.kind !== "folder") return;
+    const target = childPath(model.path, entry.name);
+    keepColumns(target);
+    navigate(target, null, { replace: true });
+  };
+
+  /** Columns: ← goes up. */
+  const leaveColumn = () => {
+    const parent = parentOf(model.path);
+    if (parent) keepColumns(parent);
+    goUp({ replace: true });
   };
 
   const open = (entry: Entry) => {
@@ -215,7 +228,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       key={model.path + (model.id ?? "")}
       model={model}
       selection={selection}
-      mode={columnsMode ? "list" : settings.viewMode}
+      mode={columnsMode ? "list" : view.viewMode}
       onOpen={open}
       // Only for the folder it belongs to: for one render after navigating, the old folder is
       // still shown and would give up on a name it doesn't have.
@@ -228,7 +241,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       onRename={rename}
       onContextMenu={(x, y, onItem) => void showMenu(x, y, onItem)}
       onRight={columnsMode ? () => void enterSelected() : undefined}
-      onLeft={columnsMode ? () => goUp({ replace: true }) : undefined}
+      onLeft={columnsMode ? leaveColumn : undefined}
     />
   );
 

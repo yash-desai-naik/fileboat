@@ -27,6 +27,8 @@ export interface Settings {
   foldersFirst: boolean;
   showHidden: boolean;
   groupBy: GroupBy;
+  /** Each folder keeps the view chosen in it; the four above are the defaults. */
+  rememberViews: boolean;
   /** Details view column widths by column id; missing ones use the defaults. */
   columnWidths: Record<string, number>;
   /** Folders pinned in the sidebar, in order. */

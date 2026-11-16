@@ -5,6 +5,7 @@ import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
 import { addFavourite, removeFavourite } from "./favourites";
+import { hasOwnView, makeDefaultView, resetFolderView, setFolderView, viewFor } from "./folderViews";
 import { paneActions, undoLast } from "./pane";
 import {
   activateTabAt,
@@ -73,6 +74,8 @@ const toggle = (key: "showSidebar" | "showPreview") => () => updateSettings({ [k
 /** Every command in the app. Rebuilt when settings change so check marks stay current. */
 export function buildCommands(): Command[] {
   const s = getSettings();
+  const here = activeTab().path;
+  const v = viewFor(here, s);
   const showing = shownTheme(s).id;
 
   const theme = (value: Theme, title: string): Command => ({
@@ -96,24 +99,24 @@ export function buildCommands(): Command[] {
     category: "View",
     title,
     keys: [key],
-    checked: s.viewMode === value,
-    run: () => updateSettings({ viewMode: value }),
+    checked: v.viewMode === value,
+    run: () => setFolderView(activeTab().path, { viewMode: value }),
   });
 
   const sortBy = (value: SortBy, title: string): Command => ({
     id: `sort.${value}`,
     category: "Sort",
     title: `By ${title}`,
-    checked: s.sortBy === value,
-    run: () => updateSettings({ sortBy: value }),
+    checked: v.sortBy === value,
+    run: () => setFolderView(activeTab().path, { sortBy: value }),
   });
 
   const groupBy = (value: GroupBy, title: string): Command => ({
     id: `group.${value}`,
     category: "Group",
     title,
-    checked: s.groupBy === value,
-    run: () => updateSettings({ groupBy: value }),
+    checked: v.groupBy === value,
+    run: () => setFolderView(activeTab().path, { groupBy: value }),
   });
 
   return [
@@ -220,8 +223,24 @@ export function buildCommands(): Command[] {
       id: "sort.descending",
       category: "Sort",
       title: "Descending",
-      checked: s.sortDescending,
-      run: () => updateSettings({ sortDescending: !getSettings().sortDescending }),
+      checked: v.sortDescending,
+      run: () => {
+        const path = activeTab().path;
+        setFolderView(path, { sortDescending: !viewFor(path).sortDescending });
+      },
+    },
+    {
+      id: "view.reset",
+      category: "View",
+      title: "Reset This Folder to the Default View",
+      hidden: !hasOwnView(here),
+      run: () => resetFolderView(activeTab().path),
+    },
+    {
+      id: "view.makeDefault",
+      category: "View",
+      title: "Use This Folder's View as the Default",
+      run: () => makeDefaultView(activeTab().path),
     },
     {
       id: "sort.foldersFirst",

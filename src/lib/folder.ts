@@ -1,5 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import type { GroupBy, Settings, SortBy } from "./settings";
+import { getSettings, type GroupBy, type SortBy } from "./settings";
+import { viewFor } from "./folderViews";
 
 /** One row, as src-tauri/src/fs/entry.rs sends it. */
 export interface Entry {
@@ -34,13 +35,16 @@ export interface FolderViewSpec {
   tzOffsetMin: number;
 }
 
-export function viewFromSettings(s: Settings): FolderViewSpec {
+/** How the folder at `path` is listed: its own view (lib/folderViews.ts) and the settings. */
+export function viewSpec(path: string): FolderViewSpec {
+  const s = getSettings();
+  const v = viewFor(path, s);
   return {
-    sort: s.sortBy,
-    descending: s.sortDescending,
+    sort: v.sortBy,
+    descending: v.sortDescending,
     foldersFirst: s.foldersFirst,
     showHidden: s.showHidden,
-    group: s.groupBy,
+    group: v.groupBy,
     now: Date.now(),
     tzOffsetMin: -new Date().getTimezoneOffset(),
   };

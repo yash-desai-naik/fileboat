@@ -5,6 +5,7 @@ import { childPath, type Entry } from "../lib/folder";
 import { paneActions } from "../lib/pane";
 import { FILE_MANAGER, IS_MAC, fmtShortcut } from "../lib/platform";
 import { getSettings, updateSettings, type GroupBy, type SortBy } from "../lib/settings";
+import { hasOwnView, makeDefaultView, resetFolderView, setFolderView, viewFor } from "../lib/folderViews";
 import { newTab } from "../lib/tabs";
 import { openInEditor, openTerminal, type Tools } from "../lib/tools";
 import type { MenuItem } from "../shell/Menu";
@@ -150,16 +151,25 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
 export function folderMenu(ctx: MenuContext): MenuItem[] {
   const s = getSettings();
   const { folder } = ctx;
+  const v = viewFor(folder, s);
   const group = (value: GroupBy, label: string): MenuItem => ({
     label,
-    checked: s.groupBy === value,
-    onSelect: () => updateSettings({ groupBy: value }),
+    checked: v.groupBy === value,
+    onSelect: () => setFolderView(folder, { groupBy: value }),
   });
   const sort = (value: SortBy, label: string): MenuItem => ({
     label,
-    checked: s.sortBy === value,
-    onSelect: () => updateSettings({ sortBy: value }),
+    checked: v.sortBy === value,
+    onSelect: () => setFolderView(folder, { sortBy: value }),
   });
+  // Only when this folder has a view of its own.
+  const ownView: MenuItem[] = hasOwnView(folder)
+    ? [
+        "separator",
+        { label: "Reset to Default View", onSelect: () => resetFolderView(folder) },
+        { label: "Use as Default View", onSelect: () => makeDefaultView(folder) },
+      ]
+    : [];
   return [
     {
       label: "New",
@@ -179,9 +189,10 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     {
       label: "View",
       submenu: [
-        { label: "Columns", hint: fmtShortcut("Ctrl+Shift+1"), checked: s.viewMode === "columns", onSelect: () => updateSettings({ viewMode: "columns" }) },
-        { label: "List", hint: fmtShortcut("Ctrl+Shift+2"), checked: s.viewMode === "list", onSelect: () => updateSettings({ viewMode: "list" }) },
-        { label: "Details", hint: fmtShortcut("Ctrl+Shift+3"), checked: s.viewMode === "details", onSelect: () => updateSettings({ viewMode: "details" }) },
+        { label: "Columns", hint: fmtShortcut("Ctrl+Shift+1"), checked: v.viewMode === "columns", onSelect: () => setFolderView(folder, { viewMode: "columns" }) },
+        { label: "List", hint: fmtShortcut("Ctrl+Shift+2"), checked: v.viewMode === "list", onSelect: () => setFolderView(folder, { viewMode: "list" }) },
+        { label: "Details", hint: fmtShortcut("Ctrl+Shift+3"), checked: v.viewMode === "details", onSelect: () => setFolderView(folder, { viewMode: "details" }) },
+        ...ownView,
       ],
     },
     {
@@ -193,7 +204,7 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
         sort("type", "Type"),
         sort("size", "Size"),
         "separator",
-        { label: "Descending", checked: s.sortDescending, onSelect: () => updateSettings({ sortDescending: !s.sortDescending }) },
+        { label: "Descending", checked: v.sortDescending, onSelect: () => setFolderView(folder, { sortDescending: !v.sortDescending }) },
         { label: "Folders First", checked: s.foldersFirst, onSelect: () => updateSettings({ foldersFirst: !s.foldersFirst }) },
       ],
     },

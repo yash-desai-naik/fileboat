@@ -67,6 +67,8 @@ pub struct Settings {
     pub show_hidden: bool,
     /// "none" | "type" | "modified" | "size" | "letter"
     pub group_by: String,
+    /// Each folder keeps the view chosen in it; the view settings above are the defaults.
+    pub remember_views: bool,
     /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
     pub column_widths: BTreeMap<String, u32>,
     /// Folders pinned in the sidebar, in order.
@@ -99,6 +101,7 @@ impl Default for Settings {
             folders_first: true,
             show_hidden: false,
             group_by: "none".into(),
+            remember_views: true,
             column_widths: BTreeMap::new(),
             favourites: Vec::new(),
             editor: String::new(),
@@ -179,6 +182,7 @@ sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)
+rememberViews: true | false (each folder keeps the view, sort and grouping chosen in it; viewMode, sortBy, sortDescending and groupBy are then the defaults)
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
 editor: \"\" (the first found) | \"vscode\" | \"vscode-insiders\" | \"cursor\" | \"windsurf\" | \"zed\" | \"sublime\" | \"notepad++\" | \"jetbrains-idea\" (and other JetBrains IDEs) | \"notepad\" | \"textedit\"
 terminal: \"\" (the first found) | \"windows-terminal\" | \"pwsh\" | \"powershell\" | \"cmd\" | \"git-bash\" | \"wsl\" | \"terminal\" | \"iterm\" | \"ghostty\" | \"warp\" | \"wezterm\"
@@ -319,6 +323,9 @@ mod tests {
         assert_eq!((next.view_mode.as_str(), next.sort_by.as_str()), ("details", "name"));
         assert_eq!(next.column_widths, BTreeMap::from([("name".to_string(), 40), ("size".to_string(), 120)]));
         assert!(s.checked_change(&json!({ "sortBy": "size", "sortDescending": true })).is_ok());
+        // Folders remember their own view unless turned off.
+        assert!(s.remember_views);
+        assert!(!s.merged(&json!({ "rememberViews": false })).unwrap().remember_views);
     }
 
     #[test]

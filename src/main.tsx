@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { App } from "./App";
 import { loadSettings } from "./lib/settings";
+import { loadFolderViews } from "./lib/folderViews";
 import { openFromOutside, restoreTabs, saveTabs } from "./lib/tabs";
 import { listenForDrops } from "./lib/dnd";
 import { listen } from "@tauri-apps/api/event";
@@ -51,7 +52,7 @@ void appWindow.onCloseRequested(async () => {
 });
 
 // A reloaded page starts clean: folders the previous page opened are closed in Rust first.
-Promise.all([loadSettings(), restoreTabs(), invoke("folders_reset").catch(() => {})])
+Promise.all([loadSettings(), restoreTabs(), loadFolderViews(), invoke("folders_reset").catch(() => {})])
   .then(([settings]) => {
     // Set the theme before the first render so the window never shows the wrong colours.
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -64,6 +65,8 @@ Promise.all([loadSettings(), restoreTabs(), invoke("folders_reset").catch(() => 
     });
     void listen<string>("open-path", (e) => void openFromOutside(e.payload));
     listenForDrops();
+    // Another window may have changed folder views meanwhile.
+    window.addEventListener("focus", () => void loadFolderViews());
     showWhenPainted();
   })
   .catch((err) => {

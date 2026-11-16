@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppearance } from "./lib/appearance";
 import { buildCommands } from "./lib/commands";
+import { hasOwnView, useFolderView } from "./lib/folderViews";
 import { updateSettings, useSettings } from "./lib/settings";
 import { useNoBrowserContextMenu, useShortcuts } from "./lib/shortcuts";
 import { uiActions } from "./lib/ui";
@@ -35,13 +36,15 @@ export function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   uiActions.openAbout = () => setAboutOpen(true);
 
-  // Rebuilt when settings change so check marks stay current.
-  const commands = useMemo(() => buildCommands(), [settings]);
-  useShortcuts(commands);
-  useNoBrowserContextMenu();
-
   const { tabs } = useTabs();
   const tab = activeTab();
+  const view = useFolderView(tab.path);
+  const viewKey = [view.viewMode, view.sortBy, view.sortDescending, view.groupBy, hasOwnView(tab.path)].join();
+
+  // Rebuilt when settings or the open folder's view change so check marks stay current.
+  const commands = useMemo(() => buildCommands(), [settings, viewKey, tab.path]);
+  useShortcuts(commands);
+  useNoBrowserContextMenu();
   useMouseNavigation();
 
   useEffect(() => {

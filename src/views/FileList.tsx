@@ -7,6 +7,7 @@ import { dragOut } from "../lib/dnd";
 import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
+import { setFolderView, useFolderView } from "../lib/folderViews";
 import { FileTypeIcon } from "../shell/FileTypeIcon";
 import { FolderIcon } from "../shell/Icons";
 import { uiActions } from "../lib/ui";
@@ -83,6 +84,7 @@ export function FileList(props: Props) {
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
+  const view = useFolderView(model.path);
   const cut = useCutPaths();
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowH = useRowHeight(settings.density);
@@ -323,10 +325,9 @@ export function FileList(props: Props) {
   };
 
   const sortBy = (sort: SortBy) =>
-    updateSettings(
-      settings.sortBy === sort
-        ? { sortDescending: !settings.sortDescending }
-        : { sortBy: sort, sortDescending: DESCENDING_FIRST.includes(sort) },
+    setFolderView(
+      model.path,
+      view.sortBy === sort ? { sortDescending: !view.sortDescending } : { sortBy: sort, sortDescending: DESCENDING_FIRST.includes(sort) },
     );
 
   let empty: string | null = null;
@@ -366,10 +367,10 @@ export function FileList(props: Props) {
                 <button
                   className="fl-head-btn"
                   onClick={() => sortBy(c.sort)}
-                  aria-sort={settings.sortBy === c.sort ? (settings.sortDescending ? "descending" : "ascending") : "none"}
+                  aria-sort={view.sortBy === c.sort ? (view.sortDescending ? "descending" : "ascending") : "none"}
                 >
                   <span>{c.label}</span>
-                  {settings.sortBy === c.sort && <span className="fl-sort">{settings.sortDescending ? "▼" : "▲"}</span>}
+                  {view.sortBy === c.sort && <span className="fl-sort">{view.sortDescending ? "▼" : "▲"}</span>}
                 </button>
                 <ColumnResizer
                   width={widths[ci]}

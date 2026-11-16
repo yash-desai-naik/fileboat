@@ -1,5 +1,5 @@
 import { fmtShortcut } from "../lib/platform";
-import { updateSettings, useSettings } from "../lib/settings";
+import { setFolderView, useFolderView } from "../lib/folderViews";
 import { goBack, goForward, goUp, navigate, parentOf, useTabs } from "../lib/tabs";
 import { AddressBar } from "../views/AddressBar";
 import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, ListIcon } from "./Icons";
@@ -8,7 +8,7 @@ import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, L
 export function Toolbar() {
   const { tabs, activeId } = useTabs();
   const tab = tabs.find((t) => t.id === activeId) ?? tabs[0];
-  const settings = useSettings();
+  const view = useFolderView(tab.path);
 
   return (
     <div className="toolbar">
@@ -26,29 +26,29 @@ export function Toolbar() {
       <AddressBar path={tab.path} onNavigate={(p, select) => navigate(p, select ?? null)} />
       <div className="segmented view-switch" role="radiogroup" aria-label="View">
         <button
-          className={`seg${settings.viewMode === "columns" ? " active" : ""}`}
+          className={`seg${view.viewMode === "columns" ? " active" : ""}`}
           role="radio"
-          aria-checked={settings.viewMode === "columns"}
+          aria-checked={view.viewMode === "columns"}
           title={`Columns (${fmtShortcut("Ctrl+Shift+1")})`}
-          onClick={() => updateSettings({ viewMode: "columns" })}
+          onClick={() => setFolderView(tab.path, { viewMode: "columns" })}
         >
           <ColumnsIcon size={14} />
         </button>
         <button
-          className={`seg${settings.viewMode === "list" ? " active" : ""}`}
+          className={`seg${view.viewMode === "list" ? " active" : ""}`}
           role="radio"
-          aria-checked={settings.viewMode === "list"}
+          aria-checked={view.viewMode === "list"}
           title={`List (${fmtShortcut("Ctrl+Shift+2")})`}
-          onClick={() => updateSettings({ viewMode: "list" })}
+          onClick={() => setFolderView(tab.path, { viewMode: "list" })}
         >
           <ListIcon size={14} />
         </button>
         <button
-          className={`seg${settings.viewMode === "details" ? " active" : ""}`}
+          className={`seg${view.viewMode === "details" ? " active" : ""}`}
           role="radio"
-          aria-checked={settings.viewMode === "details"}
+          aria-checked={view.viewMode === "details"}
           title={`Details (${fmtShortcut("Ctrl+Shift+3")})`}
-          onClick={() => updateSettings({ viewMode: "details" })}
+          onClick={() => setFolderView(tab.path, { viewMode: "details" })}
         >
           <DetailsIcon size={14} />
         </button>
