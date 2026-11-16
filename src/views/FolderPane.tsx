@@ -18,6 +18,7 @@ import { ColumnsView } from "./ColumnsView";
 import { StatusBar } from "./StatusBar";
 import { Selection } from "./selection";
 import { setCurrent } from "../lib/current";
+import type { RepoInfo } from "../lib/git";
 
 /**
  * A tab's folder in the center: its model, selection and view. Every tab keeps one (hidden when
@@ -208,6 +209,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
           .then((created) => setRequest({ name: created, rename: false }))
           .catch((err) => setNotice(String(err)));
       },
+      repo: await invoke<RepoInfo | null>("git_info", { path: model.path }).catch(() => null),
     };
     setMenu({ x, y, items: entries.length ? itemMenu(ctx) : folderMenu(ctx), keyboard });
   };

@@ -10,6 +10,9 @@ import { newTab } from "../lib/tabs";
 import { openInEditor, openTerminal, type Tools } from "../lib/tools";
 import type { MenuItem } from "../shell/Menu";
 import { showToast } from "../shell/Toast";
+import { askConfirm } from "../shell/Confirm";
+import { requestDiff } from "../lib/current";
+import type { RepoInfo } from "../lib/git";
 
 /** Everything a context menu needs to know about where it was opened. */
 export interface MenuContext {
@@ -22,10 +25,78 @@ export interface MenuContext {
   open: (entry: Entry) => void;
   /** Make a new file from a template (name and content), then select it. */
   newFromTemplate: (name: string, content: string) => void;
+  /** The git repository the folder is in, if any. */
+  repo: RepoInfo | null;
 }
 
 const run = (command: string, args: Record<string, unknown>) => () =>
   void invoke(command, args).catch((err) => showToast(String(err), "error"));
+
+// ---------- git ----------
+
+const STAGEABLE = new Set(["modified", "added", "deleted", "renamed", "untracked", "conflicted", "changed"]);
+const DISCARDABLE = new Set(["modified", "deleted", "renamed", "untracked", "changed"]);
+const DIFFABLE = new Set(["modified", "added", "renamed", "conflicted"]);
+
+/** Open the selection's page on GitHub / GitLab, or copy its permalink. */
+function webPage(path: string, permalink: boolean) {
+  void invoke<string>("git_web_url", { path, permalink }).then(
+    (url) =>
+      permalink
+        ? void navigator.clipboard.writeText(url).then(() => showToast("Copied the permalink"))
+        : void invoke("open_url", { url }).catch((err) => showToast(String(err), "error")),
+    (err) => showToast(String(err), "error"),
+  );
+}
+
+/** Git ▸ for the selection, inside a repository. */
+function gitItems(ctx: MenuContext, paths: string[]): MenuItem[] {
+  if (!ctx.repo) return [];
+  const { entries } = ctx;
+  const one = entries.length === 1 ? entries[0] : null;
+  const fail = (err: unknown) => showToast(String(err), "error");
+  const discard = async () => {
+    const gone = entries.filter((e) => e.git === "untracked").map((e) => childPath(ctx.folder, e.name));
+    const tracked = entries.filter((e) => e.git && DISCARDABLE.has(e.git) && e.git !== "untracked").map((e) => childPath(ctx.folder, e.name));
+    const what = entries.length === 1 ? `“${entries[0].name}”` : `${entries.length} items`;
+    const ok = await askConfirm({
+      title: "Discard changes?",
+      body: `The unstaged changes to ${what} will be lost.${gone.length ? " Untracked files go to the Recycle Bin." : ""}`,
+      confirm: "Discard",
+      danger: true,
+    });
+    if (!ok) return;
+    if (tracked.length) await invoke("git_paths", { op: "discard", paths: tracked }).catch(fail);
+    if (gone.length) await invoke("op_trash", { paths: gone }).catch(fail);
+  };
+  const items: MenuItem[] = [
+    { label: "Stage", disabled: !entries.some((e) => e.git && STAGEABLE.has(e.git)), onSelect: () => void invoke("git_paths", { op: "stage", paths }).catch(fail) },
+    { label: "Unstage", disabled: !entries.some((e) => e.staged), onSelect: () => void invoke("git_paths", { op: "unstage", paths }).catch(fail) },
+    { label: "Discard Changes…", danger: true, disabled: !entries.some((e) => e.git && DISCARDABLE.has(e.git)), onSelect: () => void discard() },
+  ];
+  if (one && one.kind === "file" && one.git && DIFFABLE.has(one.git)) {
+    items.push({
+      label: "Show Diff",
+      onSelect: () => {
+        updateSettings({ showPreview: true });
+        requestDiff(paths[0]);
+      },
+    });
+  }
+  items.push(
+    "separator",
+    {
+      label: "Add to .gitignore",
+      disabled: entries.every((e) => e.git === "ignored"),
+      onSelect: () =>
+        void invoke<number>("git_ignore", { paths }).then((n) => showToast(n ? `Added ${n} to .gitignore` : "Already in .gitignore"), fail),
+    },
+    "separator",
+    { label: "Open on the Web", onSelect: () => webPage(paths[0], false) },
+    { label: "Copy Permalink", onSelect: () => webPage(paths[0], true) },
+  );
+  return items;
+}
 
 // ---------- copy path, in every form a developer needs ----------
 
@@ -131,6 +202,8 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
     });
   }
   items.push({ label: "Copy Path", submenu: pathForms(paths) });
+  const git = gitItems(ctx, paths);
+  if (git.length) items.push({ label: "Git", submenu: git });
   items.push(
     "separator",
     { label: "Duplicate", onSelect: () => paneActions.duplicate() },
@@ -185,6 +258,19 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     ...editorItems(ctx, [folder]),
     ...terminalItems(ctx, folder),
     { label: "Copy Path", submenu: pathForms([folder]) },
+    ...(ctx.repo
+      ? [
+          {
+            label: "Git",
+            submenu: [
+              { label: "Open Git Panel", hint: fmtShortcut("Ctrl+Shift+G"), onSelect: () => updateSettings({ showSidebar: true, sidebarView: "git" }) },
+              "separator",
+              { label: "Open on the Web", onSelect: () => webPage(folder, false) },
+              { label: "Copy Permalink", onSelect: () => webPage(folder, true) },
+            ] as MenuItem[],
+          } as MenuItem,
+        ]
+      : []),
     "separator",
     {
       label: "View",
@@ -219,6 +305,7 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
         group("modified", "Date Modified"),
         group("size", "Size"),
         group("letter", "First Letter"),
+        group("git", "Git Status"),
       ],
     },
     {

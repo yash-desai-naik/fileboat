@@ -7,7 +7,7 @@ export type Density = "compact" | "default" | "comfortable";
 export type ViewMode = "details" | "list" | "columns";
 export type SortBy = "name" | "size" | "modified" | "created" | "type";
 export type GitIgnored = "dim" | "hide" | "show";
-export type GroupBy = "none" | "type" | "modified" | "size" | "letter";
+export type GroupBy = "none" | "type" | "modified" | "size" | "letter" | "git";
 
 /** Mirrors `Settings` in src-tauri/src/prefs.rs. */
 export interface Settings {

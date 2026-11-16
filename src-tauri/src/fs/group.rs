@@ -15,6 +15,8 @@ pub enum GroupBy {
     Size,
     /// First letter (digits together, other characters together).
     Letter,
+    /// Git status: conflicts, changed, untracked, unchanged, ignored.
+    Git,
 }
 
 /// Where an entry goes: groups sort by `rank`, then `sub`; `key` identifies the group (for
@@ -109,6 +111,17 @@ fn by_size(e: &Entry) -> GroupOf {
     }
 }
 
+fn by_git(e: &Entry) -> GroupOf {
+    use crate::git::Mark;
+    match e.git {
+        Some(Mark::Conflicted) => g(0, "git:conflicted", "Conflicts"),
+        Some(Mark::Modified | Mark::Added | Mark::Deleted | Mark::Renamed | Mark::Changed) => g(1, "git:changed", "Changed"),
+        Some(Mark::Untracked) => g(2, "git:untracked", "Untracked"),
+        None => g(3, "git:clean", "Unchanged"),
+        Some(Mark::Ignored) => g(4, "git:ignored", "Ignored"),
+    }
+}
+
 fn by_letter(e: &Entry) -> GroupOf {
     // Leading dots don't count (".env" goes under E), as in most file managers.
     let first = e.key.trim_start_matches('.').chars().next();
@@ -139,6 +152,7 @@ pub fn group_of(e: &Entry, by: GroupBy, clock: &Clock) -> Option<GroupOf> {
         GroupBy::Modified => by_date(e.modified, clock),
         GroupBy::Size => by_size(e),
         GroupBy::Letter => by_letter(e),
+        GroupBy::Git => by_git(e),
     })
 }
 

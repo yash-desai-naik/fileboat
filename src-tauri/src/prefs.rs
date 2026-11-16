@@ -152,7 +152,7 @@ impl Settings {
         if !matches!(self.sort_by.as_str(), "name" | "size" | "modified" | "created" | "type") {
             self.sort_by = d.sort_by;
         }
-        if !matches!(self.group_by.as_str(), "none" | "type" | "modified" | "size" | "letter") {
+        if !matches!(self.group_by.as_str(), "none" | "type" | "modified" | "size" | "letter" | "git") {
             self.group_by = d.group_by;
         }
         if !matches!(self.sidebar_view.as_str(), "places" | "git") {
@@ -200,7 +200,7 @@ sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 sidebarView: \"places\" | \"git\" (what the sidebar shows; the git panel is Ctrl+Shift+G)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
-groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)
+groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" | \"git\" (group rows under headers)
 folderSizes: true | false (work out folder sizes in the background; they show in the Size column)
 gitIgnored: \"dim\" | \"hide\" | \"show\" (files git ignores, inside a repository)
 rememberViews: true | false (each folder keeps the view, sort and grouping chosen in it; viewMode, sortBy, sortDescending and groupBy are then the defaults)

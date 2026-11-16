@@ -49,3 +49,26 @@ export function useCurrent(): Current | null {
     () => current,
   );
 }
+
+// "Show Diff" from a menu: the preview opens that file on its Diff tab.
+let diffFor: string | null = null;
+const diffListeners = new Set<() => void>();
+
+export function requestDiff(path: string) {
+  diffFor = path;
+  for (const l of diffListeners) l();
+}
+
+/** Whether a diff was asked for `path` (asking clears it). */
+export function takeDiffRequest(path: string): boolean {
+  if (!diffFor || diffFor.toLowerCase() !== path.toLowerCase()) return false;
+  diffFor = null;
+  return true;
+}
+
+export function onDiffRequest(l: () => void): () => void {
+  diffListeners.add(l);
+  return () => {
+    diffListeners.delete(l);
+  };
+}

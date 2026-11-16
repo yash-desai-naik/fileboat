@@ -108,6 +108,7 @@ const ENTRIES: Entry[] = [
       ["modified", "Date modified"],
       ["size", "Size"],
       ["letter", "First letter"],
+      ["git", "Git status"],
     ],
   },
   {

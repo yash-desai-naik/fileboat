@@ -193,6 +193,36 @@ pub fn show(repo: &Repo, rev: &str, rel: &str) -> Result<Option<Vec<u8>>, String
     }
 }
 
+/// Add these paths (relative to the root) to the repository's top `.gitignore`, as patterns
+/// anchored at the root ("/build/"), skipping ones already there. Returns how many were added.
+pub fn ignore(repo: &Repo, rels: &[(String, bool)]) -> Result<usize, String> {
+    let file = repo.root.join(".gitignore");
+    let existing = std::fs::read_to_string(&file).unwrap_or_default();
+    let have: std::collections::HashSet<&str> = existing.lines().map(str::trim).collect();
+    let mut add = Vec::new();
+    for (rel, dir) in rels {
+        // Characters with a meaning in patterns are escaped.
+        let escaped: String = rel.chars().flat_map(|c| if matches!(c, '*' | '?' | '[' | '!' | '#') { vec!['\\', c] } else { vec![c] }).collect();
+        let pattern = format!("/{escaped}{}", if *dir { "/" } else { "" });
+        if !have.contains(pattern.as_str()) && !add.contains(&pattern) {
+            add.push(pattern);
+        }
+    }
+    if add.is_empty() {
+        return Ok(0);
+    }
+    let mut text = existing.clone();
+    if !text.is_empty() && !text.ends_with('\n') {
+        text.push('\n');
+    }
+    for p in &add {
+        text.push_str(p);
+        text.push('\n');
+    }
+    std::fs::write(&file, text).map_err(|e| e.to_string())?;
+    Ok(add.len())
+}
+
 /// `origin`, or the first remote; None without remotes.
 fn remote_name(repo: &Repo) -> Option<String> {
     let mut c = command(&repo.root);
@@ -353,6 +383,11 @@ mod tests {
         stash_pop(&r).unwrap();
         assert_eq!(std::fs::read_to_string(dir.join("a.txt")).unwrap(), "stashed\n");
         assert!(sync(&r, Sync::Push, |_| {}, || false).is_err(), "no remote");
+
+        assert_eq!(ignore(&r, &[("build".into(), true), ("notes [old].txt".into(), false)]).unwrap(), 2);
+        assert_eq!(ignore(&r, &[("build".into(), true)]).unwrap(), 0, "already there");
+        let text = std::fs::read_to_string(dir.join(".gitignore")).unwrap();
+        assert!(text.ends_with("/build/\n/notes \\[old].txt\n"), "{text}");
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }

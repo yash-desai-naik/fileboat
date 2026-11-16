@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { useCurrent } from "../lib/current";
+import { onDiffRequest, takeDiffRequest, useCurrent } from "../lib/current";
 import { childPath, type Entry } from "../lib/folder";
 import { formatDate, formatSize } from "../lib/format";
 import { openInEditor } from "../lib/tools";
@@ -192,6 +192,14 @@ function Content({ preview, info: withInfo }: { preview: ReturnType<typeof usePr
   // A changed text file under git can show its diff.
   const diffable = !!shown && !!entry?.git && DIFFABLE_MARKS.has(entry.git) && DIFFABLE_VIEWERS.has(shown.viewer);
   const showDiff = diffable && tab === "diff";
+  // "Show Diff" from a menu.
+  const shownPath = shown?.path ?? null;
+  useEffect(() => {
+    if (!shownPath) return;
+    const check = () => takeDiffRequest(shownPath) && setTab("diff");
+    check();
+    return onDiffRequest(check);
+  }, [shownPath]);
   if (target && "count" in target)
     return (
       <div className="pane-empty">

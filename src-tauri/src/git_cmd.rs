@@ -137,6 +137,19 @@ pub async fn git_paths(folders: State<'_, Folders>, op: String, paths: Vec<Strin
     Ok(())
 }
 
+/// Add these files and folders to the repository's .gitignore.
+#[tauri::command]
+pub async fn git_ignore(folders: State<'_, Folders>, paths: Vec<String>) -> Result<usize, String> {
+    let first = paths.first().ok_or("Nothing selected.")?.clone();
+    let repo = repo_of(&first)?;
+    let rel = rels(&repo, &paths)?;
+    let dirs: Vec<(String, bool)> = rel.into_iter().zip(paths.iter()).map(|(r, p)| (r, std::path::Path::new(p).is_dir())).collect();
+    let r = repo.clone();
+    let n = blocking(move || git::ignore(&r, &dirs)).await?;
+    refresh(&folders, &repo);
+    Ok(n)
+}
+
 #[tauri::command]
 pub async fn git_commit(folders: State<'_, Folders>, root: String, message: String, amend: bool) -> Result<String, String> {
     let repo = repo_of(&root)?;

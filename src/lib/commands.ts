@@ -125,6 +125,7 @@ export function buildCommands(): Command[] {
     groupBy("modified", "By Date Modified"),
     groupBy("size", "By Size"),
     groupBy("letter", "By First Letter"),
+    groupBy("git", "Git Status"),
     {
       id: "commandBar.commands",
       category: "Help",

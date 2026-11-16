@@ -1,7 +1,12 @@
 import { Command as Cmdk, defaultFilter } from "cmdk";
-import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
 import type { Command } from "../lib/commands";
 import { Kbd } from "../shell/Kbd";
+import { showToast } from "../shell/Toast";
+import { formatDate } from "../lib/format";
+import type { RepoInfo } from "../lib/git";
+import { activeTab, navigate } from "../lib/tabs";
 
 /**
  * The command bar: one box for everything, VS Code style. The first character picks the mode
@@ -21,7 +26,7 @@ const MODES: Mode[] = [
   { prefix: "", name: "Go to", hint: "Go to a file or folder", placeholder: "Go to a file or folder…", ready: false },
   { prefix: ">", name: "Commands", hint: "Run a command", placeholder: "Type a command…", ready: true },
   { prefix: "%", name: "Search contents", hint: "Search inside files in this folder", placeholder: "Search file contents…", ready: false },
-  { prefix: "#", name: "Git", hint: "Branches, changed files and commits", placeholder: "Branches, changes, commits…", ready: false },
+  { prefix: "#", name: "Git", hint: "Branches, changed files and commits", placeholder: "Branches, changes, commits…", ready: true },
   { prefix: "@", name: "Places", hint: "Favourites, projects and drives", placeholder: "Favourites, projects, drives…", ready: false },
   { prefix: "!", name: "Shell", hint: "Run a shell command in this folder", placeholder: "Shell command…", ready: false },
   { prefix: "?", name: "Help", hint: "List the modes", placeholder: "Modes…", ready: true },
@@ -80,6 +85,7 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
           <Cmdk.List>
             {mode.prefix === ">" && <CommandItems commands={commands} onClose={onClose} />}
             {mode.prefix === "?" && <HelpItems onPick={setText} />}
+            {mode.prefix === "#" && <GitItems onClose={onClose} />}
             {!mode.ready && (
               <div className="palette-note">
                 <strong>{mode.name}</strong>: {mode.hint.toLowerCase()}. This arrives in a later version; type{" "}
@@ -158,5 +164,112 @@ function HelpItems({ onPick }: { onPick: (text: string) => void }) {
         </Cmdk.Item>
       ))}
     </Cmdk.Group>
+  );
+}
+
+interface GitFile {
+  path: string;
+  index: string;
+  worktree: string;
+  conflicted: boolean;
+  untracked: boolean;
+}
+interface GitBranch {
+  name: string;
+  remote: boolean;
+  current: boolean;
+}
+interface GitCommit {
+  hash: string;
+  short: string;
+  author: string;
+  date: number;
+  subject: string;
+}
+
+/** `#`: the changed files, branches and recent commits of the repository you're in. */
+function GitItems({ onClose }: { onClose: () => void }) {
+  const [data, setData] = useState<{ root: string; files: GitFile[]; branches: GitBranch[]; commits: GitCommit[] } | null | "none">(null);
+  useEffect(() => {
+    const path = activeTab().path;
+    void (async () => {
+      const info = await invoke<RepoInfo | null>("git_info", { path });
+      if (!info) return setData("none");
+      const [status, branches, commits] = await Promise.all([
+        invoke<{ files: GitFile[] } | null>("git_status", { path: info.root }),
+        invoke<GitBranch[]>("git_branches", { root: info.root }).catch(() => []),
+        invoke<GitCommit[]>("git_log", { root: info.root, count: 30 }).catch(() => []),
+      ]);
+      setData({ root: info.root, files: status?.files ?? [], branches, commits });
+    })();
+  }, []);
+  if (data === null) return <div className="palette-note">Reading the repository…</div>;
+  if (data === "none") return <div className="palette-note">This folder isn't in a git repository.</div>;
+  const sep = data.root.includes("\\") ? "\\" : "/";
+  const showFile = (rel: string) => {
+    const full = data.root.replace(/[\\/]+$/, "") + sep + rel.replace(/\/$/, "").split("/").join(sep);
+    const i = full.lastIndexOf(sep);
+    onClose();
+    navigate(full.slice(0, i), full.slice(i + 1));
+  };
+  const letter = (f: GitFile) => (f.conflicted ? "!" : f.untracked ? "U" : f.worktree !== "." ? f.worktree : f.index);
+  return (
+    <>
+      {data.files.length > 0 && (
+        <Cmdk.Group heading="Changed files">
+          {data.files.map((f) => (
+            <Cmdk.Item key={`f:${f.path}`} value={`file ${f.path}`} onSelect={() => showFile(f.path)}>
+              <span className="palette-prefix mono">{letter(f)}</span>
+              <span className="palette-title">{f.path}</span>
+            </Cmdk.Item>
+          ))}
+        </Cmdk.Group>
+      )}
+      <Cmdk.Group heading="Branches">
+        {data.branches.map((b) => (
+          <Cmdk.Item
+            key={`b:${b.name}`}
+            value={`branch ${b.name}`}
+            onSelect={() => {
+              onClose();
+              if (b.current) return;
+              const name = b.remote ? b.name.replace(/^[^/]+\//, "") : b.name;
+              void invoke("git_branch_op", { root: data.root, op: "switch", name }).then(
+                () => showToast(`Switched to ${name}`),
+                (err) => showToast(String(err), "error"),
+              );
+            }}
+          >
+            <span className="palette-check" aria-hidden="true">
+              {b.current ? "✓" : ""}
+            </span>
+            <span className="palette-title">
+              {b.name}
+              {b.remote && <span className="palette-category"> (remote)</span>}
+            </span>
+          </Cmdk.Item>
+        ))}
+      </Cmdk.Group>
+      {data.commits.length > 0 && (
+        <Cmdk.Group heading="Recent commits (Enter copies the hash)">
+          {data.commits.map((c) => (
+            <Cmdk.Item
+              key={`c:${c.hash}`}
+              value={`commit ${c.short} ${c.subject} ${c.author}`}
+              onSelect={() => {
+                onClose();
+                void navigator.clipboard.writeText(c.hash).then(() => showToast(`Copied ${c.short}`));
+              }}
+            >
+              <span className="palette-prefix mono">{c.short}</span>
+              <span className="palette-title">{c.subject}</span>
+              <span className="palette-category">
+                {c.author} · {formatDate(c.date * 1000)}
+              </span>
+            </Cmdk.Item>
+          ))}
+        </Cmdk.Group>
+      )}
+    </>
   );
 }

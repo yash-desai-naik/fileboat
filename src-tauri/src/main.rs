@@ -83,6 +83,7 @@ fn main() {
             git_cmd::git_info,
             git_cmd::git_status,
             git_cmd::git_paths,
+            git_cmd::git_ignore,
             git_cmd::git_commit,
             git_cmd::git_branches,
             git_cmd::git_branch_op,
