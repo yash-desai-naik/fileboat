@@ -1,6 +1,7 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod clipboard;
 mod desktop;
 mod folders;
 mod jobs;
@@ -29,6 +30,7 @@ fn main() {
         .manage(folders::Folders::default())
         .manage(fileboat_core::ops::undo::UndoLog::default())
         .manage(jobs::Jobs::default())
+        .manage(clipboard::AppClipboard::default())
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -74,6 +76,9 @@ fn main() {
             jobs::job_transfer,
             jobs::job_cancel,
             jobs::job_resolve,
+            clipboard::clipboard_set,
+            clipboard::clipboard_get,
+            clipboard::clipboard_clear_cut,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,

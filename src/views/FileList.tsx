@@ -1,7 +1,8 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
-import type { Entry, FolderModel } from "../lib/folder";
+import { childPath, type Entry, type FolderModel } from "../lib/folder";
+import { isCut, useCutPaths } from "../lib/clipboard";
 import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
@@ -69,6 +70,7 @@ export function FileList(props: Props) {
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
+  const cut = useCutPaths();
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowH = useRowHeight(settings.density);
   // The Details header scrolls sideways with the rows but sticks to the top: rows start below it,
@@ -332,7 +334,9 @@ export function FileList(props: Props) {
             return (
               <div
                 key={v.key}
-                className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}`}
+                className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}${
+                  entry && isCut(cut, childPath(model.path, entry.name)) ? " cut" : ""
+                }`}
                 role="row"
                 aria-selected={selected}
                 aria-rowindex={v.index + 1}

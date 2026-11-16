@@ -61,11 +61,12 @@ export function useJobs(): Job[] {
 }
 
 /** Copy or move paths into a folder, in the background. Errors starting it show as a toast. */
-export async function startTransfer(sources: string[], dest: string, mode: "copy" | "move") {
+export async function startTransfer(sources: string[], dest: string, mode: "copy" | "move"): Promise<string | null> {
   try {
-    await invoke<string>("job_transfer", { sources, dest, mode });
+    return await invoke<string>("job_transfer", { sources, dest, mode });
   } catch (err) {
     showToast(String(err), "error");
+    return null;
   }
 }
 

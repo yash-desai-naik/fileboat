@@ -264,3 +264,9 @@
   overflow: visible;
   z-index: 3;
 }
+
+/* Cut, waiting to be pasted. */
+.fl-row.cut .fl-text,
+.fl-row.cut .fl-icon {
+  opacity: 0.5;
+}

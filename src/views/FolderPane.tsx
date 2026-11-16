@@ -6,6 +6,8 @@ import { paneActions } from "../lib/pane";
 import { IS_MAC } from "../lib/platform";
 import { askConfirm } from "../shell/Confirm";
 import { startTransfer } from "../lib/jobs";
+import { copyFiles, cutFiles, pasteInto } from "../lib/clipboard";
+import { showToast } from "../shell/Toast";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { StatusBar } from "./StatusBar";
@@ -78,6 +80,16 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       if (name) setRenameRequest(name);
     };
     paneActions.refresh = () => void model.refresh();
+    const selectedPaths = async () => (await selectedNames(model, selection)).map((n) => childPath(model.path, n));
+    paneActions.copy = async () => copyFiles(await selectedPaths());
+    paneActions.cut = async () => cutFiles(await selectedPaths());
+    paneActions.paste = () => void pasteInto(model.path);
+    paneActions.copyPath = async () => {
+      const paths = await selectedPaths();
+      const text = paths.length ? paths.join("\n") : model.path;
+      await navigator.clipboard.writeText(text);
+      showToast(paths.length > 1 ? `Copied ${paths.length} paths` : `Copied ${text}`);
+    };
     paneActions.duplicate = async () => {
       const names = await selectedNames(model, selection);
       if (names.length) await startTransfer(names.map((n) => childPath(model.path, n)), model.path, "copy");

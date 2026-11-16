@@ -14,6 +14,11 @@ export const paneActions = {
   delete: (_permanently: boolean) => {},
   /** Copy the selection beside itself ("a - Copy.txt"). */
   duplicate: () => {},
+  copy: () => {},
+  cut: () => {},
+  paste: () => {},
+  /** Copy the selection's full paths as text. */
+  copyPath: () => {},
 };
 
 export type PaneActions = typeof paneActions;
