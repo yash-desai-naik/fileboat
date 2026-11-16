@@ -1,12 +1,16 @@
 import { Command as Cmdk, defaultFilter } from "cmdk";
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Command } from "../lib/commands";
 import { Kbd } from "../shell/Kbd";
 import { showToast } from "../shell/Toast";
 import { formatDate } from "../lib/format";
 import type { RepoInfo } from "../lib/git";
-import { activeTab, navigate } from "../lib/tabs";
+import { activeTab, navigate, newTab, parentOf, samePath, tabTitle } from "../lib/tabs";
+import { getRecents } from "../lib/recents";
+import { getSettings } from "../lib/settings";
+import { askConfirm } from "../shell/Confirm";
+import type { Hit, SearchResult } from "../lib/search";
 import { requestLine } from "../lib/current";
 import { updateSettings } from "../lib/settings";
 
@@ -25,12 +29,12 @@ interface Mode {
 }
 
 const MODES: Mode[] = [
-  { prefix: "", name: "Go to", hint: "Go to a file or folder", placeholder: "Go to a file or folder…", ready: false },
+  { prefix: "", name: "Go to", hint: "Go to a file or folder", placeholder: "Go to a file or folder, or type a path…", ready: true },
   { prefix: ">", name: "Commands", hint: "Run a command", placeholder: "Type a command…", ready: true },
   { prefix: "%", name: "Search contents", hint: "Search inside files in this folder", placeholder: "Text to find in files here (/regex/ for a pattern)…", ready: true },
   { prefix: "#", name: "Git", hint: "Branches, changed files and commits", placeholder: "Branches, changes, commits…", ready: true },
-  { prefix: "@", name: "Places", hint: "Favourites, projects and drives", placeholder: "Favourites, projects, drives…", ready: false },
-  { prefix: "!", name: "Shell", hint: "Run a shell command in this folder", placeholder: "Shell command…", ready: false },
+  { prefix: "@", name: "Places", hint: "Favourites, recent folders and drives", placeholder: "Favourites, recent folders, drives…", ready: true },
+  { prefix: "!", name: "Shell", hint: "Run a shell command in this folder", placeholder: "Shell command (Enter runs it here)…", ready: true },
   { prefix: "?", name: "Help", hint: "List the modes", placeholder: "Modes…", ready: true },
 ];
 
@@ -52,9 +56,17 @@ interface Props {
   onClose: () => void;
 }
 
+/** A path typed in the Go to box ("C:\\", "~/", "/usr", "..", "\\\\server"): path mode. */
+function looksLikePath(text: string): boolean {
+  return /^([a-z]:[\\/]?|~|\.\.?([\\/]|$)|\/|\\\\)/i.test(text);
+}
+
 export function CommandBar({ commands, initialText, onClose }: Props) {
   const [text, setText] = useState(initialText);
   const mode = modeOf(text);
+  // Enter's modifiers, for Ctrl+Enter (show in folder) and Alt+Enter (new tab).
+  const mods = useRef({ ctrl: false, alt: false });
+  const pathMode = mode.prefix === "" && looksLikePath(text);
 
   return (
     <div className="overlay" onMouseDown={onClose}>
@@ -63,7 +75,7 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
           label="Command bar"
           loop
           // Content search results are already matches: no filtering on top.
-          shouldFilter={mode.prefix !== "%"}
+          shouldFilter={!["%", "", "!"].includes(mode.prefix)}
           // Match on what follows the prefix: ">zoom" finds "View: Zoom In".
           filter={(value, search, keywords) => {
             const q = queryOf(search);
@@ -76,6 +88,14 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
             onValueChange={setText}
             placeholder={`${mode.placeholder}  (? for help)`}
             onKeyDown={(e) => {
+              if (e.key === "Enter") mods.current = { ctrl: e.ctrlKey || e.metaKey, alt: e.altKey };
+              if (e.key === "Tab" && pathMode) {
+                // Tab takes the highlighted completion.
+                e.preventDefault();
+                const v = document.querySelector<HTMLElement>("[cmdk-item][data-selected='true']")?.dataset.path;
+                if (v) setText(v);
+                return;
+              }
               if (e.key === "Escape") {
                 e.preventDefault();
                 onClose();
@@ -91,6 +111,10 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
             {mode.prefix === "?" && <HelpItems onPick={setText} />}
             {mode.prefix === "#" && <GitItems onClose={onClose} />}
             {mode.prefix === "%" && <ContentItems query={queryOf(text)} onClose={onClose} />}
+            {mode.prefix === "" && !pathMode && <GoToItems query={text} mods={mods} onClose={onClose} />}
+            {pathMode && <PathItems text={text} mods={mods} onClose={onClose} />}
+            {mode.prefix === "@" && <PlaceItems mods={mods} onClose={onClose} />}
+            {mode.prefix === "!" && <ShellItems line={queryOf(text)} />}
             {!mode.ready && (
               <div className="palette-note">
                 <strong>{mode.name}</strong>: {mode.hint.toLowerCase()}. This arrives in a later version; type{" "}
@@ -365,6 +389,226 @@ function ContentItems({ query, onClose }: { query: string; onClose: () => void }
           ))}
         </Cmdk.Group>
       ))}
+    </>
+  );
+}
+
+type Mods = MutableRefObject<{ ctrl: boolean; alt: boolean }>;
+
+/** Go to a file or folder: Enter opens it (a folder: goes there), Ctrl+Enter shows it in its folder, Alt+Enter opens a tab. */
+function go(path: string, folder: boolean, mods: Mods, onClose: () => void) {
+  const { ctrl, alt } = mods.current;
+  mods.current = { ctrl: false, alt: false };
+  onClose();
+  const parent = parentOf(path) ?? path;
+  const name = path.slice(parent.replace(/[\\/]+$/, "").length).replace(/^[\\/]+/, "");
+  if (alt) return newTab(folder ? path : parent, true, folder ? null : name);
+  if (ctrl || !folder) {
+    if (!ctrl && !folder) return void invoke("open_path", { path }).catch((err) => showToast(String(err), "error"));
+    return navigate(parent, name);
+  }
+  navigate(path);
+}
+
+/** Letters of `q` in order in `s` (case aside). */
+function fuzzy(s: string, q: string): boolean {
+  let i = 0;
+  const lower = s.toLowerCase();
+  for (const c of q.toLowerCase()) {
+    if (c === " ") continue;
+    i = lower.indexOf(c, i);
+    if (i < 0) return false;
+    i++;
+  }
+  return true;
+}
+
+function HitName({ h }: { h: Hit }) {
+  const set = new Set(h.indices);
+  return (
+    <>
+      {[...h.name].map((c, i) => (set.has(i) ? <mark key={i}>{c}</mark> : c))}
+    </>
+  );
+}
+
+/** (nothing): recent folders and favourites first, then the index. */
+function GoToItems({ query, mods, onClose }: { query: string; mods: Mods; onClose: () => void }) {
+  const [hits, setHits] = useState<Hit[]>([]);
+  const q = query.trim();
+  useEffect(() => {
+    if (!q) return setHits([]);
+    let stale = false;
+    const timer = window.setTimeout(() => {
+      void invoke<SearchResult>("index_search", { query: q, scope: null, limit: 40 }).then(
+        (r) => !stale && setHits(r.hits),
+        () => !stale && setHits([]),
+      );
+    }, 80);
+    return () => {
+      stale = true;
+      window.clearTimeout(timer);
+    };
+  }, [q]);
+  const favourites = getSettings().favourites;
+  const places = [...favourites.map((p) => ({ path: p, why: "Favourite" })), ...getRecents().filter((p) => !favourites.some((f) => samePath(f, p))).map((p) => ({ path: p, why: "Recent" }))]
+    .filter((p) => !q || fuzzy(tabTitle(p.path), q) || fuzzy(p.path, q))
+    .slice(0, q ? 6 : 12);
+  return (
+    <>
+      {places.length > 0 && (
+        <Cmdk.Group heading={q ? "Places" : "Recent and favourite folders"}>
+          {places.map((p) => (
+            <Cmdk.Item key={`p:${p.path}`} value={`p:${p.path}`} onSelect={() => go(p.path, true, mods, onClose)}>
+              <span className="palette-title">{tabTitle(p.path)}</span>
+              <span className="palette-category">{p.path}</span>
+              <span className="palette-category"> · {p.why}</span>
+            </Cmdk.Item>
+          ))}
+        </Cmdk.Group>
+      )}
+      {hits.length > 0 && (
+        <Cmdk.Group heading="Files and folders">
+          {hits.map((h) => (
+            <Cmdk.Item key={`h:${h.path}`} value={`h:${h.path}`} onSelect={() => go(h.path, h.folder, mods, onClose)}>
+              <span className="palette-title">
+                <HitName h={h} />
+                {h.folder ? "/" : ""}
+              </span>
+              <span className="palette-category">{parentOf(h.path)}</span>
+            </Cmdk.Item>
+          ))}
+        </Cmdk.Group>
+      )}
+      {!q && <div className="palette-note">Type a name, or a path (C:\\, ~/, ..). Ctrl+Enter shows it in its folder, Alt+Enter opens a tab.</div>}
+      {q && !places.length && !hits.length && <div className="palette-note">No matches in the index.</div>}
+    </>
+  );
+}
+
+/** A path typed: each part completed (Tab takes the highlighted one), Enter goes there. */
+function PathItems({ text, mods, onClose }: { text: string; mods: Mods; onClose: () => void }) {
+  const [list, setList] = useState<string[]>([]);
+  const base = activeTab().path;
+  useEffect(() => {
+    let stale = false;
+    void invoke<string[]>("path_complete", { input: text, base, limit: 30 }).then((l) => !stale && setList(l));
+    return () => {
+      stale = true;
+    };
+  }, [text, base]);
+  const goTyped = async () => {
+    const r = await invoke<{ path: string; kind: "folder" | "file" | "missing" }>("path_resolve", { input: text, base }).catch(() => null);
+    if (r && r.kind !== "missing") go(r.path, r.kind === "folder", mods, onClose);
+    else showToast(`${text} doesn't exist.`, "error");
+  };
+  return (
+    <>
+      <Cmdk.Group heading="Path">
+        <Cmdk.Item value="typed" onSelect={() => void goTyped()}>
+          <span className="palette-title">Go to {text}</span>
+        </Cmdk.Item>
+        {list.map((p) => (
+          <Cmdk.Item key={p} value={p} data-path={p} onSelect={() => go(p, true, mods, onClose)}>
+            <span className="palette-title mono">{p}</span>
+          </Cmdk.Item>
+        ))}
+      </Cmdk.Group>
+    </>
+  );
+}
+
+interface PlaceList {
+  home: { name: string; path: string }[];
+  drives: { path: string; label: string }[];
+}
+
+/** `@`: favourites, recent folders, home places and drives. */
+function PlaceItems({ mods, onClose }: { mods: Mods; onClose: () => void }) {
+  const [places, setPlaces] = useState<PlaceList | null>(null);
+  useEffect(() => void invoke<PlaceList>("places_list").then(setPlaces), []);
+  const item = (key: string, path: string, title: string, detail: string) => (
+    <Cmdk.Item key={key} value={`${title} ${path}`} onSelect={() => go(path, true, mods, onClose)}>
+      <span className="palette-title">{title}</span>
+      <span className="palette-category">{detail}</span>
+    </Cmdk.Item>
+  );
+  return (
+    <>
+      <Cmdk.Group heading="Favourites">{getSettings().favourites.map((p) => item(`f:${p}`, p, tabTitle(p), p))}</Cmdk.Group>
+      <Cmdk.Group heading="Recent folders">{getRecents().slice(0, 20).map((p) => item(`r:${p}`, p, tabTitle(p), p))}</Cmdk.Group>
+      {places && <Cmdk.Group heading="Home">{places.home.map((p) => item(`h:${p.path}`, p.path, p.name, p.path))}</Cmdk.Group>}
+      {places && <Cmdk.Group heading="Drives">{places.drives.map((d) => item(`d:${d.path}`, d.path, d.label, d.path))}</Cmdk.Group>}
+    </>
+  );
+}
+
+type ShellEvent = { type: "output"; text: string } | { type: "exit"; code: number | null; ms: number };
+
+/** Asked once per run of the app. */
+let shellAllowed = false;
+
+/** `!`: run a command in the folder you're in; its output shows here (closing stops it). */
+function ShellItems({ line }: { line: string }) {
+  const cwd = activeTab().path;
+  const [output, setOutput] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const running = useRef<string | null>(null);
+  const out = useRef<HTMLPreElement>(null);
+  useEffect(
+    () => () => {
+      if (running.current) void invoke("shell_cancel", { id: running.current });
+    },
+    [],
+  );
+  useEffect(() => {
+    if (out.current) out.current.scrollTop = out.current.scrollHeight;
+  }, [output]);
+  const run = async () => {
+    if (!line.trim() || running.current) return;
+    if (!shellAllowed) {
+      const ok = await askConfirm({
+        title: "Run shell commands from the command bar?",
+        body: `What you type after ! runs in ${cwd} with ${navigator.userAgent.includes("Windows") ? "cmd.exe" : "your shell"}, as if typed in a terminal.`,
+        confirm: "Run",
+      });
+      if (!ok) return;
+      shellAllowed = true;
+    }
+    setOutput("");
+    setStatus("Running…");
+    const channel = new Channel<ShellEvent>();
+    channel.onmessage = (e) => {
+      if (e.type === "output") setOutput((o) => (o + e.text).slice(-200_000));
+      else {
+        running.current = null;
+        setStatus(`Exited with ${e.code ?? "no code"} after ${(e.ms / 1000).toFixed(1)} s`);
+      }
+    };
+    try {
+      running.current = await invoke<string>("shell_run", { cwd, line, onEvent: channel });
+    } catch (err) {
+      setStatus(String(err));
+    }
+  };
+  return (
+    <>
+      <Cmdk.Group heading={`In ${cwd}`}>
+        <Cmdk.Item value="run" onSelect={() => void run()}>
+          <span className="palette-title mono">{line.trim() ? `Run: ${line}` : "Type a command, then Enter"}</span>
+        </Cmdk.Item>
+      </Cmdk.Group>
+      {(status || output) && (
+        <div className="shell-output">
+          {status && <div className="palette-note">{status} {running.current ? "(Esc stops it)" : ""}</div>}
+          <pre ref={out} className="mono">{output}</pre>
+        </div>
+      )}
+      {!output && !status && (
+        <div className="palette-note">
+          Esc closes the bar <Kbd combo="Esc" /> and stops a running command. Try <code>git log --oneline -5</code> or <code>npm test</code>.
+        </div>
+      )}
     </>
   );
 }

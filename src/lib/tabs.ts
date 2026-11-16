@@ -54,6 +54,14 @@ export function activeTab(): Tab {
   return state.tabs.find((t) => t.id === state.activeId) ?? state.tabs[0];
 }
 
+/** Call `l` whenever tabs change (outside React). */
+export function subscribeTabs(l: () => void): () => void {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
 function updateTab(id: string, patch: Partial<Tab>) {
   set({ ...state, tabs: state.tabs.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
 }

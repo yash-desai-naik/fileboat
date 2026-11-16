@@ -401,3 +401,23 @@
 .folder-pane[hidden] {
   display: none;
 }
+
+/* The command bar's shell output */
+.shell-output pre {
+  max-height: 320px;
+  margin: 0 8px 8px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.grep-line mark,
+[cmdk-item] mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+}

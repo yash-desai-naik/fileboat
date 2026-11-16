@@ -17,6 +17,7 @@ mod places_cmd;
 mod preview_cmd;
 mod repos;
 mod settings;
+mod shell_cmd;
 mod sizes;
 mod state;
 mod tools_cmd;
@@ -43,6 +44,7 @@ fn main() {
         .manage(preview_cmd::PreviewFiles::default())
         .manage(git_cmd::Syncing::default())
         .manage(std::sync::Arc::new(grep_cmd::Greps::default()))
+        .manage(std::sync::Arc::new(shell_cmd::Shells::default()))
         // Images, media, PDFs and fonts for the preview, read off the main thread.
         .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -89,6 +91,8 @@ fn main() {
             indexer::index_search,
             grep_cmd::grep_start,
             grep_cmd::grep_cancel,
+            shell_cmd::shell_run,
+            shell_cmd::shell_cancel,
             indexer::index_status,
             indexer::index_rebuild,
             indexer::index_pause,
