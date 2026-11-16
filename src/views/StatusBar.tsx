@@ -3,6 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { FolderModel, SelectionInfo } from "../lib/folder";
 import { formatSize } from "../lib/format";
 import { branchLabel, useGitInfo, type RepoInfo } from "../lib/git";
+import { useIndexStatus } from "../lib/search";
 import type { Selection } from "./selection";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
@@ -41,6 +42,7 @@ export function StatusBar({ model, selection, active }: { model: FolderModel; se
   }, [model.path, active]);
 
   const git = useGitInfo(active ? model.path : null);
+  const index = useIndexStatus();
 
   const hidden = model.total - model.count;
   const parts: string[] = [];
@@ -60,6 +62,11 @@ export function StatusBar({ model, selection, active }: { model: FolderModel; se
       <span>{parts.join(" · ")}</span>
       {selected && <span className="status-selected">{selected}</span>}
       <span className="spacer" />
+      {index && (index.phase === "building" || index.phase === "reconciling") && (
+        <span className="muted status-index" title="The search index is being brought up to date">
+          {index.phase === "building" ? `Indexing… ${index.progress.toLocaleString()}` : "Updating the index…"}
+        </span>
+      )}
       {git && <GitStatus info={git} />}
       {space && (
         <span className="muted" title={`${formatSize(space[0])} free of ${formatSize(space[1])}`}>

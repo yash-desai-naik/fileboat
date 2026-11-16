@@ -541,3 +541,7 @@
 .sr-foot .spacer {
   flex: 1;
 }
+
+.status-index {
+  margin-right: 14px;
+}

@@ -32,6 +32,41 @@ export interface MenuContext {
 const run = (command: string, args: Record<string, unknown>) => () =>
   void invoke(command, args).catch((err) => showToast(String(err), "error"));
 
+// ---------- the search index ----------
+
+/** Index This Folder / Leave Out of the Index, for one folder. */
+function indexItems(folder: string): MenuItem[] {
+  const s = getSettings();
+  const lower = (p: string) => p.replace(/[\\/]+$/, "").toLowerCase();
+  const under = (p: string, base: string) => lower(p) === lower(base) || lower(p).startsWith(lower(base) + (base.includes("\\") ? "\\" : "/"));
+  const excluded = s.indexExcludes.some((e) => lower(e) === lower(folder));
+  return [
+    excluded
+      ? {
+          label: "Put Back in the Index",
+          onSelect: () => updateSettings({ indexExcludes: s.indexExcludes.filter((e) => lower(e) !== lower(folder)) }),
+        }
+      : {
+          label: "Leave Out of the Index",
+          onSelect: () => {
+            updateSettings({ indexExcludes: [...s.indexExcludes, folder] });
+            showToast("Left out of the index");
+          },
+        },
+    {
+      label: "Index This Folder",
+      onSelect: async () => {
+        // The folders indexed now (the home folder when none were chosen).
+        const roots = s.indexRoots.length ? s.indexRoots : ((await invoke<{ roots: string[] }>("index_status").catch(() => null))?.roots ?? []);
+        // Outside every root: a new root; inside one (left out by a rule): indexed anyway.
+        if (roots.some((r) => under(folder, r))) updateSettings({ indexIncludes: [...s.indexIncludes, folder] });
+        else updateSettings({ indexRoots: [...roots, folder] });
+        showToast("Indexing it now");
+      },
+    },
+  ];
+}
+
 // ---------- git ----------
 
 const STAGEABLE = new Set(["modified", "added", "deleted", "renamed", "untracked", "conflicted", "changed"]);
@@ -213,6 +248,7 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
     "separator",
   );
   if (onlyFolders) items.push({ label: "Add to Favourites", onSelect: () => paths.forEach((p) => addFavourite(p)) });
+  if (onlyFolders && paths.length === 1) items.push({ label: "Search Index", submenu: indexItems(paths[0]) });
   items.push({ label: `Show in ${FILE_MANAGER}`, onSelect: run("reveal_in_file_manager", { path: paths[0] }) });
   items.push({ label: IS_MAC ? "Get Info" : "Properties", hint: IS_MAC ? undefined : "Alt+Enter", onSelect: run("show_properties", { path: paths[0] }) });
   // Windows: Explorer's own menu, with what shell extensions add (7-Zip, TortoiseGit, Send to…).
@@ -258,6 +294,7 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     ...editorItems(ctx, [folder]),
     ...terminalItems(ctx, folder),
     { label: "Copy Path", submenu: pathForms([folder]) },
+    { label: "Search Index", submenu: indexItems(folder) },
     ...(ctx.repo
       ? [
           {

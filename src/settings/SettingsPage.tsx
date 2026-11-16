@@ -8,13 +8,15 @@ import { useAppVersion, versionLine } from "../shell/AboutDialog";
 import { uiActions } from "../lib/ui";
 import type { ThemeMode } from "../themes";
 import { ThemePicker } from "./ThemePicker";
+import { IndexSettings } from "./IndexSettings";
 import { loadTools, type Tool } from "../lib/tools";
 
 type Def =
   | { key: keyof Settings; type: "select"; options: [string | number, string][] }
   | { key: keyof Settings; type: "toggle" }
   | { key: "editor" | "terminal"; type: "tool" }
-  | { key: "lightTheme" | "darkTheme"; type: "themes"; mode: ThemeMode };
+  | { key: "lightTheme" | "darkTheme"; type: "themes"; mode: ThemeMode }
+  | { key: "indexRoots"; type: "index" };
 
 type Entry = Def & { section: string; label: string; help?: string };
 
@@ -161,6 +163,17 @@ const ENTRIES: Entry[] = [
     help: `For "Terminal here" (${fmtShortcut("Ctrl+`")}).`,
   },
 
+  {
+    section: "Search index",
+    key: "indexEnabled",
+    type: "toggle",
+    label: "Keep a search index",
+    help: `Names and dates only, never contents. Search everywhere (${fmtShortcut("Ctrl+Shift+F")}) and Go to use it.`,
+  },
+  { section: "Search index", key: "indexGitignore", type: "toggle", label: "Honour .gitignore inside projects", help: "Ignored build output is still found when you search that folder directly." },
+  { section: "Search index", key: "indexHidden", type: "toggle", label: "Index hidden files and folders", help: "The ones the system marks hidden (dotfiles are indexed either way)." },
+  { section: "Search index", key: "indexRoots", type: "index", label: "Folders, exclusions and rules", help: "indexRoots indexExcludes indexIncludes node_modules rules" },
+
   { section: "Layout", key: "showSidebar", type: "toggle", label: "Show the sidebar", help: fmtShortcut("Ctrl+B") },
   { section: "Layout", key: "showPreview", type: "toggle", label: "Show the preview pane", help: fmtShortcut("Alt+P") },
 
@@ -239,7 +252,9 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
           {visible
             .filter((e) => e.section === section)
             .map((e) =>
-              e.type === "themes" ? (
+              e.type === "index" ? (
+                <IndexSettings key={e.key} settings={settings} />
+              ) : e.type === "themes" ? (
                 <ThemePicker
                   key={e.key}
                   mode={e.mode}
@@ -300,7 +315,8 @@ function Control({ entry, settings }: { entry: Entry; settings: Settings }) {
     case "tool":
       return <ToolSelect which={entry.key} value={String(value)} />;
     case "themes":
-      return null; // drawn full width by ThemePicker
+    case "index":
+      return null; // drawn full width
   }
 }
 

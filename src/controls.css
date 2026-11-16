@@ -490,3 +490,79 @@ table.kv td {
   width: 100% !important;
   opacity: 0.25;
 }
+
+/* ---------- Settings ▸ Search index ---------- */
+
+.index-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 8px;
+}
+.index-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-hover);
+}
+.index-status .spacer {
+  flex: 1;
+}
+.setting-sub {
+  margin-top: 10px;
+  font-weight: 600;
+}
+.index-settings p {
+  margin: 0;
+}
+.list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.list-editor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+}
+.list-editor-row .mono {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-editor-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.list-editor-add .input {
+  flex: 1;
+}
+.rule-group {
+  margin-top: 6px;
+}
+.rule-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 2px 12px;
+  margin-top: 2px;
+}
+.rule {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.rule .small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
