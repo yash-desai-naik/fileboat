@@ -9,6 +9,10 @@ import { showToast } from "../shell/Toast";
 import type { Info, Text } from "./types";
 import {
   ArchiveViewer,
+  CsvViewer,
+  MarkdownViewer,
+  StructuredViewer,
+  SvgViewer,
   FolderViewer,
   FontViewer,
   HexViewer,
@@ -39,8 +43,17 @@ function useTarget(): { path: string; reload: string } | { count: number } | nul
 export function Body({ info, reload }: { info: Info; reload: string }) {
   switch (info.viewer) {
     case "image":
-    case "svg":
       return <ImageViewer info={info} reload={reload} />;
+    case "svg":
+      return <SvgViewer info={info} reload={reload} />;
+    case "markdown":
+      return <MarkdownViewer info={info} reload={reload} />;
+    case "json":
+    case "yaml":
+    case "toml":
+      return <StructuredViewer info={info} reload={reload} />;
+    case "csv":
+      return <CsvViewer info={info} reload={reload} />;
     case "audio":
     case "video":
       return <MediaViewer info={info} reload={reload} />;

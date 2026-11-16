@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatSize } from "../lib/format";
 import { updateSettings, useSettings } from "../lib/settings";
+import { CsvTable, Tree } from "./structured";
 import type { ArchiveList, FolderPreview, Info, Text } from "./types";
 
 // Loaded with the first text file shown (images and PDFs don't need it).
@@ -302,6 +303,121 @@ export function FolderViewer({ info, reload }: { info: Info; reload: string }) {
           <PlainText text={data.readme[1]} />
         </div>
       )}
+    </>
+  );
+}
+
+const Markdown = lazy(() => import("./Markdown"));
+
+/** How each kind of file was last shown (Preview or Source, Tree or Text…), for this run. */
+const lastMode = new Map<string, string>();
+
+function useMode(kind: string, fallback: string): [string, (m: string) => void] {
+  const [mode, setMode] = useState(lastMode.get(kind) ?? fallback);
+  return [
+    mode,
+    (m) => {
+      lastMode.set(kind, m);
+      setMode(m);
+    },
+  ];
+}
+
+/** A small switch between two ways of showing a file. */
+export function Modes({ value, options, onChange }: { value: string; options: [string, string][]; onChange: (v: string) => void }) {
+  return (
+    <span className="pv-modes" role="radiogroup">
+      {options.map(([v, label]) => (
+        <button key={v} role="radio" aria-checked={value === v} className={value === v ? "on" : ""} onClick={() => onChange(v)}>
+          {label}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+/** The folder a file is in. */
+function folderOf(path: string): string {
+  const i = Math.max(path.lastIndexOf("\\"), path.lastIndexOf("/"));
+  return path.slice(0, i) || path.slice(0, i + 1);
+}
+
+export function MarkdownViewer({ info, reload }: { info: Info; reload: string }) {
+  const { data, error, more } = useText(info.path, reload);
+  const [mode, setMode] = useMode("markdown", "preview");
+  if (error) return <Note>{error}</Note>;
+  if (!data) return <Loading />;
+  return (
+    <>
+      <TextBar text={data} onMore={more}>
+        {mode === "source" && <WrapToggle />}
+        <Modes value={mode} onChange={setMode} options={[["preview", "Preview"], ["source", "Source"]]} />
+      </TextBar>
+      {mode === "preview" ? (
+        <Suspense fallback={<Loading />}>
+          <Markdown text={data.text} folder={folderOf(info.path)} />
+        </Suspense>
+      ) : (
+        <Code text={data.text} name={info.name} />
+      )}
+    </>
+  );
+}
+
+/** JSON, YAML and TOML: highlighted text, or a tree. */
+export function StructuredViewer({ info, reload }: { info: Info; reload: string }) {
+  const { data, error, more } = useText(info.path, reload);
+  const [mode, setMode] = useMode("structured", "text");
+  const tree = useLoad(
+    () => (mode === "tree" ? invoke<unknown>("preview_structured", { path: info.path, format: info.viewer }) : Promise.resolve(null)),
+    [info.path, reload, mode],
+  );
+  if (error) return <Note>{error}</Note>;
+  if (!data) return <Loading />;
+  return (
+    <>
+      <TextBar text={data} onMore={more}>
+        {mode === "text" && <WrapToggle />}
+        <Modes value={mode} onChange={setMode} options={[["text", "Text"], ["tree", "Tree"]]} />
+      </TextBar>
+      {mode === "text" ? (
+        <Code text={data.text} name={info.name} />
+      ) : tree.error ? (
+        <Note>Can't show this as a tree: {tree.error}</Note>
+      ) : tree.data === null ? (
+        <Loading />
+      ) : (
+        <Tree value={tree.data} />
+      )}
+    </>
+  );
+}
+
+export function CsvViewer({ info, reload }: { info: Info; reload: string }) {
+  const { data, error, more } = useText(info.path, reload);
+  const [mode, setMode] = useMode("csv", "table");
+  if (error) return <Note>{error}</Note>;
+  if (!data) return <Loading />;
+  return (
+    <>
+      <TextBar text={data} onMore={more}>
+        <Modes value={mode} onChange={setMode} options={[["table", "Table"], ["text", "Text"]]} />
+      </TextBar>
+      {mode === "table" ? <CsvTable text={data.text} name={info.name} /> : <Code text={data.text} name={info.name} />}
+    </>
+  );
+}
+
+/** SVG as an image (its scripts never run) or its source. */
+export function SvgViewer({ info, reload }: { info: Info; reload: string }) {
+  const [mode, setMode] = useMode("svg", "image");
+  return (
+    <>
+      <div className="pv-bar">
+        <span>SVG</span>
+        <Modes value={mode} onChange={setMode} options={[["image", "Image"], ["source", "Source"]]} />
+      </div>
+      {mode === "image" ? <ImageViewer info={info} reload={reload} /> : <TextViewer info={info} reload={reload} />}
     </>
   );
 }

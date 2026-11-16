@@ -43,7 +43,7 @@ pub async fn preview_archive(path: String) -> Result<ArchiveList, String> {
     blocking(move || preview::list_archive(&PathBuf::from(path), 5000)).await
 }
 
-/// A YAML or TOML file as JSON, for the tree (files over 8 MB are shown as text only).
+/// A JSON, YAML or TOML file as JSON, for the tree (files over 8 MB are shown as text only).
 #[tauri::command]
 pub async fn preview_structured(path: String, format: String) -> Result<serde_json::Value, String> {
     blocking(move || {

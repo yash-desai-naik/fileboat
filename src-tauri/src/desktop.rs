@@ -52,6 +52,17 @@ pub fn open_releases_page() -> Result<(), String> {
     open_with_desktop(std::path::Path::new("https://github.com/yash-desai-naik/fileboat/releases"))
 }
 
+/// Open a link from the preview (a Markdown link) in the browser or mail app: http, https and
+/// mailto only, never a program or a file.
+#[tauri::command]
+pub fn open_url(url: String) -> Result<(), String> {
+    let parsed = url::Url::parse(&url).map_err(|_| "That isn't a link.".to_string())?;
+    if !matches!(parsed.scheme(), "http" | "https" | "mailto") {
+        return Err("Only web and mail links open from the preview.".into());
+    }
+    open_with_desktop(std::path::Path::new(parsed.as_str()))
+}
+
 /// Open a file with its default app (or run it, for programs), as a double-click in Explorer or
 /// Finder does. On Windows a type with no app gets the system's "Open with" dialog.
 #[tauri::command]

@@ -250,3 +250,215 @@
 .link-btn.on {
   text-decoration: underline;
 }
+
+/* Preview | Source and the like */
+.pv-modes {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.pv-modes button {
+  padding: 0 7px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  line-height: 18px;
+  cursor: pointer;
+}
+.pv-modes button + button {
+  border-left: 1px solid var(--border);
+}
+.pv-modes button.on {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+/* Syntax colours for highlighted blocks outside the editor (Markdown code, the tree). */
+.tok-keyword,
+.tok-modifier,
+.tok-controlKeyword,
+.tok-tagName {
+  color: var(--syn-keyword);
+}
+.tok-typeName,
+.tok-className,
+.tok-namespace {
+  color: var(--syn-type);
+}
+.tok-macroName,
+.tok-function {
+  color: var(--syn-function);
+}
+.tok-string,
+.tok-string2,
+.tok-regexp {
+  color: var(--syn-string);
+}
+.tok-number {
+  color: var(--syn-number);
+}
+.tok-bool,
+.tok-atom,
+.tok-literal {
+  color: var(--syn-literal);
+}
+.tok-comment,
+.tok-meta {
+  color: var(--syn-comment);
+  font-style: italic;
+}
+.tok-variableName,
+.tok-propertyName,
+.tok-attributeName {
+  color: var(--syn-property);
+}
+.tok-operator,
+.tok-punctuation {
+  color: var(--syn-operator);
+}
+.tok-invalid {
+  color: var(--syn-invalid);
+}
+
+/* Rendered Markdown */
+.pv-md {
+  padding: 8px 16px 24px;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.pv-md h1,
+.pv-md h2 {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.pv-md h1 {
+  font-size: 1.6em;
+}
+.pv-md h2 {
+  font-size: 1.3em;
+}
+.pv-md h3 {
+  font-size: 1.1em;
+}
+.pv-md h1,
+.pv-md h2,
+.pv-md h3,
+.pv-md h4 {
+  margin: 1.2em 0 0.5em;
+  line-height: 1.3;
+}
+.pv-md > :first-child {
+  margin-top: 0.4em;
+}
+.pv-md a {
+  color: var(--accent);
+  cursor: pointer;
+}
+.pv-md code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+}
+.pv-md pre {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+.pv-md pre code {
+  padding: 0;
+  background: none;
+  font-size: var(--fs-sm);
+  color: var(--syn-operator);
+}
+.pv-md blockquote {
+  margin: 0.8em 0;
+  padding: 0 12px;
+  color: var(--text-2);
+  border-left: 3px solid var(--border);
+}
+.pv-md img {
+  max-width: 100%;
+}
+.pv-md table {
+  border-collapse: collapse;
+}
+.pv-md th,
+.pv-md td {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+}
+.pv-md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.pv-md-remote {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+/* JSON / YAML / TOML tree */
+.pv-tree {
+  padding: 6px 8px;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+.pv-tree-row {
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.pv-tree-row.branch {
+  cursor: pointer;
+}
+.pv-tree-row.branch:hover {
+  background: var(--bg-hover);
+}
+.pv-tree-twisty {
+  flex: none;
+  width: 14px;
+  color: var(--text-3);
+}
+.pv-tree-children {
+  margin-left: 7px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+.pv-tree-more {
+  margin-left: 14px;
+}
+
+/* CSV table */
+.pv-table-wrap {
+  overflow: auto;
+}
+.pv-table {
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.pv-table th,
+.pv-table td {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.pv-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-sidebar);
+  font-weight: 600;
+}
+.pv-table .num {
+  color: var(--text-3);
+  text-align: right;
+}

@@ -70,6 +70,7 @@ fn main() {
             desktop::open_app_folder,
             desktop::open_releases_page,
             desktop::open_path,
+            desktop::open_url,
             desktop::reveal_in_file_manager,
             desktop::show_properties,
             desktop::open_with_dialog,

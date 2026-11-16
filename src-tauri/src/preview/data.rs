@@ -1,12 +1,13 @@
-//! YAML and TOML as JSON, for the preview's tree (JSON itself is parsed by the view).
+//! JSON, YAML and TOML as one JSON value, for the preview's tree.
 
 use serde::Deserialize;
 use serde_json::Value;
 
-/// Parse `text` as `format` ("yaml" or "toml") into a JSON value. A YAML file with several
+/// Parse `text` as `format` ("json", "yaml" or "toml") into a JSON value. A YAML file with several
 /// documents becomes a list of them.
 pub fn structured(text: &str, format: &str) -> Result<Value, String> {
     match format {
+        "json" => serde_json::from_str(text).map_err(|e| e.to_string()),
         "yaml" => {
             let mut docs = Vec::new();
             for doc in serde_yaml_ng::Deserializer::from_str(text) {
@@ -75,5 +76,12 @@ mod tests {
             json!({ "package": { "name": "x", "when": "1979-05-27" } })
         );
         assert!(structured("a = ", "toml").is_err());
+        // Keys keep the file's order.
+        let keys: Vec<String> = structured("z: 1
+a: 2
+m: 3
+", "yaml").unwrap().as_object().unwrap().keys().cloned().collect();
+        assert_eq!(keys, ["z", "a", "m"]);
+        assert_eq!(structured("[1, {\"a\": null}]", "json").unwrap(), json!([1, { "a": null }]));
     }
 }
