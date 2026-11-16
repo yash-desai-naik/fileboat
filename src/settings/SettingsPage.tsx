@@ -67,6 +67,41 @@ const ENTRIES: Entry[] = [
     options: [0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2].map((z) => [z, `${Math.round(z * 100)}%`]),
   },
 
+  {
+    section: "Folders",
+    key: "viewMode",
+    type: "select",
+    label: "View",
+    help: `${fmtShortcut("Ctrl+Shift+2")} List, ${fmtShortcut("Ctrl+Shift+3")} Details`,
+    options: [
+      ["details", "Details"],
+      ["list", "List"],
+    ],
+  },
+  {
+    section: "Folders",
+    key: "sortBy",
+    type: "select",
+    label: "Sort by",
+    help: "Or click a column header in the Details view.",
+    options: [
+      ["name", "Name"],
+      ["modified", "Date modified"],
+      ["created", "Date created"],
+      ["type", "Type"],
+      ["size", "Size"],
+    ],
+  },
+  { section: "Folders", key: "sortDescending", type: "toggle", label: "Descending order" },
+  { section: "Folders", key: "foldersFirst", type: "toggle", label: "Folders before files" },
+  {
+    section: "Folders",
+    key: "showHidden",
+    type: "toggle",
+    label: "Show hidden files",
+    help: `Files the system marks hidden. ${fmtShortcut("Ctrl+Shift+.")}`,
+  },
+
   { section: "Layout", key: "showSidebar", type: "toggle", label: "Show the sidebar", help: fmtShortcut("Ctrl+B") },
   { section: "Layout", key: "showPreview", type: "toggle", label: "Show the preview pane", help: fmtShortcut("Alt+P") },
 

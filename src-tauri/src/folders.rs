@@ -250,6 +250,14 @@ pub fn folder_rows(folders: State<'_, Folders>, id: String, start: usize, end: u
     Ok(f.folder.rows(start, end).cloned().collect())
 }
 
+/// Names of rows `start..end` (select all, Shift+click across rows not on screen).
+#[tauri::command]
+pub fn folder_names(folders: State<'_, Folders>, id: String, start: usize, end: usize) -> Result<Vec<String>, String> {
+    let f = folders.get(&id)?;
+    let f = f.lock().unwrap();
+    Ok(f.folder.rows(start, end).map(|e| e.name.clone()).collect())
+}
+
 /// Change the sort or hidden files; the view hears `Changed` and re-reads its rows.
 #[tauri::command]
 pub fn folder_view(folders: State<'_, Folders>, id: String, view: View) -> Result<usize, String> {

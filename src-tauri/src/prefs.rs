@@ -5,9 +5,12 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// The Details view's columns (widths in `columnWidths`).
+const COLUMNS: [&str; 4] = ["name", "modified", "type", "size"];
 const DEFAULT_LIGHT_THEME: &str = "fileboat-light";
 const DEFAULT_DARK_THEME: &str = "fileboat-dark";
 
@@ -53,6 +56,17 @@ pub struct Settings {
     /// The preview pane on the right.
     pub show_preview: bool,
     pub preview_width: u32,
+    /// How folders show: "details" | "list".
+    pub view_mode: String,
+    /// "name" | "size" | "modified" | "created" | "type"
+    pub sort_by: String,
+    pub sort_descending: bool,
+    /// Folders before files whatever the sort.
+    pub folders_first: bool,
+    /// Show files the system marks hidden (and dotfiles on macOS).
+    pub show_hidden: bool,
+    /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
+    pub column_widths: BTreeMap<String, u32>,
     /// Look for a new version on GitHub at start-up and once a day.
     pub check_updates: bool,
     /// A version the user chose to skip (no notice for it; a manual check still shows it).
@@ -71,6 +85,12 @@ impl Default for Settings {
             sidebar_width: 240,
             show_preview: false,
             preview_width: 360,
+            view_mode: "details".into(),
+            sort_by: "name".into(),
+            sort_descending: false,
+            folders_first: true,
+            show_hidden: false,
+            column_widths: BTreeMap::new(),
             check_updates: true,
             skipped_update: String::new(),
         }
@@ -99,6 +119,16 @@ impl Settings {
         self.ui_zoom = self.ui_zoom.clamp(0.5, 3.0);
         self.sidebar_width = self.sidebar_width.clamp(160, 900);
         self.preview_width = self.preview_width.clamp(240, 1600);
+        if !matches!(self.view_mode.as_str(), "details" | "list") {
+            self.view_mode = d.view_mode;
+        }
+        if !matches!(self.sort_by.as_str(), "name" | "size" | "modified" | "created" | "type") {
+            self.sort_by = d.sort_by;
+        }
+        self.column_widths.retain(|k, _| COLUMNS.contains(&k.as_str()));
+        for w in self.column_widths.values_mut() {
+            *w = (*w).clamp(40, 2000);
+        }
         self
     }
 
@@ -128,6 +158,9 @@ density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
 showSidebar, showPreview (the preview pane): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
+viewMode: \"details\" | \"list\" (how folders show)
+sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
+columnWidths: {\"name\": 320, \"modified\": 150, \"type\": 140, \"size\": 90} (Details view, 40 to 2000 pixels each)
 checkUpdates: look for a new Fileboat version at start-up and once a day
 skippedUpdate: a version not to be told about again (\"\" = none)";
 
@@ -254,6 +287,16 @@ mod tests {
         assert!(s.checked_change(&json!({ "sidebarWidth": 5 })).is_err());
         let (_, changes) = s.checked_change(&json!({ "showPreview": true, "density": "default" })).unwrap();
         assert_eq!(changes, vec![("showPreview".to_string(), json!(false), json!(true))]);
+    }
+
+    #[test]
+    fn view_settings_are_checked() {
+        let s = Settings::default();
+        assert_eq!((s.view_mode.as_str(), s.sort_by.as_str(), s.folders_first, s.show_hidden), ("details", "name", true, false));
+        let next = s.merged(&json!({ "viewMode": "grid", "sortBy": "colour", "columnWidths": { "name": 5, "nope": 100, "size": 120 } })).unwrap();
+        assert_eq!((next.view_mode.as_str(), next.sort_by.as_str()), ("details", "name"));
+        assert_eq!(next.column_widths, BTreeMap::from([("name".to_string(), 40), ("size".to_string(), 120)]));
+        assert!(s.checked_change(&json!({ "sortBy": "size", "sortDescending": true })).is_ok());
     }
 
     #[test]

@@ -50,6 +50,7 @@ fn main() {
             desktop::open_path,
             folders::folder_open,
             folders::folder_rows,
+            folders::folder_names,
             folders::folder_view,
             folders::folder_row_of,
             folders::folder_seek,

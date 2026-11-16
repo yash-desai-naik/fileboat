@@ -1,0 +1,169 @@
+/* Folder views: Details and List. */
+
+.filelist {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fl-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+}
+
+/* The header sticks to the top and scrolls sideways with the rows. */
+.fl-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 100%;
+  padding: 0 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.fl-head {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+.fl-head-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.fl-head.right .fl-head-btn {
+  justify-content: flex-end;
+}
+.fl-head-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.fl-sort {
+  font-size: 8px;
+  color: var(--accent);
+}
+.fl-resizer {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  right: -3px;
+  width: 7px;
+  z-index: 1;
+  cursor: col-resize;
+}
+.fl-resizer::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.fl-resizer:hover::after {
+  background: var(--accent);
+}
+
+.fl-rows {
+  position: relative;
+  min-width: 100%;
+}
+
+.fl-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+.fl-row:hover {
+  background: var(--bg-hover);
+}
+.fl-row.selected {
+  background: var(--selection);
+}
+/* The keyboard cursor shows while the view has focus. */
+.fl-scroll:focus-visible .fl-row.focused,
+.fl-scroll:focus .fl-row.focused {
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+.fl-row.hidden .fl-text,
+.fl-row.hidden .fl-icon {
+  opacity: 0.6;
+}
+
+.fl-cell {
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fl-cell.right {
+  text-align: right;
+}
+.fl-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fl-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+.fl-icon.folder {
+  color: var(--accent);
+}
+.fl-link {
+  flex: none;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+
+.fl-empty {
+  position: absolute;
+  inset: 48px 0 auto;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.fl-empty.error {
+  color: var(--danger);
+}
+
+.pane-notice {
+  flex: none;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--danger-bg);
+  border-bottom: 1px solid var(--border);
+  user-select: text;
+}

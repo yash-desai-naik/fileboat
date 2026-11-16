@@ -1,4 +1,4 @@
-import { getSettings, updateSettings, type Density, type Settings, type Theme } from "./settings";
+import { getSettings, updateSettings, type Density, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
 import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
@@ -76,6 +76,23 @@ export function buildCommands(): Command[] {
     run: () => updateSettings({ density: value }),
   });
 
+  const viewMode = (value: ViewMode, title: string, key: string): Command => ({
+    id: `view.mode.${value}`,
+    category: "View",
+    title,
+    keys: [key],
+    checked: s.viewMode === value,
+    run: () => updateSettings({ viewMode: value }),
+  });
+
+  const sortBy = (value: SortBy, title: string): Command => ({
+    id: `sort.${value}`,
+    category: "Sort",
+    title: `By ${title}`,
+    checked: s.sortBy === value,
+    run: () => updateSettings({ sortBy: value }),
+  });
+
   return [
     {
       id: "commandBar.commands",
@@ -103,6 +120,35 @@ export function buildCommands(): Command[] {
       keys: ["Alt+P"],
       checked: s.showPreview,
       run: toggle("showPreview"),
+    },
+    viewMode("list", "List", "Ctrl+Shift+2"),
+    viewMode("details", "Details", "Ctrl+Shift+3"),
+    {
+      id: "view.hidden",
+      category: "View",
+      title: "Show Hidden Files",
+      keys: ["Ctrl+Shift+."],
+      checked: s.showHidden,
+      run: () => updateSettings({ showHidden: !getSettings().showHidden }),
+    },
+    sortBy("name", "Name"),
+    sortBy("modified", "Date Modified"),
+    sortBy("created", "Date Created"),
+    sortBy("type", "Type"),
+    sortBy("size", "Size"),
+    {
+      id: "sort.descending",
+      category: "Sort",
+      title: "Descending",
+      checked: s.sortDescending,
+      run: () => updateSettings({ sortDescending: !getSettings().sortDescending }),
+    },
+    {
+      id: "sort.foldersFirst",
+      category: "Sort",
+      title: "Folders First",
+      checked: s.foldersFirst,
+      run: () => updateSettings({ foldersFirst: !getSettings().foldersFirst }),
     },
     { id: "view.zoomIn", category: "View", title: "Zoom In", keys: ["Ctrl+=", "Ctrl+Shift+="], run: () => stepZoom(1) },
     { id: "view.zoomOut", category: "View", title: "Zoom Out", keys: ["Ctrl+-"], run: () => stepZoom(-1) },

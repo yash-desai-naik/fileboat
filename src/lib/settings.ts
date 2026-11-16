@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 
 export type Theme = "system" | "light" | "dark";
 export type Density = "compact" | "default" | "comfortable";
+export type ViewMode = "details" | "list";
+export type SortBy = "name" | "size" | "modified" | "created" | "type";
 
 /** Mirrors `Settings` in src-tauri/src/prefs.rs. */
 export interface Settings {
@@ -18,6 +20,13 @@ export interface Settings {
   sidebarWidth: number;
   showPreview: boolean;
   previewWidth: number;
+  viewMode: ViewMode;
+  sortBy: SortBy;
+  sortDescending: boolean;
+  foldersFirst: boolean;
+  showHidden: boolean;
+  /** Details view column widths by column id; missing ones use the defaults. */
+  columnWidths: Record<string, number>;
   checkUpdates: boolean;
   skippedUpdate: string;
 }

@@ -11,6 +11,7 @@ import { UpdateNotice } from "./shell/UpdateNotice";
 import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
+import { FolderPane } from "./views/FolderPane";
 
 const SIDEBAR_DEFAULT = 240;
 const PREVIEW_DEFAULT = 360;
@@ -31,6 +32,9 @@ export function App() {
   const commands = useMemo(() => buildCommands(), [settings]);
   useShortcuts(commands);
   useNoBrowserContextMenu();
+
+  // The folder shown (tabs and history come next).
+  const [path, setPath] = useState("~");
 
   const toggleSidebar = () => updateSettings({ showSidebar: !settings.showSidebar });
   const togglePreview = () => updateSettings({ showPreview: !settings.showPreview });
@@ -71,10 +75,7 @@ export function App() {
         )}
 
         <main className="center">
-          <div className="pane-empty">
-            <FolderIcon size={24} />
-            <p>Folders open here</p>
-          </div>
+          <FolderPane path={path} onNavigate={setPath} />
         </main>
 
         {settings.showPreview && (
