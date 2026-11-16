@@ -11,6 +11,7 @@ mod native_menu;
 mod navigate;
 mod ops_cmd;
 mod places_cmd;
+mod preview_cmd;
 mod settings;
 mod sizes;
 mod state;
@@ -35,6 +36,15 @@ fn main() {
         .manage(fileboat_core::ops::undo::UndoLog::default())
         .manage(jobs::Jobs::default())
         .manage(clipboard::AppClipboard::default())
+        .manage(preview_cmd::PreviewFiles::default())
+        // Images, media, PDFs and fonts for the preview, read off the main thread.
+        .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            std::thread::spawn(move || {
+                let files = app.state::<preview_cmd::PreviewFiles>();
+                responder.respond(preview_cmd::serve(&files, &request));
+            });
+        })
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -64,6 +74,13 @@ fn main() {
             desktop::show_properties,
             desktop::open_with_dialog,
             native_menu::native_menu,
+            preview_cmd::preview_info,
+            preview_cmd::preview_text,
+            preview_cmd::preview_bytes,
+            preview_cmd::preview_archive,
+            preview_cmd::preview_structured,
+            preview_cmd::preview_folder,
+            preview_cmd::preview_url,
             folders::folder_open,
             folders::folder_rows,
             folders::folder_names,

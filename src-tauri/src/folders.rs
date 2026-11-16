@@ -91,6 +91,11 @@ impl Folders {
         self.0.sizer.get_or_init(|| Sizer::start(self.clone()))
     }
 
+    /// A folder's size, if the sizer has it.
+    pub fn cached_size(&self, path: &Path) -> Option<fs::TreeSize> {
+        self.0.sizer.get()?.cached(path)
+    }
+
     /// Whether an open folder at `dir` wants its subfolders sized.
     pub fn wants_sizes(&self, dir: &Path) -> bool {
         let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
