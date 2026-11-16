@@ -4,6 +4,8 @@ import { fmtShortcut, OS_NAME } from "../lib/platform";
 import { updateSettings, useSettings, type Settings } from "../lib/settings";
 import { shownMode, usePrefersDark } from "../lib/themeMode";
 import { Dialog } from "../shell/Dialog";
+import { useAppVersion, versionLine } from "../shell/AboutDialog";
+import { uiActions } from "../lib/ui";
 import type { ThemeMode } from "../themes";
 import { ThemePicker } from "./ThemePicker";
 
@@ -74,6 +76,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const [query, setQuery] = useState("");
   const [fileNote, setFileNote] = useState<string | null>(null);
+  const version = useAppVersion();
   const mode = shownMode(settings.theme, usePrefersDark());
 
   const visible = useMemo(() => {
@@ -102,6 +105,16 @@ export function SettingsPage({ onClose }: { onClose: () => void }) {
           </button>
           {fileNote && <span className="muted small">{fileNote}</span>}
           <span className="spacer" />
+          <button
+            className="link-btn settings-version"
+            title="About Fileboat: version, build, folders"
+            onClick={() => {
+              onClose();
+              uiActions.openAbout();
+            }}
+          >
+            {version ? versionLine(version) : "Fileboat"}
+          </button>
           <button className="btn primary" onClick={onClose}>
             Done
           </button>

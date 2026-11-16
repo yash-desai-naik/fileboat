@@ -245,3 +245,52 @@ textarea.input {
   gap: 8px;
   color: var(--text-2);
 }
+
+table.kv {
+  border-collapse: collapse;
+  user-select: text;
+}
+table.kv th {
+  width: 110px;
+  padding: 4px 12px 4px 0;
+  color: var(--text-3);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+table.kv td {
+  padding: 4px 0;
+  vertical-align: top;
+}
+
+/* ---------- About ---------- */
+
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.about-name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.about-table th {
+  width: 90px;
+}
+.about-path {
+  word-break: break-all;
+}
+/* The note under a folder is prose, not a path. */
+.about-what {
+  font-family: var(--font-ui);
+  word-break: normal;
+}
+.settings-version {
+  margin-right: 10px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.settings-version:hover {
+  color: var(--accent);
+}

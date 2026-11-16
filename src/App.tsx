@@ -6,6 +6,7 @@ import { useNoBrowserContextMenu, useShortcuts } from "./lib/shortcuts";
 import { uiActions } from "./lib/ui";
 import { CommandBar } from "./palette/CommandBar";
 import { SettingsPage } from "./settings/SettingsPage";
+import { AboutDialog } from "./shell/AboutDialog";
 import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
@@ -22,6 +23,8 @@ export function App() {
   uiActions.openCommandBar = (text = ">") => setCommandBar(text);
   const [settingsOpen, setSettingsOpen] = useState(false);
   uiActions.openSettings = () => setSettingsOpen(true);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  uiActions.openAbout = () => setAboutOpen(true);
 
   // Rebuilt when settings change so check marks stay current.
   const commands = useMemo(() => buildCommands(), [settings]);
@@ -102,6 +105,7 @@ export function App() {
 
       {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
       {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </div>
   );
 }

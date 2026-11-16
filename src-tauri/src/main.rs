@@ -1,6 +1,7 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod desktop;
 mod settings;
 mod window;
 
@@ -30,6 +31,8 @@ fn main() {
             settings::update_settings,
             settings::open_settings_file,
             window::window_fit_restore,
+            desktop::app_paths,
+            desktop::open_app_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Fileboat");

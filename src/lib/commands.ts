@@ -85,6 +85,7 @@ export function buildCommands(): Command[] {
     },
     { id: "commandBar.help", category: "Help", title: "Command Bar Modes", run: () => uiActions.openCommandBar("?") },
     { id: "settings.open", category: "Preferences", title: "Open Settings", keys: ["Ctrl+,"], run: () => uiActions.openSettings() },
+    { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
     {
       id: "view.toggleSidebar",
       category: "View",
