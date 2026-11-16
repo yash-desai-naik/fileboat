@@ -179,6 +179,7 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     {
       label: "View",
       submenu: [
+        { label: "Columns", hint: fmtShortcut("Ctrl+Shift+1"), checked: s.viewMode === "columns", onSelect: () => updateSettings({ viewMode: "columns" }) },
         { label: "List", hint: fmtShortcut("Ctrl+Shift+2"), checked: s.viewMode === "list", onSelect: () => updateSettings({ viewMode: "list" }) },
         { label: "Details", hint: fmtShortcut("Ctrl+Shift+3"), checked: s.viewMode === "details", onSelect: () => updateSettings({ viewMode: "details" }) },
       ],

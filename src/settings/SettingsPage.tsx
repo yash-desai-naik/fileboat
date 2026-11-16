@@ -74,10 +74,11 @@ const ENTRIES: Entry[] = [
     key: "viewMode",
     type: "select",
     label: "View",
-    help: `${fmtShortcut("Ctrl+Shift+2")} List, ${fmtShortcut("Ctrl+Shift+3")} Details`,
+    help: `${fmtShortcut("Ctrl+Shift+1")} Columns, ${fmtShortcut("Ctrl+Shift+2")} List, ${fmtShortcut("Ctrl+Shift+3")} Details`,
     options: [
       ["details", "Details"],
       ["list", "List"],
+      ["columns", "Columns"],
     ],
   },
   {

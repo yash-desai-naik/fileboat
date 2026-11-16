@@ -11,8 +11,9 @@ import { loadTools, openInEditor, openTerminal, type Tools } from "../lib/tools"
 import { Menu, type MenuItem } from "../shell/Menu";
 import { folderMenu, itemMenu } from "./contextMenu";
 import { showToast } from "../shell/Toast";
-import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
+import { goUp, navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
+import { ColumnsView } from "./ColumnsView";
 import { StatusBar } from "./StatusBar";
 import { Selection } from "./selection";
 
@@ -191,6 +192,14 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   );
 
   if (!model) return null;
+  const columnsMode = settings.viewMode === "columns";
+
+  /** Columns: → goes into the selected folder. */
+  const enterSelected = async () => {
+    if (selection.size !== 1) return;
+    const [entry] = await model.entries([...selection.names]);
+    if (entry?.kind === "folder") navigate(childPath(model.path, entry.name), null, { replace: true });
+  };
 
   const open = (entry: Entry) => {
     const target = childPath(model.path, entry.name);
@@ -200,6 +209,28 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
         .then(() => setNotice(null))
         .catch((err) => setNotice(String(err)));
   };
+
+  const list = (
+    <FileList
+      key={model.path + (model.id ?? "")}
+      model={model}
+      selection={selection}
+      mode={columnsMode ? "list" : settings.viewMode}
+      onOpen={open}
+      // Only for the folder it belongs to: for one render after navigating, the old folder is
+      // still shown and would give up on a name it doesn't have.
+      select={samePath(model.path, tab.path) ? tab.select : null}
+      onSelected={onSelected}
+      active={active}
+      onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
+      request={request}
+      onRequestDone={onRequestDone}
+      onRename={rename}
+      onContextMenu={(x, y, onItem) => void showMenu(x, y, onItem)}
+      onRight={columnsMode ? () => void enterSelected() : undefined}
+      onLeft={columnsMode ? () => goUp({ replace: true }) : undefined}
+    />
+  );
 
   return (
     <div className="folder-pane" hidden={!active}>
@@ -211,23 +242,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
           </button>
         </div>
       )}
-      <FileList
-        key={model.path + (model.id ?? "")}
-        model={model}
-        selection={selection}
-        mode={settings.viewMode}
-        onOpen={open}
-        // Only for the folder it belongs to: for one render after navigating, the old folder is
-        // still shown and would give up on a name it doesn't have.
-        select={samePath(model.path, tab.path) ? tab.select : null}
-        onSelected={onSelected}
-        active={active}
-        onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
-        request={request}
-        onRequestDone={onRequestDone}
-        onRename={rename}
-        onContextMenu={(x, y, onItem) => void showMenu(x, y, onItem)}
-      />
+      {columnsMode ? <ColumnsView model={model} selection={selection}>{list}</ColumnsView> : list}
       {menu && <Menu x={menu.x} y={menu.y} items={menu.items} keyboard={menu.keyboard} onClose={() => setMenu(null)} />}
       <StatusBar model={model} selection={selection} active={active} />
     </div>

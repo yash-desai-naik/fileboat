@@ -74,14 +74,18 @@ export function tabTitle(path: string): string {
 
 // ---------- navigation in the active tab ----------
 
-/** Show `path` in the active tab, remembering where it was for Back. */
-export function navigate(path: string, select: string | null = null) {
+/**
+ * Show `path` in the active tab, remembering where it was for Back (unless `replace`: moving
+ * around in the Columns view doesn't fill the history).
+ */
+export function navigate(path: string, select: string | null = null, options: { replace?: boolean } = {}) {
   const tab = activeTab();
   if (samePath(tab.path, path)) {
     if (select) updateTab(tab.id, { select });
     return;
   }
-  updateTab(tab.id, { path, select, back: [...tab.back, tab.path].slice(-100), forward: [] });
+  if (options.replace) updateTab(tab.id, { path, select, forward: [] });
+  else updateTab(tab.id, { path, select, back: [...tab.back, tab.path].slice(-100), forward: [] });
 }
 
 /** The folder resolved to its real path (e.g. "~" → C:\Users\me): not a step in the history. */
@@ -111,10 +115,10 @@ export function goForward() {
 }
 
 /** The folder above, with the one you were in selected. */
-export function goUp() {
+export function goUp(options: { replace?: boolean } = {}) {
   const tab = activeTab();
   const parent = parentOf(tab.path);
-  if (parent) navigate(parent, lastName(tab.path, parent));
+  if (parent) navigate(parent, lastName(tab.path, parent), options);
 }
 
 /** The parent folder of a path, or null at a drive or the root. */

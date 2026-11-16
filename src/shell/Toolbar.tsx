@@ -2,7 +2,7 @@ import { fmtShortcut } from "../lib/platform";
 import { updateSettings, useSettings } from "../lib/settings";
 import { goBack, goForward, goUp, navigate, parentOf, useTabs } from "../lib/tabs";
 import { AddressBar } from "../views/AddressBar";
-import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, DetailsIcon, ListIcon } from "./Icons";
+import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, ListIcon } from "./Icons";
 
 /** Under the title bar: Back, Forward, Up, the address bar and the view switch. */
 export function Toolbar() {
@@ -19,12 +19,21 @@ export function Toolbar() {
         <button className="icon-btn" title={`Forward (${fmtShortcut("Alt+Right")})`} disabled={!tab.forward.length} onClick={goForward}>
           <ArrowRightIcon />
         </button>
-        <button className="icon-btn" title={`Up (${fmtShortcut("Alt+Up")})`} disabled={!parentOf(tab.path)} onClick={goUp}>
+        <button className="icon-btn" title={`Up (${fmtShortcut("Alt+Up")})`} disabled={!parentOf(tab.path)} onClick={() => goUp()}>
           <ArrowUpIcon />
         </button>
       </div>
       <AddressBar path={tab.path} onNavigate={(p, select) => navigate(p, select ?? null)} />
       <div className="segmented view-switch" role="radiogroup" aria-label="View">
+        <button
+          className={`seg${settings.viewMode === "columns" ? " active" : ""}`}
+          role="radio"
+          aria-checked={settings.viewMode === "columns"}
+          title={`Columns (${fmtShortcut("Ctrl+Shift+1")})`}
+          onClick={() => updateSettings({ viewMode: "columns" })}
+        >
+          <ColumnsIcon size={14} />
+        </button>
         <button
           className={`seg${settings.viewMode === "list" ? " active" : ""}`}
           role="radio"

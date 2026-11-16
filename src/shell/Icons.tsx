@@ -196,6 +196,16 @@ export function DetailsIcon(p: IconProps) {
   );
 }
 
+/** Columns view: folders side by side. */
+export function ColumnsIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="2" y="3" width="12" height="10" rx="1.5" />
+      <path d="M6 3v10M10 3v10" />
+    </Svg>
+  );
+}
+
 /** List view: names only. */
 export function ListIcon(p: IconProps) {
   return (

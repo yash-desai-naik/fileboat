@@ -56,7 +56,7 @@ pub struct Settings {
     /// The preview pane on the right.
     pub show_preview: bool,
     pub preview_width: u32,
-    /// How folders show: "details" | "list".
+    /// How folders show: "details" | "list" | "columns".
     pub view_mode: String,
     /// "name" | "size" | "modified" | "created" | "type"
     pub sort_by: String,
@@ -131,7 +131,7 @@ impl Settings {
         self.ui_zoom = self.ui_zoom.clamp(0.5, 3.0);
         self.sidebar_width = self.sidebar_width.clamp(160, 900);
         self.preview_width = self.preview_width.clamp(240, 1600);
-        if !matches!(self.view_mode.as_str(), "details" | "list") {
+        if !matches!(self.view_mode.as_str(), "details" | "list" | "columns") {
             self.view_mode = d.view_mode;
         }
         if !matches!(self.sort_by.as_str(), "name" | "size" | "modified" | "created" | "type") {
@@ -176,7 +176,7 @@ density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
 showSidebar, showPreview (the preview pane): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
-viewMode: \"details\" | \"list\" (how folders show)
+viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)

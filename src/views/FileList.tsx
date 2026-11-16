@@ -66,6 +66,11 @@ interface Props {
   onRename: (entry: Entry, newName: string) => Promise<string | null>;
   /** Right-click: on the selection (`onItem`) or on empty space. */
   onContextMenu: (x: number, y: number, onItem: boolean) => void;
+  /** A plain click on an item (Columns: a click in a side column goes there). */
+  onPlainClick?: (entry: Entry) => void;
+  /** → and ← (Columns: into the selected folder, up to the parent). */
+  onRight?: () => void;
+  onLeft?: () => void;
 }
 
 /**
@@ -74,7 +79,7 @@ interface Props {
  */
 export function FileList(props: Props) {
   const { model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab } = props;
-  const { request, onRequestDone, onRename, onContextMenu } = props;
+  const { request, onRequestDone, onRename, onContextMenu, onPlainClick, onRight, onLeft } = props;
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
@@ -234,6 +239,14 @@ export function FileList(props: Props) {
       }
       void go(to, e.shiftKey);
     };
+    if (e.key === "ArrowRight" && onRight && !mod) {
+      e.preventDefault();
+      return onRight();
+    }
+    if (e.key === "ArrowLeft" && onLeft && !mod) {
+      e.preventDefault();
+      return onLeft();
+    }
     switch (e.key) {
       case "ArrowDown":
         return move(at < 0 ? 0 : at + 1);
@@ -394,10 +407,10 @@ export function FileList(props: Props) {
                 key={v.key}
                 data-drop-path={entry?.kind === "folder" ? childPath(model.path, entry.name) : undefined}
                 onClick={(e) => {
+                  if (!entry || e.button !== 0 || modPressed(e) || e.shiftKey) return;
                   // A plain click on one of several selected rows selects just it (once no drag began).
-                  if (entry && e.button === 0 && !modPressed(e) && !e.shiftKey && selection.size > 1 && selection.has(entry.name)) {
-                    selection.set([entry.name], row, entry.name);
-                  }
+                  if (selection.size > 1 && selection.has(entry.name)) selection.set([entry.name], row, entry.name);
+                  onPlainClick?.(entry);
                 }}
                 className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}${
                   entry && isCut(cut, childPath(model.path, entry.name)) ? " cut" : ""

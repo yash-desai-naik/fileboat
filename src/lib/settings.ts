@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 
 export type Theme = "system" | "light" | "dark";
 export type Density = "compact" | "default" | "comfortable";
-export type ViewMode = "details" | "list";
+export type ViewMode = "details" | "list" | "columns";
 export type SortBy = "name" | "size" | "modified" | "created" | "type";
 export type GroupBy = "none" | "type" | "modified" | "size" | "letter";
 
