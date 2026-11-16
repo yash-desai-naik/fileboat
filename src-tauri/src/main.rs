@@ -137,6 +137,7 @@ fn main() {
             preview_cmd::preview_text,
             preview_cmd::preview_bytes,
             preview_cmd::preview_archive,
+            preview_cmd::preview_download,
             preview_cmd::preview_structured,
             preview_cmd::preview_folder,
             preview_cmd::preview_url,

@@ -38,6 +38,21 @@ pub async fn preview_bytes(path: String, offset: u64, len: usize) -> Result<Vec<
     blocking(move || preview::read_bytes(&PathBuf::from(path), offset, len)).await
 }
 
+/// Bring a cloud file (OneDrive, iCloud) onto this computer by reading it through, so it can be
+/// previewed. Only on request: nothing else in Fileboat downloads cloud files.
+#[tauri::command]
+pub async fn preview_download(path: String) -> Result<(), String> {
+    blocking(move || {
+        use std::io::Read;
+        let path = PathBuf::from(path);
+        let mut file = fileboat_core::osfs::open(&path).map_err(|e| format!("Couldn't download it: {e}"))?;
+        let mut buf = vec![0u8; 1 << 20];
+        while file.read(&mut buf).map_err(|e| format!("Couldn't download it: {e}"))? > 0 {}
+        Ok(())
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn preview_archive(path: String) -> Result<ArchiveList, String> {
     blocking(move || preview::list_archive(&PathBuf::from(path), 5000)).await

@@ -75,10 +75,33 @@ export function Body({ info, reload }: { info: Info; reload: string }) {
     case "folder":
       return <FolderViewer info={info} reload={reload} />;
     case "cloud":
-      return <Note>This file is in the cloud and not on this computer. Open it to download it.</Note>;
+      return <CloudViewer info={info} />;
     default:
       return <TextViewer info={info} reload={reload} />;
   }
+}
+
+/** A cloud file not on this computer: downloaded only when asked. */
+function CloudViewer({ info }: { info: Info }) {
+  const [busy, setBusy] = useState(false);
+  const download = () => {
+    setBusy(true);
+    invoke("preview_download", { path: info.path }).then(
+      () => window.dispatchEvent(new Event("preview-again")),
+      (err) => {
+        setBusy(false);
+        showToast(String(err), "error");
+      },
+    );
+  };
+  return (
+    <Note>
+      This file is in the cloud and not on this computer ({formatSize(info.size)}).{" "}
+      <button className="link-btn" disabled={busy} onClick={download}>
+        {busy ? "Downloading…" : "Download to preview"}
+      </button>
+    </Note>
+  );
 }
 
 /** Size, dates, attributes and the path (click to copy). */
@@ -125,6 +148,13 @@ function usePreview() {
   const reload = target && "path" in target ? target.reload : "";
   const [info, setInfo] = useState<Info | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bumped when a cloud file has been downloaded: read its info again.
+  const [again, setAgain] = useState(0);
+  useEffect(() => {
+    const bump = () => setAgain((n) => n + 1);
+    window.addEventListener("preview-again", bump);
+    return () => window.removeEventListener("preview-again", bump);
+  }, []);
 
   useEffect(() => {
     if (!path) return;
@@ -148,7 +178,7 @@ function usePreview() {
       stale = true;
       window.clearTimeout(timer);
     };
-  }, [path, reload]);
+  }, [path, reload, again]);
 
   const shown = info && path && info.path.toLowerCase() === path.toLowerCase() ? info : null;
   const entry = target && "entry" in target ? target.entry : null;
