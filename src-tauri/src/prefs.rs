@@ -69,6 +69,8 @@ pub struct Settings {
     pub group_by: String,
     /// Each folder keeps the view chosen in it; the view settings above are the defaults.
     pub remember_views: bool,
+    /// Work out folder sizes in the background (Size column, selection, group totals).
+    pub folder_sizes: bool,
     /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
     pub column_widths: BTreeMap<String, u32>,
     /// Folders pinned in the sidebar, in order.
@@ -102,6 +104,7 @@ impl Default for Settings {
             show_hidden: false,
             group_by: "none".into(),
             remember_views: true,
+            folder_sizes: false,
             column_widths: BTreeMap::new(),
             favourites: Vec::new(),
             editor: String::new(),
@@ -182,6 +185,7 @@ sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)
+folderSizes: true | false (work out folder sizes in the background; they show in the Size column)
 rememberViews: true | false (each folder keeps the view, sort and grouping chosen in it; viewMode, sortBy, sortDescending and groupBy are then the defaults)
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
 editor: \"\" (the first found) | \"vscode\" | \"vscode-insiders\" | \"cursor\" | \"windsurf\" | \"zed\" | \"sublime\" | \"notepad++\" | \"jetbrains-idea\" (and other JetBrains IDEs) | \"notepad\" | \"textedit\"
@@ -326,6 +330,7 @@ mod tests {
         // Folders remember their own view unless turned off.
         assert!(s.remember_views);
         assert!(!s.merged(&json!({ "rememberViews": false })).unwrap().remember_views);
+        assert!(!s.folder_sizes && s.merged(&json!({ "folderSizes": true })).unwrap().folder_sizes);
     }
 
     #[test]

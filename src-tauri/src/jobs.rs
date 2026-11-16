@@ -213,6 +213,12 @@ pub fn job_transfer(app: AppHandle, jobs: State<'_, Jobs>, sources: Vec<String>,
                 v.message = Some(message);
             }
             ctl.emit();
+            // Folder sizes that include the destination (and, for a move, the sources) changed.
+            let mut touched = vec![dest.clone()];
+            if mode == Mode::Move {
+                touched.extend(sources.iter().cloned());
+            }
+            app.state::<crate::folders::Folders>().sizes_changed(&touched);
             app.state::<Jobs>().running.lock().unwrap().remove(&job_id);
         })
         .map_err(|e| e.to_string())?;

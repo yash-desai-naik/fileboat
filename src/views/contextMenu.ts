@@ -192,6 +192,8 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
         { label: "Columns", hint: fmtShortcut("Ctrl+Shift+1"), checked: v.viewMode === "columns", onSelect: () => setFolderView(folder, { viewMode: "columns" }) },
         { label: "List", hint: fmtShortcut("Ctrl+Shift+2"), checked: v.viewMode === "list", onSelect: () => setFolderView(folder, { viewMode: "list" }) },
         { label: "Details", hint: fmtShortcut("Ctrl+Shift+3"), checked: v.viewMode === "details", onSelect: () => setFolderView(folder, { viewMode: "details" }) },
+        "separator",
+        { label: "Calculate Folder Sizes", onSelect: () => paneActions.calculateSizes() },
         ...ownView,
       ],
     },

@@ -27,7 +27,7 @@ function SideColumn({ path, highlight, onPick }: { path: string; highlight: stri
   const selection = useMemo(() => new Selection(), [model]);
 
   useEffect(() => {
-    model.open(viewSpec(path)).catch((err) => model.fail(String(err)));
+    model.open(viewSpec(path, false)).catch((err) => model.fail(String(err)));
     return () => model.close();
   }, [model]);
 
@@ -35,7 +35,7 @@ function SideColumn({ path, highlight, onPick }: { path: string; highlight: stri
   const { foldersFirst, showHidden } = settings;
   const { sortBy, sortDescending, groupBy } = useFolderView(path);
   useEffect(() => {
-    void model.setView(viewSpec(path));
+    void model.setView(viewSpec(path, false));
   }, [model, path, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
 
   return (

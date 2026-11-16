@@ -478,7 +478,7 @@ function Cells({ entry, mode, rename }: { entry: Entry; mode: ViewMode; rename: 
       {name}
       <span className="fl-cell mono muted">{formatDate(entry.modified)}</span>
       <span className="fl-cell muted">{describeType(entry)}</span>
-      <span className="fl-cell mono muted right">{folder ? "" : formatSize(entry.size)}</span>
+      <span className="fl-cell mono muted right">{folder && !entry.sized ? "" : formatSize(entry.size)}</span>
     </>
   );
 }

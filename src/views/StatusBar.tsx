@@ -48,7 +48,7 @@ export function StatusBar({ model, selection, active }: { model: FolderModel; se
   let selected: string | null = null;
   if (names.size > 0) {
     selected = `${plural(names.size, "selected", "selected")}`;
-    if (info && info.files > 0) selected += ` · ${formatSize(info.bytes)}`;
+    if (info && (info.files > 0 || info.bytes > 0)) selected += ` · ${formatSize(info.bytes)}`;
     if (info && info.folders > 0 && info.files > 0) selected += ` in ${plural(info.files, "file")}`;
   }
 

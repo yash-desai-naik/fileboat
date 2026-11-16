@@ -15,6 +15,8 @@ export interface Entry {
   hidden: boolean;
   link: boolean;
   readonly: boolean;
+  /** A folder whose `size` (everything under it) has been worked out. */
+  sized: boolean;
 }
 
 export interface SelectionInfo {
@@ -33,10 +35,16 @@ export interface FolderViewSpec {
   /** The viewer's clock, for date groups. */
   now: number;
   tzOffsetMin: number;
+  /** Work out folder sizes in the background. */
+  folderSizes: boolean;
 }
 
-/** How the folder at `path` is listed: its own view (lib/folderViews.ts) and the settings. */
-export function viewSpec(path: string): FolderViewSpec {
+/**
+ * How the folder at `path` is listed: its own view (lib/folderViews.ts) and the settings. Folder
+ * sizes are worked out only for the folder in front (`sizes`): a tab in the background doesn't
+ * keep the disk busy.
+ */
+export function viewSpec(path: string, sizes: boolean): FolderViewSpec {
   const s = getSettings();
   const v = viewFor(path, s);
   return {
@@ -47,6 +55,7 @@ export function viewSpec(path: string): FolderViewSpec {
     group: v.groupBy,
     now: Date.now(),
     tzOffsetMin: -new Date().getTimezoneOffset(),
+    folderSizes: s.folderSizes && sizes,
   };
 }
 
@@ -242,6 +251,11 @@ export class FolderModel {
   /** Read the folder again from disk (F5). */
   async refresh() {
     await this.ask("folder_refresh", {}, null);
+  }
+
+  /** Work out the subfolders' sizes (whatever the setting); rows update as they arrive. */
+  async calculateSizes() {
+    await this.ask("folder_sizes", {}, null);
   }
 
   /** Re-sort or show hidden files (the folder may have closed meanwhile: then nothing to do). */

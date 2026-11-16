@@ -27,6 +27,8 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   const [model, setModel] = useState<FolderModel | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const modelRef = useRef<FolderModel | null>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const selection = useMemo(() => new Selection(), [model]);
   const view = useFolderView(tab.path);
 
@@ -40,18 +42,18 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
     modelRef.current = m;
     setModel(m);
     setNotice(null);
-    m.open(viewSpec(m.path))
+    m.open(viewSpec(m.path, activeRef.current))
       .then(() => settlePath(tab.id, m.path))
       .catch((err) => m.fail(String(err)));
   }, [tab.id, tab.path]);
 
   useEffect(() => () => modelRef.current?.close(), []);
 
-  const { foldersFirst, showHidden } = settings;
+  const { foldersFirst, showHidden, folderSizes } = settings;
   const { sortBy, sortDescending, groupBy } = view;
   useEffect(() => {
-    if (model) void model.setView(viewSpec(model.path));
-  }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
+    if (model) void model.setView(viewSpec(model.path, active));
+  }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy, folderSizes, active]);
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
 
@@ -94,6 +96,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       if (name) setRequest({ name, rename: true });
     };
     paneActions.refresh = () => void model.refresh();
+    paneActions.calculateSizes = () => void model.calculateSizes();
     const selectedPaths = async () => (await selectedNames(model, selection)).map((n) => childPath(model.path, n));
     paneActions.copy = async () => copyFiles(await selectedPaths());
     paneActions.cut = async () => cutFiles(await selectedPaths());

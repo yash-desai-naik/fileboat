@@ -120,6 +120,13 @@ const ENTRIES: Entry[] = [
   { section: "Folders", key: "foldersFirst", type: "toggle", label: "Folders before files" },
   {
     section: "Folders",
+    key: "folderSizes",
+    type: "toggle",
+    label: "Show folder sizes",
+    help: "Worked out in the background. Links and cloud-only folders aren't followed. Or run Calculate Folder Sizes Here on one folder.",
+  },
+  {
+    section: "Folders",
     key: "showHidden",
     type: "toggle",
     label: "Show hidden files",

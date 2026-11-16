@@ -10,6 +10,8 @@ export const paneActions = {
   newFile: () => {},
   rename: () => {},
   refresh: () => {},
+  /** Work out the sizes of the folders here. */
+  calculateSizes: () => {},
   /** Delete the selection: to the Recycle Bin / Trash, or permanently (asks first). */
   delete: (_permanently: boolean) => {},
   /** Copy the selection beside itself ("a - Copy.txt"). */

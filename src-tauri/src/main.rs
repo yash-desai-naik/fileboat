@@ -12,6 +12,7 @@ mod navigate;
 mod ops_cmd;
 mod places_cmd;
 mod settings;
+mod sizes;
 mod state;
 mod tools_cmd;
 mod update;
@@ -71,6 +72,7 @@ fn main() {
             folders::folder_collapse,
             folders::folder_selection_info,
             folders::folder_view,
+            folders::folder_sizes,
             folders::folder_row_of,
             folders::folder_seek,
             folders::folder_close,

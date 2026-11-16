@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use tauri::ipc::Channel;
 use tauri::State;
 
+use crate::sizes::Sizer;
 use crate::watch::{Changes, Watch};
 
 /// What a view hears about its folder.
@@ -33,6 +34,15 @@ pub struct OpenFolder {
     pub channel: Channel<FolderEvent>,
     /// False once the view closed it: the listing thread stops.
     pub alive: bool,
+    /// "Calculate Folder Sizes" was chosen here (sizes are worked out even with the setting off).
+    pub sizes_requested: bool,
+}
+
+impl OpenFolder {
+    /// Whether its subfolders' sizes are worked out.
+    fn wants_sizes(&self) -> bool {
+        self.alive && (self.folder.view().folder_sizes || self.sizes_requested)
+    }
 }
 
 impl OpenFolder {
@@ -53,15 +63,13 @@ struct Inner {
     open: Mutex<HashMap<String, Shared>>,
     /// Started with the first folder; None if the OS refused (folders then aren't live).
     watch: OnceLock<Option<Watch>>,
+    /// Started when a folder first wants sizes.
+    sizer: OnceLock<Arc<Sizer>>,
 }
 
-/// Paths compare without case on Windows and macOS (their usual file systems ignore it).
+/// The same folder (see `sizes::path_key`).
 fn same_path(a: &Path, b: &Path) -> bool {
-    if cfg!(any(windows, target_os = "macos")) {
-        a.as_os_str().to_string_lossy().to_lowercase() == b.as_os_str().to_string_lossy().to_lowercase()
-    } else {
-        a == b
-    }
+    a == b || crate::sizes::path_key(a) == crate::sizes::path_key(b)
 }
 
 impl Folders {
@@ -77,6 +85,92 @@ impl Folders {
                 Watch::start(move |changes| folders.apply(changes)).ok()
             })
             .as_ref()
+    }
+
+    fn sizer(&self) -> &Arc<Sizer> {
+        self.0.sizer.get_or_init(|| Sizer::start(self.clone()))
+    }
+
+    /// Whether an open folder at `dir` wants its subfolders sized.
+    pub fn wants_sizes(&self, dir: &Path) -> bool {
+        let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
+        open.iter().any(|f| {
+            let f = f.lock().unwrap();
+            f.wants_sizes() && same_path(&f.folder.path, dir)
+        })
+    }
+
+    /// Show the sizes already known for a folder's subfolders, and work out the rest.
+    fn fill_sizes(&self, shared: &Shared) {
+        let missing = {
+            let mut f = shared.lock().unwrap();
+            if !f.wants_sizes() {
+                return;
+            }
+            let sizer = self.sizer();
+            let path = f.folder.path.clone();
+            let mut known = Vec::new();
+            let mut missing = Vec::new();
+            for name in f.folder.unsized_folders() {
+                let p = path.join(&name);
+                match sizer.cached(&p) {
+                    Some(size) => known.push((name, size.bytes)),
+                    None => missing.push(p),
+                }
+            }
+            if f.folder.set_sizes(known.iter().map(|(n, b)| (n.as_str(), *b))) {
+                f.changed();
+            }
+            missing
+        };
+        self.sizer().queue(missing);
+    }
+
+    /// Fileboat changed what's under these paths (a copy or move finished): sizes that include
+    /// them are worked out again. Changes deeper than an open folder's own items aren't seen by
+    /// the watcher, so this is how dropping files onto a subfolder updates its size.
+    pub fn sizes_changed(&self, paths: &[PathBuf]) {
+        let Some(sizer) = self.0.sizer.get() else { return };
+        for p in paths {
+            sizer.forget_up(p);
+        }
+        let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
+        let mut again = Vec::new();
+        for shared in open {
+            let f = shared.lock().unwrap();
+            if !f.wants_sizes() {
+                continue;
+            }
+            for p in paths {
+                // The folder's own item that holds `p` (`p` itself when it's one).
+                let item = p.ancestors().find(|a| a.parent().is_some_and(|d| same_path(d, &f.folder.path)));
+                if let Some(item) = item
+                    && f.folder.get(&item.file_name().unwrap_or_default().to_string_lossy()).is_some_and(|e| e.kind == fs::Kind::Folder)
+                {
+                    again.push(item.to_path_buf());
+                }
+            }
+        }
+        sizer.queue(again);
+    }
+
+    /// Sizes worked out (by the sizer): give them to the open folders they're in.
+    pub fn apply_sizes(&self, done: &[(PathBuf, fs::TreeSize)]) {
+        let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
+        for shared in open {
+            let mut f = shared.lock().unwrap();
+            if !f.wants_sizes() {
+                continue;
+            }
+            let path = f.folder.path.clone();
+            let mine = done
+                .iter()
+                .filter(|(p, _)| p.parent().is_some_and(|d| same_path(d, &path)))
+                .filter_map(|(p, size)| Some((p.file_name()?.to_str()?, size.bytes)));
+            if f.folder.set_sizes(mine) {
+                f.changed();
+            }
+        }
     }
 
     fn close(&self, id: &str) {
@@ -103,11 +197,20 @@ impl Folders {
     /// Changes from the watcher: re-read the changed names in each open folder they belong to
     /// (outside the lock), apply them, and tell the views.
     fn apply(&self, changes: Changes) {
+        // Sizes that include what changed are out of date.
+        if let Some(sizer) = self.0.sizer.get() {
+            for p in &changes.paths {
+                sizer.forget_up(p);
+            }
+        }
         let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
         for shared in open {
             let path = shared.lock().unwrap().folder.path.clone();
             if changes.rescan {
-                relist(&shared, &path);
+                if let Some(sizer) = self.0.sizer.get() {
+                    sizer.forget_under(&path);
+                }
+                relist(self, &shared, &path);
                 continue;
             }
             let inside: Vec<&PathBuf> = changes.paths.iter().filter(|p| p.parent().is_some_and(|d| same_path(d, &path))).collect();
@@ -138,32 +241,40 @@ impl Folders {
             if upserts.is_empty() && removed.is_empty() {
                 continue;
             }
-            let mut f = shared.lock().unwrap();
-            if f.alive {
+            {
+                let mut f = shared.lock().unwrap();
+                if !f.alive {
+                    continue;
+                }
                 f.folder.apply(upserts, &removed);
                 f.changed();
             }
+            self.fill_sizes(&shared);
         }
     }
 }
 
 /// Read a folder again from scratch (the OS lost track of its changes).
-fn relist(shared: &Shared, path: &Path) {
+fn relist(folders: &Folders, shared: &Shared, path: &Path) {
     let mut all = Vec::new();
     let result = fs::list(path, 4096, |batch| {
         all.extend(batch);
         true
     });
-    let mut f = shared.lock().unwrap();
-    match result {
-        Ok(()) => {
-            f.folder.replace(all);
-            f.changed();
-        }
-        Err(message) => {
-            let _ = f.channel.send(FolderEvent::Error { message });
+    {
+        let mut f = shared.lock().unwrap();
+        match result {
+            Ok(()) => {
+                f.folder.replace(all);
+                f.changed();
+            }
+            Err(message) => {
+                let _ = f.channel.send(FolderEvent::Error { message });
+                return;
+            }
         }
     }
+    folders.fill_sizes(shared);
 }
 
 #[derive(Serialize)]
@@ -203,6 +314,7 @@ pub fn folder_open(
         window: window.label().to_string(),
         channel: on_event,
         alive: true,
+        sizes_requested: false,
     }));
     folders.0.open.lock().unwrap().insert(id.clone(), shared.clone());
     if let Some(w) = folders.watch() {
@@ -210,6 +322,7 @@ pub fn folder_open(
     }
 
     let listing = path.clone();
+    let folders = folders.inner().clone();
     std::thread::spawn(move || {
         // The first batch goes out at once (a screenful); then batches at most every 300 ms, so
         // a huge folder is sorted a few times while loading rather than once per batch.
@@ -234,7 +347,9 @@ pub fn folder_open(
         });
         match result {
             Ok(()) => {
-                flush(&mut pending, true);
+                if flush(&mut pending, true) {
+                    folders.fill_sizes(&shared);
+                }
             }
             Err(message) => {
                 let _ = shared.lock().unwrap().channel.send(FolderEvent::Error { message });
@@ -258,8 +373,8 @@ pub fn folder_rows(folders: State<'_, Folders>, id: String, start: usize, end: u
     Ok(f.folder.rows(start, end).cloned().collect())
 }
 
-/// What a selection holds, for the status bar: how many files and folders, and the files' total
-/// size (folders aren't sized here).
+/// What a selection holds, for the status bar: how many files and folders, and the total size
+/// of the files and of the folders already sized.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectionInfo {
@@ -276,6 +391,9 @@ pub fn folder_selection_info(folders: State<'_, Folders>, id: String, names: Vec
     for e in names.iter().filter_map(|n| f.folder.get(n)) {
         if e.kind == fs::Kind::Folder {
             info.folders += 1;
+            if e.sized {
+                info.bytes += e.size;
+            }
         } else {
             info.files += 1;
             info.bytes += e.size;
@@ -303,11 +421,25 @@ pub fn folder_names(folders: State<'_, Folders>, id: String, start: usize, end: 
 /// Change the sort or hidden files; the view hears `Changed` and re-reads its rows.
 #[tauri::command]
 pub fn folder_view(folders: State<'_, Folders>, id: String, view: View) -> Result<usize, String> {
-    let f = folders.get(&id)?;
-    let mut f = f.lock().unwrap();
-    f.folder.set_view(view);
-    f.changed();
-    Ok(f.folder.len())
+    let shared = folders.get(&id)?;
+    let len = {
+        let mut f = shared.lock().unwrap();
+        f.folder.set_view(view);
+        f.changed();
+        f.folder.len()
+    };
+    folders.fill_sizes(&shared);
+    Ok(len)
+}
+
+/// "Calculate Folder Sizes": work out this folder's subfolder sizes (whatever the setting); the
+/// view hears `Changed` as they arrive.
+#[tauri::command]
+pub fn folder_sizes(folders: State<'_, Folders>, id: String) -> Result<(), String> {
+    let shared = folders.get(&id)?;
+    shared.lock().unwrap().sizes_requested = true;
+    folders.fill_sizes(&shared);
+    Ok(())
 }
 
 /// The folder's groups, in order (empty when not grouping).
@@ -353,7 +485,12 @@ pub fn folder_seek(folders: State<'_, Folders>, id: String, prefix: String, from
 pub fn folder_refresh(folders: State<'_, Folders>, id: String) -> Result<(), String> {
     let shared = folders.get(&id)?;
     let path = shared.lock().unwrap().folder.path.clone();
-    std::thread::spawn(move || relist(&shared, &path));
+    // Sizes are worked out again too.
+    if let Some(sizer) = folders.0.sizer.get() {
+        sizer.forget_under(&path);
+    }
+    let folders = folders.inner().clone();
+    std::thread::spawn(move || relist(&folders, &shared, &path));
     Ok(())
 }
 
