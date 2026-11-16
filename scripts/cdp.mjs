@@ -1,0 +1,86 @@
+// Drive a running Fileboat through WebView2's DevTools protocol (development only).
+// Start Fileboat with:  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9222"
+// CDP_PORT=<port> picks another port (e.g. when Tableboat already uses 9222).
+// Usage: node scripts/cdp.mjs <steps.json>   (steps: [{eval}|{click:[x,y],double?}|{key}|{text}|{shot:path}|{cdp,params}|{wait:ms}])
+import { readFileSync, writeFileSync } from "node:fs";
+
+const steps = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const targets = await (await fetch(`http://127.0.0.1:${process.env.CDP_PORT ?? 9222}/json`)).json();
+// The app's pages (skip WebView2's stray about:blank); CDP_PAGE=<n> picks the n-th window.
+const pages = targets.filter((t) => t.type === "page" && t.url.startsWith("http"));
+const page = pages[Number(process.env.CDP_PAGE ?? 0)] ?? targets.find((t) => t.type === "page");
+if (!page) throw new Error("no page target");
+const ws = new WebSocket(page.webSocketDebuggerUrl);
+await new Promise((r) => ws.addEventListener("open", r, { once: true }));
+
+let id = 0;
+const pending = new Map();
+const logs = [];
+ws.addEventListener("message", (ev) => {
+  const msg = JSON.parse(ev.data);
+  if (msg.id && pending.has(msg.id)) {
+    pending.get(msg.id)(msg);
+    pending.delete(msg.id);
+  } else if (msg.method === "Runtime.consoleAPICalled") {
+    logs.push(`[console.${msg.params.type}] ` + msg.params.args.map((a) => a.value ?? a.description).join(" "));
+  } else if (msg.method === "Runtime.exceptionThrown") {
+    logs.push(`[exception] ${msg.params.exceptionDetails.exception?.description ?? msg.params.exceptionDetails.text}`);
+  }
+});
+const send = (method, params = {}) =>
+  new Promise((resolve) => {
+    const n = ++id;
+    pending.set(n, resolve);
+    ws.send(JSON.stringify({ id: n, method, params }));
+  });
+
+await send("Runtime.enable");
+await send("Page.enable");
+
+const mouse = async (type, x, y, clickCount = 1, button = "left") =>
+  send("Input.dispatchMouseEvent", { type, x, y, button, clickCount, buttons: type === "mouseReleased" ? 0 : 1 });
+
+for (const step of steps) {
+  if (step.eval) {
+    const r = await send("Runtime.evaluate", { expression: step.eval, awaitPromise: true, returnByValue: true });
+    console.log("eval:", JSON.stringify(r.result?.result?.value ?? r.result?.exceptionDetails?.exception?.description ?? r.result));
+  } else if (step.click) {
+    const [x, y] = step.click;
+    const button = step.right ? "right" : "left";
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    for (let c = 1; c <= (step.double ? 2 : 1); c++) {
+      await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button, clickCount: c, buttons: button === "right" ? 2 : 1 });
+      await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, clickCount: c, buttons: 0 });
+    }
+  } else if (step.drag) {
+    // {"drag": [x1, y1, x2, y2]}: press, move in steps, release (splitters, column borders).
+    const [x1, y1, x2, y2] = step.drag;
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x1, y: y1 });
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x: x1, y: y1, button: "left", clickCount: 1, buttons: 1 });
+    for (let i = 1; i <= 10; i++) {
+      const x = x1 + ((x2 - x1) * i) / 10;
+      const y = y1 + ((y2 - y1) * i) / 10;
+      await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, button: "left", buttons: 1 });
+    }
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", clickCount: 1, buttons: 0 });
+  } else if (step.key) {
+    const { key, code, modifiers = 0, keyCode } = step.key;
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers, windowsVirtualKeyCode: keyCode });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers, windowsVirtualKeyCode: keyCode });
+  } else if (step.text) {
+    await send("Input.insertText", { text: step.text });
+  } else if (step.shot) {
+    const r = await send("Page.captureScreenshot", { format: "png" });
+    writeFileSync(step.shot, Buffer.from(r.result.data, "base64"));
+    console.log("shot:", step.shot);
+  } else if (step.cdp) {
+    // Any DevTools method, e.g. {"cdp": "Emulation.setDeviceMetricsOverride", "params": {...}}.
+    const r = await send(step.cdp, step.params ?? {});
+    if (r.error) console.log("cdp error:", step.cdp, JSON.stringify(r.error));
+  } else if (step.wait) {
+    await new Promise((r) => setTimeout(r, step.wait));
+  }
+}
+if (logs.length) console.log(logs.join("\n"));
+ws.close();
+process.exit(0);
