@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "re
 import { formatSize } from "../lib/format";
 import { updateSettings, useSettings } from "../lib/settings";
 import { branchLabel, useGitInfo } from "../lib/git";
+import { useLineRequest } from "../lib/current";
 import { CsvTable, Tree } from "./structured";
 import type { ArchiveList, FolderPreview, Info, Text } from "./types";
 
@@ -106,11 +107,11 @@ export function useText(path: string, reload: string) {
 }
 
 /** Highlighted text (plain until the editor has loaded), with Wrap. */
-export function Code({ text, name }: { text: string; name: string }) {
+export function Code({ text, name, line }: { text: string; name: string; line?: number | null }) {
   const { previewWrap } = useSettings();
   return (
     <Suspense fallback={<PlainText text={text} />}>
-      <CodeView text={text} name={name} wrap={previewWrap} />
+      <CodeView text={text} name={name} wrap={previewWrap} line={line} />
     </Suspense>
   );
 }
@@ -126,6 +127,7 @@ export function WrapToggle() {
 
 export function TextViewer({ info, reload }: { info: Info; reload: string }) {
   const { data, error, more } = useText(info.path, reload);
+  const line = useLineRequest(info.path);
   if (error) return <Note>{error}</Note>;
   if (!data) return <Loading />;
   return (
@@ -133,7 +135,7 @@ export function TextViewer({ info, reload }: { info: Info; reload: string }) {
       <TextBar text={data} onMore={more}>
         <WrapToggle />
       </TextBar>
-      <Code text={data.text} name={info.name} />
+      <Code text={data.text} name={info.name} line={line} />
     </>
   );
 }

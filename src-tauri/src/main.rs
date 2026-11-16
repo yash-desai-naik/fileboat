@@ -7,6 +7,7 @@ mod dnd;
 mod folders;
 mod indexer;
 mod git_cmd;
+mod grep_cmd;
 mod jobs;
 mod launch;
 mod native_menu;
@@ -41,6 +42,7 @@ fn main() {
         .manage(clipboard::AppClipboard::default())
         .manage(preview_cmd::PreviewFiles::default())
         .manage(git_cmd::Syncing::default())
+        .manage(std::sync::Arc::new(grep_cmd::Greps::default()))
         // Images, media, PDFs and fonts for the preview, read off the main thread.
         .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -85,6 +87,8 @@ fn main() {
             preview_cmd::preview_info,
             git_cmd::git_info,
             indexer::index_search,
+            grep_cmd::grep_start,
+            grep_cmd::grep_cancel,
             indexer::index_status,
             indexer::index_rebuild,
             indexer::index_pause,

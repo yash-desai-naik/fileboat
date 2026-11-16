@@ -175,6 +175,7 @@ export function buildCommands(): Command[] {
     { id: "search.here", category: "Search", title: "Search Here", keys: ["Ctrl+F"], run: () => openSearch(activeTab().id, activeTab().path, "here") },
     { id: "search.everywhere", category: "Search", title: "Search Everywhere", keys: ["Ctrl+Shift+F"], run: () => openSearch(activeTab().id, activeTab().path, "everywhere") },
     { id: "search.rebuild", category: "Search", title: "Rebuild the Index", run: () => void invoke("index_rebuild") },
+    { id: "search.contents", category: "Search", title: "Search File Contents Here", keys: ["Ctrl+Shift+H"], run: () => uiActions.openCommandBar("%") },
     { id: "edit.undo", category: "Edit", title: "Undo", keys: ["Ctrl+Z"], run: () => void undoLast() },
     { id: "file.newFolder", category: "File", title: "New Folder", keys: ["Ctrl+Shift+N"], run: () => paneActions.newFolder() },
     { id: "file.newFile", category: "File", title: "New File", keys: ["Ctrl+Alt+N"], run: () => paneActions.newFile() },

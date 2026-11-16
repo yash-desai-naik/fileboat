@@ -1,7 +1,7 @@
 import { HighlightStyle, LanguageDescription, codeFolding, foldGutter, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { Compartment, EditorState } from "@codemirror/state";
-import { EditorView, highlightSpecialChars, lineNumbers } from "@codemirror/view";
+import { drawSelection, EditorView, highlightSpecialChars, lineNumbers } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 
@@ -49,10 +49,12 @@ interface Props {
   /** The file name, to pick the language. */
   name: string;
   wrap: boolean;
+  /** A line to scroll to and select (1-based). */
+  line?: number | null;
 }
 
 /** Read-only code with highlighting, line numbers and folding; languages load when first needed. */
-export function CodeView({ text, name, wrap }: Props) {
+export function CodeView({ text, name, wrap, line }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const language = useRef(new Compartment());
@@ -70,6 +72,8 @@ export function CodeView({ text, name, wrap }: Props) {
           codeFolding(),
           foldGutter(),
           highlightSpecialChars(),
+          // The selection shows without focus (a line found by content search).
+          drawSelection(),
           syntaxHighlighting(syntax),
           chrome,
           language.current.of([]),
@@ -110,6 +114,14 @@ export function CodeView({ text, name, wrap }: Props) {
   useEffect(() => {
     view.current?.dispatch({ effects: wrapping.current.reconfigure(wrap ? EditorView.lineWrapping : []) });
   }, [wrap]);
+
+  // Content search: the matching line, in the middle and selected.
+  useEffect(() => {
+    const v = view.current;
+    if (!v || !line || line > v.state.doc.lines) return;
+    const l = v.state.doc.line(line);
+    v.dispatch({ selection: { anchor: l.from, head: l.to }, effects: EditorView.scrollIntoView(l.from, { y: "center" }) });
+  }, [line, text]);
 
   return <div className="pv-code" ref={host} />;
 }

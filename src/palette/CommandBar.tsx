@@ -1,5 +1,5 @@
 import { Command as Cmdk, defaultFilter } from "cmdk";
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import type { Command } from "../lib/commands";
 import { Kbd } from "../shell/Kbd";
@@ -7,6 +7,8 @@ import { showToast } from "../shell/Toast";
 import { formatDate } from "../lib/format";
 import type { RepoInfo } from "../lib/git";
 import { activeTab, navigate } from "../lib/tabs";
+import { requestLine } from "../lib/current";
+import { updateSettings } from "../lib/settings";
 
 /**
  * The command bar: one box for everything, VS Code style. The first character picks the mode
@@ -25,7 +27,7 @@ interface Mode {
 const MODES: Mode[] = [
   { prefix: "", name: "Go to", hint: "Go to a file or folder", placeholder: "Go to a file or folder…", ready: false },
   { prefix: ">", name: "Commands", hint: "Run a command", placeholder: "Type a command…", ready: true },
-  { prefix: "%", name: "Search contents", hint: "Search inside files in this folder", placeholder: "Search file contents…", ready: false },
+  { prefix: "%", name: "Search contents", hint: "Search inside files in this folder", placeholder: "Text to find in files here (/regex/ for a pattern)…", ready: true },
   { prefix: "#", name: "Git", hint: "Branches, changed files and commits", placeholder: "Branches, changes, commits…", ready: true },
   { prefix: "@", name: "Places", hint: "Favourites, projects and drives", placeholder: "Favourites, projects, drives…", ready: false },
   { prefix: "!", name: "Shell", hint: "Run a shell command in this folder", placeholder: "Shell command…", ready: false },
@@ -60,6 +62,8 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
         <Cmdk
           label="Command bar"
           loop
+          // Content search results are already matches: no filtering on top.
+          shouldFilter={mode.prefix !== "%"}
           // Match on what follows the prefix: ">zoom" finds "View: Zoom In".
           filter={(value, search, keywords) => {
             const q = queryOf(search);
@@ -86,6 +90,7 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
             {mode.prefix === ">" && <CommandItems commands={commands} onClose={onClose} />}
             {mode.prefix === "?" && <HelpItems onPick={setText} />}
             {mode.prefix === "#" && <GitItems onClose={onClose} />}
+            {mode.prefix === "%" && <ContentItems query={queryOf(text)} onClose={onClose} />}
             {!mode.ready && (
               <div className="palette-note">
                 <strong>{mode.name}</strong>: {mode.hint.toLowerCase()}. This arrives in a later version; type{" "}
@@ -270,6 +275,96 @@ function GitItems({ onClose }: { onClose: () => void }) {
           ))}
         </Cmdk.Group>
       )}
+    </>
+  );
+}
+
+interface LineMatch {
+  path: string;
+  line: number;
+  text: string;
+  ranges: [number, number][];
+}
+
+type GrepEvent =
+  | { type: "matches"; items: LineMatch[] }
+  | { type: "done"; files: number; lines: number; limited: boolean; ms: number }
+  | { type: "error"; message: string };
+
+function Marked({ text, ranges }: { text: string; ranges: [number, number][] }) {
+  const chars = [...text];
+  const out: React.ReactNode[] = [];
+  let at = 0;
+  for (const [a, b] of ranges) {
+    if (a < at) continue;
+    out.push(chars.slice(at, a).join(""));
+    out.push(<mark key={a}>{chars.slice(a, b).join("")}</mark>);
+    at = b;
+  }
+  out.push(chars.slice(at).join(""));
+  return <>{out}</>;
+}
+
+/** `%`: text inside the files of the folder you're in, streamed as found. */
+function ContentItems({ query, onClose }: { query: string; onClose: () => void }) {
+  const folder = activeTab().path;
+  const [lines, setLines] = useState<LineMatch[]>([]);
+  const [state, setState] = useState<string>("");
+  useEffect(() => {
+    setLines([]);
+    const q = query.trim();
+    if (!q) return setState("Type to search inside the files here (.gitignore and the index's rules apply).");
+    const regex = q.length > 2 && q.startsWith("/") && q.endsWith("/");
+    const pattern = regex ? q.slice(1, -1) : q;
+    let id: string | null = null;
+    let stale = false;
+    setState("Searching…");
+    const timer = window.setTimeout(() => {
+      const channel = new Channel<GrepEvent>();
+      channel.onmessage = (e) => {
+        if (stale) return;
+        if (e.type === "matches") setLines((l) => (l.length > 2000 ? l : [...l, ...e.items]));
+        else if (e.type === "done") setState(`${e.lines.toLocaleString()} lines in ${e.files.toLocaleString()} files searched, ${e.ms} ms${e.limited ? " (stopped at the limit)" : ""}`);
+        else setState(e.message);
+      };
+      void invoke<string>("grep_start", { path: folder, pattern, regex, case: false, wholeWord: false, onEvent: channel }).then((g) => {
+        id = g;
+        if (stale) void invoke("grep_cancel", { id: g });
+      });
+    }, 250);
+    return () => {
+      stale = true;
+      window.clearTimeout(timer);
+      if (id) void invoke("grep_cancel", { id });
+    };
+  }, [query, folder]);
+
+  const sep = folder.includes("\\") ? "\\" : "/";
+  const base = folder.replace(/[\\/]+$/, "") + sep;
+  const groups = new Map<string, LineMatch[]>();
+  for (const l of lines) groups.set(l.path, [...(groups.get(l.path) ?? []), l]);
+  const show = (m: LineMatch) => {
+    onClose();
+    const i = m.path.lastIndexOf(sep);
+    updateSettings({ showPreview: true });
+    navigate(m.path.slice(0, i), m.path.slice(i + 1));
+    requestLine(m.path, m.line);
+  };
+  return (
+    <>
+      <div className="palette-note">{state}</div>
+      {[...groups].map(([path, ls]) => (
+        <Cmdk.Group key={path} heading={path.startsWith(base) ? path.slice(base.length) : path}>
+          {ls.map((m) => (
+            <Cmdk.Item key={`${path}:${m.line}`} value={`${path}:${m.line}`} onSelect={() => show(m)}>
+              <span className="palette-prefix mono">{m.line}</span>
+              <span className="palette-title mono grep-line">
+                <Marked text={m.text} ranges={m.ranges} />
+              </span>
+            </Cmdk.Item>
+          ))}
+        </Cmdk.Group>
+      ))}
     </>
   );
 }

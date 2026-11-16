@@ -72,3 +72,26 @@ export function onDiffRequest(l: () => void): () => void {
     diffListeners.delete(l);
   };
 }
+
+// Content search: the preview shows that file scrolled to that line.
+let lineFor: { path: string; line: number } | null = null;
+const lineListeners = new Set<() => void>();
+
+export function requestLine(path: string, line: number) {
+  lineFor = { path, line };
+  for (const l of lineListeners) l();
+}
+
+/** The line asked for in `path`, if any (stays until another request). */
+export function useLineRequest(path: string): number | null {
+  const req = useSyncExternalStore(
+    (l) => {
+      lineListeners.add(l);
+      return () => {
+        lineListeners.delete(l);
+      };
+    },
+    () => lineFor,
+  );
+  return req && req.path.toLowerCase() === path.toLowerCase() ? req.line : null;
+}
