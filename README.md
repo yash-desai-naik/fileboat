@@ -8,8 +8,9 @@ Built with [Tauri 2](https://tauri.app) (Rust backend, and the WebView your syst
 WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 [Tableboat](https://github.com/yash-desai-naik/tableboat). No Electron and no Node.js at runtime.
 
-> Status: **in development, not usable yet.** The window, themes, settings, command bar and updates
-> work; browsing folders is the next milestone. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
+> Status: **in development.** You can browse folders in tabs (Details and List views, live
+> updates, sorting, the address bar, favourites and drives); file operations, previews, git,
+> search and the Claude pane come next. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
 > how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What it will do (v1)

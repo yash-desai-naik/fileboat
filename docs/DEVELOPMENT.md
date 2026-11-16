@@ -33,22 +33,37 @@ Rust, `src-tauri/src/`:
 - `lib.rs`: the window-free core `fileboat_core`, which a future `fb` command line will share:
   - `paths`: the data folder (`%APPDATA%\Fileboat`, `~/Library/Application Support/Fileboat`) and
     the cache folder (`%LOCALAPPDATA%\Fileboat`, `~/Library/Caches/Fileboat`);
+  - `fs`: listing folders (`entry.rs`: one file's metadata in one pass), the folder model views
+    read from (`model.rs`: sort, folders first, hidden files, changes), natural order
+    (`natural.rs`), and typed paths (`~`, `%VAR%`, `$VAR`, completion);
+  - `places`: home folders and drives with their free space;
   - `prefs`: `settings.json`, with validation and the help text Claude will use;
   - `themes`: the theme ids from `src/themes/themes.json`, and the contrast tests.
-- `main.rs` with `settings` (the app's settings store and commands), `window` (window size and
-  place), `desktop` (Fileboat's folders, opening things with the system) and `update` (updates).
+- `main.rs` (the desktop app) with:
+  - `folders`: open folders, one model per view, kept in Rust; the view reads only the rows on
+    screen (`folder_rows`) and hears about changes on its channel;
+  - `watch`: one file system watcher for the app (open folders only, events batched);
+  - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
+    line or from a second launch), `state` (tabs kept between runs);
+  - `settings`, `window` (size and place), `desktop` (Fileboat's folders, opening files with
+    their app) and `update` (updates).
 
 UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`):
 
 - `main.tsx` loads the settings and applies the theme before the first paint; `App.tsx` lays out
   the window.
-- `shell/`: title bar, icons, splitter, dialogs, About, the update notice.
+- `shell/`: title bar and tabs, toolbar, icons (`FileTypeIcon.tsx`: the built-in file icons),
+  menus, splitter, dialogs, About, the update notice.
+- `views/`: a tab's folder (`FolderPane`), the Details and List views (`FileList`, virtualised),
+  selection, the address bar and the status bar. `lib/folder.ts` is the view's side of a folder
+  model (rows fetched in blocks of 200); `lib/tabs.ts` holds tabs and their history.
+- `sidebar/`: favourites, home folders and drives.
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.
 - `themes/`: `themes.json` (the palettes) and `index.ts` (turns a theme into CSS variables).
-- CSS: `styles.css` (tokens and base), `controls.css`, `shell.css`, `palette.css`, `update.css`,
-  and `type.css` (the type hierarchy, loaded last). Components use the theme's variables only.
+- CSS: `styles.css` (tokens and base), `controls.css`, `shell.css`, `palette.css`, `views.css`,
+  `sidebar.css`, `update.css`, and `type.css` (the type hierarchy, loaded last). Components use the theme's variables only.
 
 ## Checks
 
@@ -138,3 +153,9 @@ powershell -ExecutionPolicy Bypass -File scripts\measure.ps1 -Exe src-tauri\targ
 | When | Build | Private memory | Idle CPU (30 s) |
 |---|---|---|---|
 | M0 (2026-11-16) | release, no folder open, Windows 11 | 115 MB across 7 processes (WebView2 GPU 55, browser 29, renderer 16, app 5) | 0.06 % |
+| M1 (2026-11-16) | release, home folder open (46 items) | 125 MB (GPU 57, browser 28, renderer 24, app 5) | 0.09 % |
+| M1 (2026-11-16) | release, a 200,000-file folder open in a second tab | 186 MB (GPU 61, app 55, renderer 31, browser 28) | 0.02 % |
+
+The 200,000-file folder costs about 50 MB in Rust (~250 bytes per entry) and almost nothing in the
+WebView, which only draws the rows on screen. The per-entry size can come down later (names and
+extensions stored once, compactly).

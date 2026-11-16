@@ -8,6 +8,28 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Browse folders** in a Details view (Name, Modified, Type, Size: click a header to sort,
+  drag to resize) or a List view. Huge folders open at once: the first rows show in milliseconds
+  and only the rows on screen are drawn, so 200,000 files scroll smoothly.
+- **Live:** folders update the moment another program creates, changes, renames or deletes
+  files. Nothing polls.
+- Select with click, Ctrl+click, Shift+click, the arrow keys and Ctrl+A; type a name to jump to
+  it; Enter or a double-click opens a folder, or opens a file with its app.
+- Natural order (file2 before file10), folders first, newest or biggest first for dates and
+  sizes; hidden files shown on request (`Ctrl+Shift+.`).
+- **Tabs** in the title bar, each with its own history; `Ctrl+T`, `Ctrl+W`, `Ctrl+Shift+T`,
+  `Ctrl+Tab`, `Ctrl+1..9`, middle-click to open a folder in a new tab, drag to reorder. Tabs come
+  back next time.
+- **Back, Forward and Up** (Alt+arrows, Backspace, the mouse's side buttons); going up selects the
+  folder you came from.
+- **Address bar:** the path as a breadcrumb whose arrows list the folders beside each part;
+  `Ctrl+L` to type a path with completion (`~`, `%VAR%` and `$VAR` work; a file's path opens its
+  folder with the file selected).
+- **Sidebar:** favourites (`Ctrl+D`), the home folders, and every drive with its free space. An
+  unreachable network drive doesn't hold anything up.
+- **Status bar:** item count, hidden items, the selection's size, the drive's free space.
+- File icons by type, coloured from the theme.
+- `fileboat <folder or file>` opens it in a new tab, in the running app if there is one.
 - The Fileboat window: a custom title bar (Snap Layouts on Windows, traffic lights on macOS), a
   sidebar and a preview pane you can show, hide and resize. It opens maximized without a white flash.
 - **19 colour themes**: Fileboat Light and Dark, Catppuccin Latte and Mocha, Tokyo Night, GitHub
