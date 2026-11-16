@@ -6,6 +6,7 @@ mod clipboard;
 mod desktop;
 mod dnd;
 mod folders;
+mod icons;
 mod indexer;
 mod git_cmd;
 mod grep_cmd;
@@ -47,6 +48,10 @@ fn main() {
         .manage(std::sync::Arc::new(grep_cmd::Greps::default()))
         .manage(std::sync::Arc::new(shell_cmd::Shells::default()))
         .manage(ai::ClaudeHub::default())
+        // A VS Code icon theme's files (from the icon-themes folder only).
+        .register_asynchronous_uri_scheme_protocol("fbicon", |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(icons::serve(&request)));
+        })
         // Images, media, PDFs and fonts for the preview, read off the main thread.
         .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -98,6 +103,11 @@ fn main() {
             grep_cmd::grep_cancel,
             shell_cmd::shell_run,
             ai::claude_status,
+            icons::icon_themes_list,
+            icons::icon_theme_load,
+            icons::icon_themes_folder,
+            icons::icon_image,
+            icons::system_icon,
             ai::claude_send,
             ai::claude_stop,
             ai::claude_new,

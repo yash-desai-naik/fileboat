@@ -1094,6 +1094,7 @@ dependencies = [
  "infer",
  "libc",
  "notify",
+ "png",
  "regex",
  "serde",
  "serde_json",

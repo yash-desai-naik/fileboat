@@ -83,6 +83,10 @@ pub struct Settings {
     pub git_ignored: String,
     /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
     pub column_widths: BTreeMap<String, u32>,
+    /// "fileboat" | "minimal" | "system" | "vscode:<folder>::<theme id>" (a theme in icon-themes).
+    pub icon_theme: String,
+    /// Change icon… rules: first match wins (path, then name, then extension).
+    pub icon_associations: Vec<IconRule>,
     /// Folders pinned in the sidebar, in order.
     pub favourites: Vec<String>,
     /// "Open in editor": an editor id ("vscode", "cursor", "zed"…), "" for the first one found.
@@ -107,6 +111,19 @@ pub struct Settings {
     pub index_hidden: bool,
     /// Honour .gitignore, .ignore and .fbignore inside projects.
     pub index_gitignore: bool,
+}
+
+/// A Change icon… rule.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IconRule {
+    /// "name" (a file or folder name), "ext" (an extension) or "path" (one file or folder).
+    #[serde(rename = "match")]
+    pub matches: String,
+    pub value: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
 }
 
 impl Default for Settings {
@@ -135,6 +152,8 @@ impl Default for Settings {
             folder_sizes: false,
             git_ignored: "dim".into(),
             column_widths: BTreeMap::new(),
+            icon_theme: "fileboat".into(),
+            icon_associations: Vec::new(),
             favourites: Vec::new(),
             editor: String::new(),
             terminal: String::new(),
@@ -188,6 +207,11 @@ impl Settings {
         if !matches!(self.git_ignored.as_str(), "dim" | "hide" | "show") {
             self.git_ignored = d.git_ignored;
         }
+        if !(matches!(self.icon_theme.as_str(), "fileboat" | "minimal" | "system") || self.icon_theme.starts_with("vscode:")) {
+            self.icon_theme = d.icon_theme.clone();
+        }
+        self.icon_associations.retain(|r| matches!(r.matches.as_str(), "name" | "ext" | "path") && !r.value.trim().is_empty());
+        self.icon_associations.truncate(1000);
         self.column_widths.retain(|k, _| COLUMNS.contains(&k.as_str()));
         for w in self.column_widths.values_mut() {
             *w = (*w).clamp(40, 2000);
@@ -243,6 +267,8 @@ rememberViews: true | false (each folder keeps the view, sort and grouping chose
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
 editor: \"\" (the first found) | \"vscode\" | \"vscode-insiders\" | \"cursor\" | \"windsurf\" | \"zed\" | \"sublime\" | \"notepad++\" | \"jetbrains-idea\" (and other JetBrains IDEs) | \"notepad\" | \"textedit\"
 terminal: \"\" (the first found) | \"windows-terminal\" | \"pwsh\" | \"powershell\" | \"cmd\" | \"git-bash\" | \"wsl\" | \"terminal\" | \"iterm\" | \"ghostty\" | \"warp\" | \"wezterm\"
+iconTheme: \"fileboat\" (built in) | \"minimal\" | \"system\" (the OS's icons) | \"vscode:<folder>::<id>\" (a VS Code icon theme in Fileboat's icon-themes folder)
+iconAssociations: [{\"match\": \"name\" | \"ext\" | \"path\", \"value\": \"src\", \"icon\": \"code\" (optional), \"color\": \"#e5534b\" (optional)}] (Change icon… rules)
 columnWidths: {\"name\": 320, \"modified\": 150, \"type\": 140, \"size\": 90} (Details view, 40 to 2000 pixels each)
 checkUpdates: look for a new Fileboat version at start-up and once a day
 skippedUpdate: a version not to be told about again (\"\" = none)";
