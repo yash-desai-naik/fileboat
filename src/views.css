@@ -139,6 +139,58 @@
 .fl-icon.folder {
   color: var(--accent);
 }
+/* Git: the name in the status colour, a letter at the end (a dot for folders with changes). */
+.fl-row.git-modified .fl-text {
+  color: var(--git-modified);
+}
+.fl-row.git-added .fl-text,
+.fl-row.git-untracked .fl-text {
+  color: var(--git-added);
+}
+.fl-row.git-deleted .fl-text {
+  color: var(--git-deleted);
+  text-decoration: line-through;
+}
+.fl-row.git-conflicted .fl-text {
+  color: var(--git-conflicted);
+}
+.fl-row.git-renamed .fl-text {
+  color: var(--git-renamed);
+}
+.fl-row.git-ignored .fl-text,
+.fl-row.git-ignored .fl-icon {
+  opacity: var(--git-ignored-opacity, 0.55);
+}
+.fl-git {
+  flex: none;
+  margin-left: auto;
+  padding-left: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.fl-git.git-modified {
+  color: var(--git-modified);
+}
+.fl-git.git-added,
+.fl-git.git-untracked {
+  color: var(--git-added);
+}
+.fl-git.git-deleted,
+.fl-git.git-conflicted {
+  color: var(--git-conflicted);
+}
+.fl-git.git-renamed {
+  color: var(--git-renamed);
+}
+.fl-git.git-changed {
+  color: var(--git-modified);
+}
+/* "Shown like the rest": ignored files aren't dimmed. */
+[data-git-ignored="show"] {
+  --git-ignored-opacity: 1;
+}
+
 .fl-link {
   flex: none;
   color: var(--text-3);
@@ -337,4 +389,22 @@
 /* Side columns are a step quieter than the one with the keyboard. */
 .column:not(.main) .fl-row.selected {
   background: var(--bg-active);
+}
+
+/* The repository in the status bar */
+.status-git {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 14px;
+}
+.status-git .branch {
+  color: var(--text);
+}
+.status-git .git-state {
+  color: var(--git-modified);
+  font-weight: 600;
+}
+.status-git .git-conflicted-count {
+  color: var(--git-conflicted);
 }

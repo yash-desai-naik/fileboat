@@ -32,11 +32,11 @@ function SideColumn({ path, highlight, onPick }: { path: string; highlight: stri
   }, [model]);
 
   // Each column is sorted and grouped as its folder is.
-  const { foldersFirst, showHidden } = settings;
+  const { foldersFirst, showHidden, gitIgnored } = settings;
   const { sortBy, sortDescending, groupBy } = useFolderView(path);
   useEffect(() => {
     void model.setView(viewSpec(path, false));
-  }, [model, path, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
+  }, [model, path, sortBy, sortDescending, foldersFirst, showHidden, groupBy, gitIgnored]);
 
   return (
     <div className="column">

@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { FolderModel, SelectionInfo } from "../lib/folder";
 import { formatSize } from "../lib/format";
+import { branchLabel, useGitInfo, type RepoInfo } from "../lib/git";
 import type { Selection } from "./selection";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
@@ -39,6 +40,8 @@ export function StatusBar({ model, selection, active }: { model: FolderModel; se
     };
   }, [model.path, active]);
 
+  const git = useGitInfo(active ? model.path : null);
+
   const hidden = model.total - model.count;
   const parts: string[] = [];
   if (model.loading && model.count > 0) parts.push(`Loading… ${model.count.toLocaleString()}`);
@@ -57,11 +60,44 @@ export function StatusBar({ model, selection, active }: { model: FolderModel; se
       <span>{parts.join(" · ")}</span>
       {selected && <span className="status-selected">{selected}</span>}
       <span className="spacer" />
+      {git && <GitStatus info={git} />}
       {space && (
         <span className="muted" title={`${formatSize(space[0])} free of ${formatSize(space[1])}`}>
           {formatSize(space[0])} free
         </span>
       )}
     </footer>
+  );
+}
+
+const STATE_LABEL: Record<NonNullable<RepoInfo["state"]>, string> = {
+  merge: "Merging",
+  rebase: "Rebasing",
+  "cherry-pick": "Cherry-picking",
+  revert: "Reverting",
+  bisect: "Bisecting",
+};
+
+/** The branch, ahead/behind, what's in progress and what changed, for the repository here. */
+function GitStatus({ info }: { info: RepoInfo }) {
+  const changes = info.staged + info.changed + info.untracked + info.conflicted;
+  const title = [
+    `Repository: ${info.root}`,
+    info.upstream ? `Tracking ${info.upstream}` : "No upstream branch",
+    info.ready ? `${info.staged} staged, ${info.changed} changed, ${info.untracked} untracked, ${info.conflicted} conflicted` : "Reading status…",
+    info.error ?? "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return (
+    <span className="status-git" title={title}>
+      <span className="branch">⎇ {branchLabel(info)}</span>
+      {info.ahead > 0 && <span title={`${info.ahead} to push`}>↑{info.ahead}</span>}
+      {info.behind > 0 && <span title={`${info.behind} to pull`}>↓{info.behind}</span>}
+      {info.state && <span className="git-state">{STATE_LABEL[info.state]}</span>}
+      {info.conflicted > 0 && <span className="git-conflicted-count">{info.conflicted} conflicted</span>}
+      {info.ready && changes > 0 && <span className="muted">{changes} changed</span>}
+      {info.error && <span className="muted">git unavailable</span>}
+    </span>
   );
 }

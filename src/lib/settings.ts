@@ -6,6 +6,7 @@ export type Theme = "system" | "light" | "dark";
 export type Density = "compact" | "default" | "comfortable";
 export type ViewMode = "details" | "list" | "columns";
 export type SortBy = "name" | "size" | "modified" | "created" | "type";
+export type GitIgnored = "dim" | "hide" | "show";
 export type GroupBy = "none" | "type" | "modified" | "size" | "letter";
 
 /** Mirrors `Settings` in src-tauri/src/prefs.rs. */
@@ -33,6 +34,8 @@ export interface Settings {
   rememberViews: boolean;
   /** Work out folder sizes in the background. */
   folderSizes: boolean;
+  /** Files git ignores: dimmed, hidden, or shown like the rest. */
+  gitIgnored: GitIgnored;
   /** Details view column widths by column id; missing ones use the defaults. */
   columnWidths: Record<string, number>;
   /** Folders pinned in the sidebar, in order. */

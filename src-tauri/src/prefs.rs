@@ -73,6 +73,8 @@ pub struct Settings {
     pub remember_views: bool,
     /// Work out folder sizes in the background (Size column, selection, group totals).
     pub folder_sizes: bool,
+    /// Files git ignores: "dim" | "hide" | "show".
+    pub git_ignored: String,
     /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
     pub column_widths: BTreeMap<String, u32>,
     /// Folders pinned in the sidebar, in order.
@@ -108,6 +110,7 @@ impl Default for Settings {
             group_by: "none".into(),
             remember_views: true,
             folder_sizes: false,
+            git_ignored: "dim".into(),
             column_widths: BTreeMap::new(),
             favourites: Vec::new(),
             editor: String::new(),
@@ -149,6 +152,9 @@ impl Settings {
         if !matches!(self.group_by.as_str(), "none" | "type" | "modified" | "size" | "letter") {
             self.group_by = d.group_by;
         }
+        if !matches!(self.git_ignored.as_str(), "dim" | "hide" | "show") {
+            self.git_ignored = d.git_ignored;
+        }
         self.column_widths.retain(|k, _| COLUMNS.contains(&k.as_str()));
         for w in self.column_widths.values_mut() {
             *w = (*w).clamp(40, 2000);
@@ -189,6 +195,7 @@ viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)
 folderSizes: true | false (work out folder sizes in the background; they show in the Size column)
+gitIgnored: \"dim\" | \"hide\" | \"show\" (files git ignores, inside a repository)
 rememberViews: true | false (each folder keeps the view, sort and grouping chosen in it; viewMode, sortBy, sortDescending and groupBy are then the defaults)
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
 editor: \"\" (the first found) | \"vscode\" | \"vscode-insiders\" | \"cursor\" | \"windsurf\" | \"zed\" | \"sublime\" | \"notepad++\" | \"jetbrains-idea\" (and other JetBrains IDEs) | \"notepad\" | \"textedit\"

@@ -17,7 +17,13 @@ export interface Entry {
   readonly: boolean;
   /** A folder whose `size` (everything under it) has been worked out. */
   sized: boolean;
+  /** Its git status inside a repository ("changed": a folder with changes inside). */
+  git: GitMark | null;
+  /** Some of its change is staged. */
+  staged: boolean;
 }
+
+export type GitMark = "modified" | "added" | "deleted" | "renamed" | "untracked" | "ignored" | "conflicted" | "changed";
 
 export interface SelectionInfo {
   files: number;
@@ -37,6 +43,8 @@ export interface FolderViewSpec {
   tzOffsetMin: number;
   /** Work out folder sizes in the background. */
   folderSizes: boolean;
+  /** Leave out what git ignores. */
+  hideIgnored: boolean;
 }
 
 /**
@@ -56,6 +64,7 @@ export function viewSpec(path: string, sizes: boolean): FolderViewSpec {
     now: Date.now(),
     tzOffsetMin: -new Date().getTimezoneOffset(),
     folderSizes: s.folderSizes && sizes,
+    hideIgnored: s.gitIgnored === "hide",
   };
 }
 

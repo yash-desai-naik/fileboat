@@ -1,7 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
-import { childPath, type Entry, type FolderModel, type Group } from "../lib/folder";
+import { childPath, type Entry, type FolderModel, type GitMark, type Group } from "../lib/folder";
 import { isCut, useCutPaths } from "../lib/clipboard";
 import { dragOut } from "../lib/dnd";
 import { describeType, formatDate, formatSize } from "../lib/format";
@@ -420,6 +420,8 @@ export function FileList(props: Props) {
                   onPlainClick?.(entry);
                 }}
                 className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}${
+                  entry?.git ? ` git-${entry.git}` : ""
+                }${
                   entry && isCut(cut, childPath(model.path, entry.name)) ? " cut" : ""
                 }`}
                 role="row"
@@ -469,6 +471,28 @@ interface RenameHandlers {
   cancel: () => void;
 }
 
+const GIT_LETTER: Record<GitMark, [string, string]> = {
+  modified: ["M", "Modified"],
+  added: ["A", "Added"],
+  deleted: ["D", "Deleted"],
+  renamed: ["R", "Renamed"],
+  untracked: ["U", "Untracked"],
+  ignored: ["", "Ignored by git"],
+  conflicted: ["!", "Conflict"],
+  changed: ["•", "Changes inside"],
+};
+
+/** The git letter (M, A, U…) or, for a folder, a dot when something inside changed. */
+function GitBadge({ mark, staged }: { mark: GitMark; staged: boolean }) {
+  const [letter, label] = GIT_LETTER[mark];
+  if (!letter) return null;
+  return (
+    <span className={`fl-git git-${mark}`} title={staged ? `${label} (staged)` : label}>
+      {letter}
+    </span>
+  );
+}
+
 function Cells({ entry, mode, rename }: { entry: Entry; mode: ViewMode; rename: RenameHandlers | null }) {
   const folder = entry.kind === "folder";
   const name = (
@@ -476,6 +500,7 @@ function Cells({ entry, mode, rename }: { entry: Entry; mode: ViewMode; rename: 
       <span className={`fl-icon${folder ? " folder" : ""}`}>{folder ? <FolderIcon size={15} /> : <FileTypeIcon entry={entry} />}</span>
       {rename ? <RenameInput name={entry.name} folder={folder} {...rename} /> : <span className="fl-text">{entry.name}</span>}
       {entry.link && !rename && <span className="fl-link" title="Link">↗</span>}
+      {entry.git && !rename && <GitBadge mark={entry.git} staged={entry.staged} />}
     </span>
   );
   if (mode === "list") return name;

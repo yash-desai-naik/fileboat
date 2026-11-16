@@ -120,6 +120,18 @@ const ENTRIES: Entry[] = [
   { section: "Folders", key: "foldersFirst", type: "toggle", label: "Folders before files" },
   {
     section: "Folders",
+    key: "gitIgnored",
+    type: "select",
+    label: "Files git ignores",
+    help: "Inside a repository: build output, node_modules and the like.",
+    options: [
+      ["dim", "Dimmed"],
+      ["hide", "Hidden"],
+      ["show", "Shown like the rest"],
+    ],
+  },
+  {
+    section: "Folders",
     key: "folderSizes",
     type: "toggle",
     label: "Show folder sizes",

@@ -8,7 +8,7 @@ import type { Settings } from "./settings";
  * mode is "system"), density and zoom. Settings changed here, in another window or by Claude all
  * arrive through the settings store.
  */
-export function useAppearance({ theme, lightTheme, darkTheme, density, uiZoom }: Settings) {
+export function useAppearance({ theme, lightTheme, darkTheme, density, uiZoom, gitIgnored }: Settings) {
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => applyTheme(resolveTheme({ theme, lightTheme, darkTheme }, media.matches));
@@ -20,6 +20,10 @@ export function useAppearance({ theme, lightTheme, darkTheme, density, uiZoom }:
   useEffect(() => {
     document.documentElement.dataset.density = density;
   }, [density]);
+
+  useEffect(() => {
+    document.documentElement.dataset.gitIgnored = gitIgnored;
+  }, [gitIgnored]);
 
   useEffect(() => {
     getCurrentWebview()
