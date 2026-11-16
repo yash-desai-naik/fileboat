@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAppearance } from "./lib/appearance";
 import { buildCommands } from "./lib/commands";
 import { publishCommands } from "./lib/agentBridge";
+import type { IconTarget } from "./icons/ChangeIcon";
 import { hasOwnView, useFolderView } from "./lib/folderViews";
 import { updateSettings, useSettings } from "./lib/settings";
 import { useNoBrowserContextMenu, useShortcuts } from "./lib/shortcuts";
@@ -23,6 +24,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 // Loaded when the pane first opens: its viewers stay out of the start-up bundle.
 const PreviewPane = lazy(() => import("./preview/PreviewPane").then((m) => ({ default: m.PreviewPane })));
+const ChangeIconDialog = lazy(() => import("./icons/ChangeIcon").then((m) => ({ default: m.ChangeIconDialog })));
 const AiPane = lazy(() => import("./ai/AiPane").then((m) => ({ default: m.AiPane })));
 const QuickLook = lazy(() => import("./preview/PreviewPane").then((m) => ({ default: m.QuickLook })));
 
@@ -41,6 +43,8 @@ export function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   uiActions.openAbout = () => setAboutOpen(true);
   const [quickLook, setQuickLook] = useState(false);
+  const [iconTarget, setIconTarget] = useState<IconTarget | null>(null);
+  uiActions.changeIcon = setIconTarget;
   uiActions.toggleQuickLook = () => setQuickLook((q) => !q);
 
   const { tabs } = useTabs();
@@ -154,6 +158,11 @@ export function App() {
       {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
       {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      {iconTarget && (
+        <Suspense fallback={null}>
+          <ChangeIconDialog target={iconTarget} onClose={() => setIconTarget(null)} />
+        </Suspense>
+      )}
       {quickLook && (
         <Suspense fallback={null}>
           <QuickLook onClose={() => setQuickLook(false)} />

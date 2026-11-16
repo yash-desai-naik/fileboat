@@ -10,13 +10,15 @@ import type { ThemeMode } from "../themes";
 import { ThemePicker } from "./ThemePicker";
 import { IndexSettings } from "./IndexSettings";
 import { loadTools, type Tool } from "../lib/tools";
+import { newTab } from "../lib/tabs";
 
 type Def =
   | { key: keyof Settings; type: "select"; options: [string | number, string][] }
   | { key: keyof Settings; type: "toggle" }
   | { key: "editor" | "terminal"; type: "tool" }
   | { key: "lightTheme" | "darkTheme"; type: "themes"; mode: ThemeMode }
-  | { key: "indexRoots"; type: "index" };
+  | { key: "indexRoots"; type: "index" }
+  | { key: "iconTheme"; type: "iconTheme" };
 
 type Entry = Def & { section: string; label: string; help?: string };
 
@@ -175,6 +177,13 @@ const ENTRIES: Entry[] = [
   { section: "Search index", key: "indexRoots", type: "index", label: "Folders, exclusions and rules", help: "indexRoots indexExcludes indexIncludes node_modules rules" },
 
   {
+    section: "Appearance",
+    key: "iconTheme",
+    type: "iconTheme",
+    label: "Icon theme",
+    help: "Fileboat's own, plain ones, your system's, or a VS Code icon theme (Material Icon Theme, vscode-icons…) put in the icon-themes folder. Right-click a file ▸ Change Icon… for your own.",
+  },
+  {
     section: "Claude",
     key: "claudeModel",
     type: "select",
@@ -329,6 +338,8 @@ function Control({ entry, settings }: { entry: Entry; settings: Settings }) {
       );
     case "tool":
       return <ToolSelect which={entry.key} value={String(value)} />;
+    case "iconTheme":
+      return <IconThemeSelect value={String(value)} />;
     case "themes":
     case "index":
       return null; // drawn full width
@@ -352,5 +363,30 @@ function ToolSelect({ which, value }: { which: "editor" | "terminal"; value: str
       ))}
       {value && tools && !tools.some((t) => t.id === value) && <option value={value}>{value} (not found)</option>}
     </select>
+  );
+}
+
+/** Built-in icon themes and the VS Code ones in the icon-themes folder. */
+function IconThemeSelect({ value }: { value: string }) {
+  const [themes, setThemes] = useState<{ id: string; label: string }[]>([]);
+  const load = () => void invoke<{ id: string; label: string }[]>("icon_themes_list").then(setThemes, () => setThemes([]));
+  useEffect(load, []);
+  return (
+    <span className="icon-theme-control">
+      <select className="input" value={value} onChange={(e) => updateSettings({ iconTheme: e.target.value })} onFocus={load}>
+        <option value="fileboat">Fileboat</option>
+        <option value="minimal">Minimal</option>
+        <option value="system">System</option>
+        {themes.map((t) => (
+          <option key={t.id} value={`vscode:${t.id}`}>
+            {t.label}
+          </option>
+        ))}
+        {value.startsWith("vscode:") && !themes.some((t) => `vscode:${t.id}` === value) && <option value={value}>{value.slice(7)} (not found)</option>}
+      </select>
+      <button className="link-btn" title="Put a VS Code icon theme's folder here, then choose it above" onClick={() => void invoke<string>("icon_themes_folder").then((p) => newTab(p, true))}>
+        Icon themes folder
+      </button>
+    </span>
   );
 }

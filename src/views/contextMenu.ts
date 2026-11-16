@@ -34,6 +34,12 @@ export interface MenuContext {
 const run = (command: string, args: Record<string, unknown>) => () =>
   void invoke(command, args).catch((err) => showToast(String(err), "error"));
 
+/** A folder's own name ("C:\\" for a drive). */
+function folderName(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, "");
+  return trimmed.slice(Math.max(trimmed.lastIndexOf("\\"), trimmed.lastIndexOf("/")) + 1) || path;
+}
+
 // ---------- the search index ----------
 
 /** Index This Folder / Leave Out of the Index, for one folder. */
@@ -259,6 +265,7 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
   );
   if (onlyFolders) items.push({ label: "Add to Favourites", onSelect: () => paths.forEach((p) => addFavourite(p)) });
   if (onlyFolders && paths.length === 1) items.push({ label: "Search Index", submenu: indexItems(paths[0]) });
+  if (one) items.push({ label: "Change Icon…", onSelect: () => uiActions.changeIcon({ path: paths[0], name: one.name, ext: one.ext, folder: one.kind === "folder" }) });
   items.push({ label: `Show in ${FILE_MANAGER}`, onSelect: run("reveal_in_file_manager", { path: paths[0] }) });
   items.push({ label: IS_MAC ? "Get Info" : "Properties", hint: IS_MAC ? undefined : "Alt+Enter", onSelect: run("show_properties", { path: paths[0] }) });
   // Windows: Explorer's own menu, with what shell extensions add (7-Zip, TortoiseGit, Send to…).
@@ -305,6 +312,7 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     ...terminalItems(ctx, folder),
     { label: "Copy Path", submenu: pathForms([folder]) },
     { label: "Search Index", submenu: indexItems(folder) },
+    { label: "Change Icon…", onSelect: () => uiActions.changeIcon({ path: folder, name: folderName(folder), ext: "", folder: true }) },
     ...(ctx.repo
       ? [
           {

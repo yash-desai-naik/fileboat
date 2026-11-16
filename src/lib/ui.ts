@@ -13,6 +13,8 @@ export const uiActions = {
   focusList: () => {},
   /** Quick Look (Space): the selected file large, over the window. */
   toggleQuickLook: () => {},
+  /** Change Icon… for a file or folder. */
+  changeIcon: (_target: { path: string; name: string; ext: string; folder: boolean }) => {},
   /** Open the Claude pane (and bring it to the front when it shares the right side). */
   showClaude: () => {},
 };
