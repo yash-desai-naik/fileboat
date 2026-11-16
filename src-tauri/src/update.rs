@@ -132,12 +132,11 @@ pub fn start_background_checks(app: AppHandle) {
         tokio::time::sleep(Duration::from_secs(20)).await;
         loop {
             let settings = app.state::<crate::settings::SettingsStore>().current();
-            if settings.check_updates {
-                if let Ok(Some(i)) = check(&app).await {
-                    if i.version != settings.skipped_update {
-                        let _ = app.emit("update:available", i);
-                    }
-                }
+            if settings.check_updates
+                && let Ok(Some(i)) = check(&app).await
+                && i.version != settings.skipped_update
+            {
+                let _ = app.emit("update:available", i);
             }
             tokio::time::sleep(Duration::from_secs(24 * 60 * 60)).await;
         }

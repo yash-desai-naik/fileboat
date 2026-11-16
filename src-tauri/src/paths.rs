@@ -36,10 +36,10 @@ pub fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
 
 /// Expand a leading `~` to the user's home folder.
 pub fn expand_home(path: &str) -> PathBuf {
-    if let Some(rest) = path.strip_prefix("~").filter(|r| r.is_empty() || r.starts_with(['/', '\\'])) {
-        if let Some(home) = home_dir() {
-            return home.join(rest.trim_start_matches(['/', '\\']));
-        }
+    if let Some(rest) = path.strip_prefix("~").filter(|r| r.is_empty() || r.starts_with(['/', '\\']))
+        && let Some(home) = home_dir()
+    {
+        return home.join(rest.trim_start_matches(['/', '\\']));
     }
     PathBuf::from(path)
 }
