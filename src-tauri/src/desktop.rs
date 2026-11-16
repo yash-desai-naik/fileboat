@@ -88,3 +88,60 @@ fn shell_open(path: &std::path::Path) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     if status.success() { Ok(()) } else { Err(format!("Couldn't open {}.", path.display())) }
 }
+
+/// Show an item in Explorer (selected) or Finder (revealed).
+#[tauri::command]
+pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        // `/select,` must be glued to the path in one argument, as Explorer parses it itself.
+        use std::os::windows::process::CommandExt;
+        std::process::Command::new("explorer.exe")
+            .raw_arg(format!("/select,\"{path}\""))
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new("open").arg("-R").arg(&path).spawn().map(|_| ()).map_err(|e| e.to_string())
+    }
+}
+
+/// The system's Properties dialog (Windows) or Get Info window (macOS) for an item.
+#[tauri::command]
+pub fn show_properties(path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::Shell::{SHOP_FILEPATH, SHObjectProperties};
+        use windows::core::{HSTRING, PCWSTR};
+        let ok = unsafe { SHObjectProperties(None, SHOP_FILEPATH, &HSTRING::from(path.as_str()), PCWSTR::null()) };
+        if ok.as_bool() { Ok(()) } else { Err(format!("Couldn't show the properties of {path}.")) }
+    }
+    #[cfg(not(windows))]
+    {
+        let script = format!(
+            "tell application \"Finder\" to open information window of (POSIX file \"{}\" as alias)",
+            path.replace('\\', "\\\\").replace('"', "\\\"")
+        );
+        std::process::Command::new("osascript").arg("-e").arg(script).spawn().map(|_| ()).map_err(|e| e.to_string())
+    }
+}
+
+/// Windows' "How do you want to open this file?" dialog (choose an app, optionally always).
+#[tauri::command]
+pub fn open_with_dialog(path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+        use windows::core::{HSTRING, PCWSTR, w};
+        let r = unsafe { ShellExecuteW(None, w!("openas"), &HSTRING::from(path.as_str()), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+        if r.0 as isize > 32 { Ok(()) } else { Err(format!("Couldn't show \"Open with\" for {path}.")) }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        Err("\"Open with\" isn't available on macOS yet: use Finder's Open With.".into())
+    }
+}

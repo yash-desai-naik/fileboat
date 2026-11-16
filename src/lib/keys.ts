@@ -35,6 +35,7 @@ const CODE_TO_KEY: Record<string, string> = {
   End: "End",
   PageUp: "PageUp",
   PageDown: "PageDown",
+  ContextMenu: "ContextMenu",
 };
 
 function codeToKey(code: string): string | null {

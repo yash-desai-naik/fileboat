@@ -7,7 +7,9 @@ import { IS_MAC } from "../lib/platform";
 import { askConfirm } from "../shell/Confirm";
 import { startTransfer } from "../lib/jobs";
 import { copyFiles, cutFiles, pasteInto } from "../lib/clipboard";
-import { openInEditor, openTerminal } from "../lib/tools";
+import { loadTools, openInEditor, openTerminal, type Tools } from "../lib/tools";
+import { Menu, type MenuItem } from "../shell/Menu";
+import { folderMenu, itemMenu } from "./contextMenu";
 import { showToast } from "../shell/Toast";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
@@ -49,9 +51,16 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
 
-  // A name to rename as soon as it's listed (a new folder or file).
-  const [renameRequest, setRenameRequest] = useState<string | null>(null);
-  const onRenameStarted = useCallback(() => setRenameRequest(null), []);
+  // The context menu showing, if any.
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[]; keyboard: boolean } | null>(null);
+  const [tools, setTools] = useState<Tools | null>(null);
+  useEffect(() => {
+    void loadTools().then(setTools);
+  }, []);
+
+  // A name to select (and maybe rename) as soon as it's listed (a new folder or file).
+  const [request, setRequest] = useState<{ name: string; rename: boolean } | null>(null);
+  const onRequestDone = useCallback(() => setRequest(null), []);
 
   // The active tab's pane answers the New / Rename / Refresh commands.
   useEffect(() => {
@@ -60,7 +69,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       try {
         const name = await invoke<string>(command, { dir: model.path });
         setNotice(null);
-        setRenameRequest(name);
+        setRequest({ name, rename: true });
         // If the folder can't be watched (some network shares), read it again to show the new item.
         window.setTimeout(() => {
           void model.rowOf(name).then((row) => {
@@ -78,7 +87,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       // recorded the row's name yet.
       const [entry] = selection.focus >= 0 ? await model.rows(selection.focus, selection.focus + 1) : [];
       const name = entry?.name ?? selection.focusName;
-      if (name) setRenameRequest(name);
+      if (name) setRequest({ name, rename: true });
     };
     paneActions.refresh = () => void model.refresh();
     const selectedPaths = async () => (await selectedNames(model, selection)).map((n) => childPath(model.path, n));
@@ -96,6 +105,16 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       openInEditor(paths.length ? paths : [model.path]);
     };
     paneActions.terminalHere = () => openTerminal(model.path);
+    paneActions.properties = async () => {
+      const [path] = await selectedPaths();
+      void invoke("show_properties", { path: path ?? model.path }).catch((err) => setNotice(String(err)));
+    };
+    paneActions.contextMenu = () => {
+      // At the cursor's row (or the top of the list), as the Menu key does in Explorer.
+      const row = document.querySelector(".folder-pane:not([hidden]) .fl-row.focused") ?? document.querySelector(".folder-pane:not([hidden]) .fl-scroll");
+      const r = row?.getBoundingClientRect();
+      if (r) void showMenu(r.left + 40, r.top + r.height / 2, selection.size > 0, true);
+    };
     paneActions.duplicate = async () => {
       const names = await selectedNames(model, selection);
       if (names.length) await startTransfer(names.map((n) => childPath(model.path, n)), model.path, "copy");
@@ -139,6 +158,24 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       if (next) navigate(model.path, next);
     };
   }, [active, model, selection]);
+
+  /** The context menu for the selection (onItem) or the folder itself. */
+  const showMenu = async (x: number, y: number, onItem: boolean, keyboard = false) => {
+    if (!model) return;
+    const entries = onItem ? await model.entries([...selection.names]) : [];
+    const ctx = {
+      folder: model.path,
+      entries,
+      tools,
+      open: (entry: Entry) => open(entry),
+      newFromTemplate: (name: string, content: string) => {
+        void invoke<string>("op_new_file", { dir: model.path, name, content })
+          .then((created) => setRequest({ name: created, rename: false }))
+          .catch((err) => setNotice(String(err)));
+      },
+    };
+    setMenu({ x, y, items: entries.length ? itemMenu(ctx) : folderMenu(ctx), keyboard });
+  };
 
   const rename = useCallback(
     async (entry: Entry, newName: string): Promise<string | null> => {
@@ -186,10 +223,12 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
         onSelected={onSelected}
         active={active}
         onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
-        renameRequest={renameRequest}
-        onRenameStarted={onRenameStarted}
+        request={request}
+        onRequestDone={onRequestDone}
         onRename={rename}
+        onContextMenu={(x, y, onItem) => void showMenu(x, y, onItem)}
       />
+      {menu && <Menu x={menu.x} y={menu.y} items={menu.items} keyboard={menu.keyboard} onClose={() => setMenu(null)} />}
       <StatusBar model={model} selection={selection} active={active} />
     </div>
   );

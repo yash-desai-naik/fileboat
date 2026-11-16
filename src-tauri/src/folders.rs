@@ -284,6 +284,14 @@ pub fn folder_selection_info(folders: State<'_, Folders>, id: String, names: Vec
     Ok(info)
 }
 
+/// The entries with these names (the selection, for a context menu), in the order given.
+#[tauri::command]
+pub fn folder_entries(folders: State<'_, Folders>, id: String, names: Vec<String>) -> Result<Vec<Entry>, String> {
+    let f = folders.get(&id)?;
+    let f = f.lock().unwrap();
+    Ok(names.iter().filter_map(|n| f.folder.get(n).cloned()).collect())
+}
+
 /// Names of rows `start..end` (select all, Shift+click across rows not on screen).
 #[tauri::command]
 pub fn folder_names(folders: State<'_, Folders>, id: String, start: usize, end: usize) -> Result<Vec<String>, String> {

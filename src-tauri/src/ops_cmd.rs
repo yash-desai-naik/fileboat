@@ -27,12 +27,16 @@ pub fn op_new_folder(undo: State<'_, UndoLog>, dir: String, name: Option<String>
     Ok(name)
 }
 
-/// A new empty file in `dir`, named `name` or the first free "New file (n).txt". Returns its name.
+/// A new file in `dir`, named `name` or the first free "New file (n).txt", empty or with
+/// `content` (templates like .gitignore). Returns its name.
 #[tauri::command]
-pub fn op_new_file(undo: State<'_, UndoLog>, dir: String, name: Option<String>) -> Result<String, String> {
+pub fn op_new_file(undo: State<'_, UndoLog>, dir: String, name: Option<String>, content: Option<String>) -> Result<String, String> {
     let dir = PathBuf::from(dir);
     let name = name.unwrap_or_else(|| ops::unique_name(&dir, "New file.txt"));
     let path = ops::create_file(&dir, &name)?;
+    if let Some(text) = content.filter(|t| !t.is_empty()) {
+        std::fs::write(&path, text).map_err(|e| format!("Couldn't write \"{name}\": {e}"))?;
+    }
     undo.push(Op::Created(path), format!("New file “{name}”"));
     Ok(name)
 }

@@ -25,17 +25,20 @@ interface MenuProps {
   onDone?: () => void;
   /** For a submenu: the parent's item rectangle, to open on its left when there's no room right. */
   parentLeft?: number;
+  /** Opened from the keyboard: the first item starts highlighted. */
+  keyboard?: boolean;
 }
 
 /**
  * A menu at a position: closes on a click outside, Esc or a choice. Items can open submenus
  * (hover, Enter or →; ← goes back). Arrow keys move, letters jump.
  */
-export function Menu({ x, y, items, onClose, onDone, parentLeft }: MenuProps) {
+export function Menu({ x, y, items, onClose, onDone, parentLeft, keyboard }: MenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x, y });
-  const [active, setActive] = useState(-1);
-  const [open, setOpen] = useState<{ index: number; x: number; y: number; left: number } | null>(null);
+  const firstItem = items.findIndex((it) => it !== "separator" && !it.disabled);
+  const [active, setActive] = useState(keyboard ? firstItem : -1);
+  const [open, setOpen] = useState<{ index: number; x: number; y: number; left: number; keyboard: boolean } | null>(null);
   const done = onDone ?? onClose;
 
   // Keep the menu inside the window (a submenu flips to the parent's left side if needed).
@@ -70,16 +73,16 @@ export function Menu({ x, y, items, onClose, onDone, parentLeft }: MenuProps) {
   // Buttons don't include separators: item i is button buttonIndex(i).
   const buttonIndex = (i: number) => items.slice(0, i).filter((it) => it !== "separator").length;
 
-  const openSub = (i: number) => {
+  const openSub = (i: number, fromKeyboard = false) => {
     const el = ref.current?.querySelectorAll<HTMLElement>(":scope > .menu-item")[buttonIndex(i)];
     const r = el?.getBoundingClientRect();
-    if (r) setOpen({ index: i, x: r.right + 2, y: r.top - 5, left: r.left - 2 });
+    if (r) setOpen({ index: i, x: r.right + 2, y: r.top - 5, left: r.left - 2, keyboard: fromKeyboard });
   };
 
-  const choose = (i: number) => {
+  const choose = (i: number, fromKeyboard = false) => {
     const item = items[i];
     if (!item || item === "separator" || item.disabled) return;
-    if (item.submenu) return openSub(i);
+    if (item.submenu) return openSub(i, fromKeyboard);
     done();
     item.onSelect?.();
   };
@@ -107,7 +110,7 @@ export function Menu({ x, y, items, onClose, onDone, parentLeft }: MenuProps) {
             e.preventDefault();
             e.stopPropagation();
             const item = items[active];
-            if (item && item !== "separator" && (e.key !== "ArrowRight" || item.submenu)) choose(active);
+            if (item && item !== "separator" && (e.key !== "ArrowRight" || item.submenu)) choose(active, true);
           } else if (e.key.length === 1) {
             // A letter jumps to the next item starting with it.
             const key = e.key.toLowerCase();
@@ -156,6 +159,7 @@ export function Menu({ x, y, items, onClose, onDone, parentLeft }: MenuProps) {
           x={open.x}
           y={open.y}
           parentLeft={open.left}
+          keyboard={open.keyboard}
           items={(items[open.index] as { submenu?: MenuItem[] }).submenu ?? []}
           onClose={() => {
             setOpen(null);

@@ -23,6 +23,10 @@ export const paneActions = {
   openInEditor: () => {},
   /** A terminal in this folder. */
   terminalHere: () => {},
+  /** The context menu for the selection (Shift+F10, the Menu key). */
+  contextMenu: () => {},
+  /** The system's Properties / Get Info for the selection or the folder. */
+  properties: () => {},
 };
 
 export type PaneActions = typeof paneActions;

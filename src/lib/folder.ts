@@ -156,6 +156,11 @@ export class FolderModel {
     return this.ask<SelectionInfo | null>("folder_selection_info", { names }, null);
   }
 
+  /** The entries with these names (the selection). */
+  async entries(names: string[]): Promise<Entry[]> {
+    return this.ask<Entry[]>("folder_entries", { names }, []);
+  }
+
   /** Names of rows `start..end`. */
   async names(start: number, end: number): Promise<string[]> {
     return this.ask<string[]>("folder_names", { start, end }, []);

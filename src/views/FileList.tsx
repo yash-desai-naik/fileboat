@@ -54,11 +54,16 @@ interface Props {
   active: boolean;
   /** Middle-click on a folder. */
   onOpenInNewTab?: (entry: Entry) => void;
-  /** A name to start renaming once it's listed (a folder just created); `onRenameStarted` clears it. */
-  renameRequest?: string | null;
-  onRenameStarted?: () => void;
+  /**
+   * A name to select once it's listed, waiting for it to appear (a file just created shows up
+   * through the watcher), and to rename in place if asked; `onRequestDone` clears it.
+   */
+  request?: { name: string; rename: boolean } | null;
+  onRequestDone?: () => void;
   /** Rename `entry` to `newName`: resolves to an error to show, or null when done. */
   onRename: (entry: Entry, newName: string) => Promise<string | null>;
+  /** Right-click: on the selection (`onItem`) or on empty space. */
+  onContextMenu: (x: number, y: number, onItem: boolean) => void;
 }
 
 /**
@@ -67,7 +72,7 @@ interface Props {
  */
 export function FileList(props: Props) {
   const { model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab } = props;
-  const { renameRequest, onRenameStarted, onRename } = props;
+  const { request, onRequestDone, onRename, onContextMenu } = props;
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
@@ -130,21 +135,21 @@ export function FileList(props: Props) {
   // The name being renamed in place (F2, or a new folder), or null.
   const [renaming, setRenaming] = useState<string | null>(null);
 
-  // Start renaming a requested name once it's listed (a new folder appears through the watcher).
+  // Select (and maybe rename) a requested name once it's listed (new items appear through the watcher).
   useEffect(() => {
-    if (!renameRequest || !model.id || model.count === 0) return;
+    if (!request || !model.id || model.count === 0) return;
     let cancelled = false;
-    void model.rowOf(renameRequest).then((row) => {
+    void model.rowOf(request.name).then((row) => {
       if (cancelled || row === null) return;
-      selection.set([renameRequest], row, renameRequest);
+      selection.set([request.name], row, request.name);
       virtualizer.scrollToIndex(row, { align: "auto" });
-      setRenaming(renameRequest);
-      onRenameStarted?.();
+      if (request.rename) setRenaming(request.name);
+      onRequestDone?.();
     });
     return () => {
       cancelled = true;
     };
-  }, [renameRequest, model, model.id, model.count, model.generation, selection, virtualizer, onRenameStarted]);
+  }, [request, model, model.id, model.count, model.generation, selection, virtualizer, onRequestDone]);
 
   const finishRename = (focusList = true) => {
     setRenaming(null);
@@ -326,6 +331,12 @@ export function FileList(props: Props) {
         onMouseDown={(e) => {
           // Clicking empty space clears the selection.
           if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains("fl-rows")) selection.clear();
+        }}
+        onContextMenu={(e) => {
+          if ((e.target as HTMLElement).closest("input")) return; // the rename box keeps the browser's menu
+          e.preventDefault();
+          const onItem = !!(e.target as HTMLElement).closest(".fl-row") && selection.size > 0;
+          onContextMenu(e.clientX, e.clientY, onItem);
         }}
       >
         {mode === "details" && (

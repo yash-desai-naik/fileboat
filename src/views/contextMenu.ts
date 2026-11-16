@@ -1,0 +1,204 @@
+import { invoke } from "@tauri-apps/api/core";
+import { pasteInto } from "../lib/clipboard";
+import { addFavourite } from "../lib/favourites";
+import { childPath, type Entry } from "../lib/folder";
+import { paneActions } from "../lib/pane";
+import { FILE_MANAGER, IS_MAC, fmtShortcut } from "../lib/platform";
+import { getSettings, updateSettings, type SortBy } from "../lib/settings";
+import { newTab } from "../lib/tabs";
+import { openInEditor, openTerminal, type Tools } from "../lib/tools";
+import type { MenuItem } from "../shell/Menu";
+import { showToast } from "../shell/Toast";
+
+/** Everything a context menu needs to know about where it was opened. */
+export interface MenuContext {
+  /** The open folder. */
+  folder: string;
+  /** The items the menu acts on (the selection); empty for a click on empty space. */
+  entries: Entry[];
+  tools: Tools | null;
+  /** Open an entry as a double-click does. */
+  open: (entry: Entry) => void;
+  /** Make a new file from a template (name and content), then select it. */
+  newFromTemplate: (name: string, content: string) => void;
+}
+
+const run = (command: string, args: Record<string, unknown>) => () =>
+  void invoke(command, args).catch((err) => showToast(String(err), "error"));
+
+// ---------- copy path, in every form a developer needs ----------
+
+function copyText(text: string, what: string) {
+  void navigator.clipboard.writeText(text).then(() => showToast(`Copied ${what}`));
+}
+
+function pathForms(paths: string[]): MenuItem[] {
+  const join = (f: (p: string) => string) => paths.map(f).join("\n");
+  const name = (p: string) => p.slice(Math.max(p.lastIndexOf("\\"), p.lastIndexOf("/")) + 1);
+  const stem = (p: string) => {
+    const n = name(p);
+    const dot = n.lastIndexOf(".");
+    return dot > 0 ? n.slice(0, dot) : n;
+  };
+  const url = (p: string) => "file:///" + encodeURI(p.replace(/\\/g, "/").replace(/^\/+/, "")).replace(/#/g, "%23").replace(/\?/g, "%3F");
+  const label = paths.length > 1 ? `${paths.length} paths` : "the path";
+  return [
+    { label: "Full Path", hint: fmtShortcut("Ctrl+Shift+C"), onSelect: () => copyText(join((p) => p), label) },
+    { label: "With Forward Slashes", hint: "C:/a/b", onSelect: () => copyText(join((p) => p.replace(/\\/g, "/")), label) },
+    ...(IS_MAC ? [] : [{ label: "With Backslashes", hint: "C:\\a\\b", onSelect: () => copyText(join((p) => p.replace(/\//g, "\\")), label) }]),
+    { label: "As a File URL", hint: "file:///", onSelect: () => copyText(join(url), paths.length > 1 ? "the URLs" : "the URL") },
+    "separator",
+    { label: "Name", onSelect: () => copyText(join(name), paths.length > 1 ? "the names" : "the name") },
+    { label: "Name Without Extension", onSelect: () => copyText(join(stem), paths.length > 1 ? "the names" : "the name") },
+  ];
+}
+
+// ---------- open with editors and terminals ----------
+
+function editorItems(ctx: MenuContext, paths: string[]): MenuItem[] {
+  const editors = ctx.tools?.editors ?? [];
+  if (!editors.length) return [];
+  const chosen = editors.find((e) => e.id === getSettings().editor) ?? editors[0];
+  const others = editors.filter((e) => e.id !== chosen.id);
+  return [
+    { label: `Open in ${chosen.name}`, hint: fmtShortcut("Ctrl+Shift+E"), onSelect: () => openInEditor(paths, chosen.id) },
+    ...(others.length
+      ? [{ label: "Open In", submenu: others.map((e): MenuItem => ({ label: e.name, onSelect: () => openInEditor(paths, e.id) })) }]
+      : []),
+  ];
+}
+
+function terminalItems(ctx: MenuContext, dir: string): MenuItem[] {
+  const terminals = ctx.tools?.terminals ?? [];
+  if (!terminals.length) return [];
+  const chosen = terminals.find((t) => t.id === getSettings().terminal) ?? terminals[0];
+  const others = terminals.filter((t) => t.id !== chosen.id);
+  return [
+    { label: `Terminal Here (${chosen.name})`, hint: fmtShortcut("Ctrl+`"), onSelect: () => openTerminal(dir, chosen.id) },
+    ...(others.length
+      ? [{ label: "Terminal Here In", submenu: others.map((t): MenuItem => ({ label: t.name, onSelect: () => openTerminal(dir, t.id) })) }]
+      : []),
+  ];
+}
+
+// ---------- templates for New ▸ ----------
+
+const TEMPLATES: [string, (folder: string) => string][] = [
+  [
+    ".gitignore",
+    () => "# Dependencies and build output\nnode_modules/\ndist/\nbuild/\ntarget/\n\n# Local settings and secrets\n.env\n.env.*\n!.env.example\n\n# Logs and OS files\n*.log\n.DS_Store\nThumbs.db\n",
+  ],
+  ["README.md", (folder) => `# ${folder.slice(Math.max(folder.lastIndexOf("\\"), folder.lastIndexOf("/")) + 1)}\n\n`],
+  [
+    ".editorconfig",
+    () =>
+      "root = true\n\n[*]\ncharset = utf-8\nend_of_line = lf\ninsert_final_newline = true\nindent_style = space\nindent_size = 2\ntrim_trailing_whitespace = true\n\n[*.md]\ntrim_trailing_whitespace = false\n",
+  ],
+  [".env", () => ""],
+];
+
+// ---------- the menus ----------
+
+/** Right-click on one or more items. */
+export function itemMenu(ctx: MenuContext): MenuItem[] {
+  const { entries, folder } = ctx;
+  const paths = entries.map((e) => childPath(folder, e.name));
+  const one = entries.length === 1 ? entries[0] : null;
+  const folders = entries.filter((e) => e.kind === "folder");
+  const onlyFolders = folders.length === entries.length;
+  const items: MenuItem[] = [
+    { label: "Open", hint: "Enter", onSelect: () => entries.slice(0, 20).forEach(ctx.open) },
+  ];
+  if (folders.length) {
+    items.push({
+      label: folders.length > 1 ? "Open in New Tabs" : "Open in New Tab",
+      hint: "Middle-click",
+      onSelect: () => folders.forEach((f) => newTab(childPath(folder, f.name), false)),
+    });
+  }
+  if (one && one.kind === "file" && !IS_MAC) items.push({ label: "Open With…", onSelect: run("open_with_dialog", { path: paths[0] }) });
+  items.push("separator", ...editorItems(ctx, paths), ...terminalItems(ctx, one?.kind === "folder" ? paths[0] : folder));
+  items.push(
+    "separator",
+    { label: "Cut", hint: fmtShortcut("Ctrl+X"), onSelect: () => paneActions.cut() },
+    { label: "Copy", hint: fmtShortcut("Ctrl+C"), onSelect: () => paneActions.copy() },
+  );
+  if (one?.kind === "folder") {
+    items.push({
+      label: "Paste Into Folder",
+      onSelect: () => void pasteInto(paths[0]),
+    });
+  }
+  items.push({ label: "Copy Path", submenu: pathForms(paths) });
+  items.push(
+    "separator",
+    { label: "Duplicate", onSelect: () => paneActions.duplicate() },
+    { label: "Rename", hint: "F2", disabled: !one, onSelect: () => paneActions.rename() },
+    { label: "Delete", hint: IS_MAC ? "⌘⌫" : "Del", onSelect: () => paneActions.delete(false) },
+    { label: "Delete Permanently…", hint: IS_MAC ? "⌘⌥⌫" : "Shift+Del", danger: true, onSelect: () => paneActions.delete(true) },
+    "separator",
+  );
+  if (onlyFolders) items.push({ label: "Add to Favourites", onSelect: () => paths.forEach((p) => addFavourite(p)) });
+  items.push({ label: `Show in ${FILE_MANAGER}`, onSelect: run("reveal_in_file_manager", { path: paths[0] }) });
+  items.push({ label: IS_MAC ? "Get Info" : "Properties", hint: IS_MAC ? undefined : "Alt+Enter", onSelect: run("show_properties", { path: paths[0] }) });
+  return items;
+}
+
+/** Right-click on empty space: the open folder itself. */
+export function folderMenu(ctx: MenuContext): MenuItem[] {
+  const s = getSettings();
+  const { folder } = ctx;
+  const sort = (value: SortBy, label: string): MenuItem => ({
+    label,
+    checked: s.sortBy === value,
+    onSelect: () => updateSettings({ sortBy: value }),
+  });
+  return [
+    {
+      label: "New",
+      submenu: [
+        { label: "Folder", hint: fmtShortcut("Ctrl+Shift+N"), onSelect: () => paneActions.newFolder() },
+        { label: "File", hint: fmtShortcut("Ctrl+Alt+N"), onSelect: () => paneActions.newFile() },
+        "separator",
+        ...TEMPLATES.map(([name, content]): MenuItem => ({ label: name, onSelect: () => ctx.newFromTemplate(name, content(folder)) })),
+      ],
+    },
+    { label: "Paste", hint: fmtShortcut("Ctrl+V"), onSelect: () => paneActions.paste() },
+    "separator",
+    ...editorItems(ctx, [folder]),
+    ...terminalItems(ctx, folder),
+    { label: "Copy Path", submenu: pathForms([folder]) },
+    "separator",
+    {
+      label: "View",
+      submenu: [
+        { label: "List", hint: fmtShortcut("Ctrl+Shift+2"), checked: s.viewMode === "list", onSelect: () => updateSettings({ viewMode: "list" }) },
+        { label: "Details", hint: fmtShortcut("Ctrl+Shift+3"), checked: s.viewMode === "details", onSelect: () => updateSettings({ viewMode: "details" }) },
+      ],
+    },
+    {
+      label: "Sort By",
+      submenu: [
+        sort("name", "Name"),
+        sort("modified", "Date Modified"),
+        sort("created", "Date Created"),
+        sort("type", "Type"),
+        sort("size", "Size"),
+        "separator",
+        { label: "Descending", checked: s.sortDescending, onSelect: () => updateSettings({ sortDescending: !s.sortDescending }) },
+        { label: "Folders First", checked: s.foldersFirst, onSelect: () => updateSettings({ foldersFirst: !s.foldersFirst }) },
+      ],
+    },
+    {
+      label: "Show Hidden Files",
+      hint: fmtShortcut("Ctrl+Shift+."),
+      checked: s.showHidden,
+      onSelect: () => updateSettings({ showHidden: !s.showHidden }),
+    },
+    { label: "Refresh", hint: "F5", onSelect: () => paneActions.refresh() },
+    "separator",
+    { label: "Add to Favourites", hint: fmtShortcut("Ctrl+D"), onSelect: () => addFavourite(folder) },
+    { label: `Open in ${FILE_MANAGER}`, onSelect: run("open_path", { path: folder }) },
+    { label: IS_MAC ? "Get Info" : "Properties", onSelect: run("show_properties", { path: folder }) },
+  ];
+}
