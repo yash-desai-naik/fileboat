@@ -1,0 +1,239 @@
+/* ---------- Preview pane ---------- */
+
+.rightpane.preview {
+  min-height: 0;
+}
+
+.pv-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.pv-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-actions {
+  flex: none;
+  display: flex;
+  gap: 10px;
+}
+
+.pv-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.pv-note {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.pv-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+}
+
+.pv-bar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.pv-subhead {
+  padding: 8px 12px 4px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* Text with line numbers */
+.pv-plain {
+  display: flex;
+  align-items: flex-start;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  min-width: max-content;
+}
+.pv-gutter {
+  flex: none;
+  position: sticky;
+  left: 0;
+  padding: 6px 8px 6px 12px;
+  text-align: right;
+  color: var(--text-3);
+  background: var(--bg-sidebar);
+  user-select: none;
+}
+.pv-plain pre {
+  margin: 0;
+  padding: 6px 12px 6px 4px;
+  font: inherit;
+  white-space: pre;
+  color: var(--text);
+}
+
+/* Images: fit the pane, click for actual size */
+.pv-image {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  cursor: zoom-in;
+  /* A checkerboard behind transparent images. */
+  background-color: var(--bg-sidebar);
+  background-image: conic-gradient(var(--bg-hover) 25%, transparent 0 50%, var(--bg-hover) 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+.pv-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.pv-image.actual {
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto;
+  cursor: zoom-out;
+}
+.pv-image.actual img {
+  max-width: none;
+  max-height: none;
+}
+.pv-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.pv-media {
+  padding: 12px;
+}
+.pv-media video,
+.pv-media audio {
+  width: 100%;
+}
+.pv-media video {
+  max-height: 60vh;
+  background: #000;
+}
+
+.pv-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 300px;
+  border: 0;
+  background: var(--bg);
+}
+
+.pv-font {
+  padding: 12px 16px;
+  color: var(--text);
+}
+.pv-font p {
+  margin: 0 0 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pv-list {
+  font-size: var(--fs-sm);
+  padding: 4px 0;
+}
+.pv-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1px 12px;
+}
+.pv-list .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-list .dir .name {
+  color: var(--text-2);
+}
+
+.pv-hex {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre;
+}
+
+.pv-facts {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+.pv-facts b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* The info strip at the bottom */
+.pv-info {
+  flex: none;
+  margin: 0;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  font-size: var(--fs-sm);
+  border-top: 1px solid var(--border);
+}
+.pv-info dt {
+  color: var(--text-3);
+}
+.pv-info dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--text);
+}
+.pv-path {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: copy;
+}
+.pv-path:hover {
+  color: var(--accent);
+}

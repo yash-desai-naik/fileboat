@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useAppearance } from "./lib/appearance";
 import { buildCommands } from "./lib/commands";
 import { hasOwnView, useFolderView } from "./lib/folderViews";
@@ -12,7 +12,6 @@ import { UpdateNotice } from "./shell/UpdateNotice";
 import { ConfirmHost } from "./shell/Confirm";
 import { Toasts } from "./shell/Toast";
 import { JobsPanel } from "./jobs/JobsPanel";
-import { FileIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
 import { FolderPane } from "./views/FolderPane";
@@ -20,6 +19,9 @@ import { Sidebar } from "./sidebar/Sidebar";
 import { Toolbar } from "./shell/Toolbar";
 import { activeTab, goBack, goForward, tabTitle, useTabs } from "./lib/tabs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+
+// Loaded when the pane first opens: its viewers stay out of the start-up bundle.
+const PreviewPane = lazy(() => import("./preview/PreviewPane").then((m) => ({ default: m.PreviewPane })));
 
 const SIDEBAR_DEFAULT = 240;
 const PREVIEW_DEFAULT = 360;
@@ -100,18 +102,11 @@ export function App() {
               onResize={(w) => updateSettings({ previewWidth: w }, { debounceMs: 400 })}
               onReset={() => updateSettings({ previewWidth: PREVIEW_DEFAULT })}
             />
-            <aside className="rightpane" style={{ width: settings.previewWidth }}>
-              <div className="pane-header">
-                <span className="pane-title">Preview</span>
-                <button className="icon-btn small" title="Close preview pane" onClick={togglePreview}>
-                  <CloseSmallIcon size={14} />
-                </button>
-              </div>
-              <div className="pane-empty">
-                <FileIcon size={20} />
-                <p>Select a file to preview it</p>
-              </div>
-            </aside>
+            <div className="rightpane-slot" style={{ width: settings.previewWidth }}>
+              <Suspense fallback={<aside className="rightpane" />}>
+                <PreviewPane onClose={togglePreview} />
+              </Suspense>
+            </div>
           </>
         )}
       </div>

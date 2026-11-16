@@ -17,6 +17,7 @@ import { FileList } from "./FileList";
 import { ColumnsView } from "./ColumnsView";
 import { StatusBar } from "./StatusBar";
 import { Selection } from "./selection";
+import { setCurrent } from "../lib/current";
 
 /**
  * A tab's folder in the center: its model, selection and view. Every tab keeps one (hidden when
@@ -56,6 +57,33 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy, folderSizes, active]);
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
+
+  // The active pane tells the preview what it's on: after a short pause (arrowing through a
+  // list doesn't preview every file on the way), and again when the folder changes on disk.
+  useEffect(() => {
+    if (!active || !model) return;
+    let timer: number | undefined;
+    let stale = false;
+    const update = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const count = selection.size;
+        if (count !== 1) return setCurrent({ folder: model.path, entry: null, count });
+        void model.entries([...selection.names]).then(([entry]) => {
+          if (!stale) setCurrent({ folder: model.path, entry: entry ?? null, count: entry ? 1 : 0 });
+        });
+      }, 80);
+    };
+    update();
+    const offSelection = selection.subscribe(update);
+    const offModel = model.subscribe(update);
+    return () => {
+      stale = true;
+      window.clearTimeout(timer);
+      offSelection();
+      offModel();
+    };
+  }, [active, model, selection]);
 
   // The context menu showing, if any.
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[]; keyboard: boolean } | null>(null);
