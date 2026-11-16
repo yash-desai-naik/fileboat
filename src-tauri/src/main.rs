@@ -1,6 +1,7 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod clipboard;
 mod desktop;
 mod dnd;
@@ -45,6 +46,7 @@ fn main() {
         .manage(git_cmd::Syncing::default())
         .manage(std::sync::Arc::new(grep_cmd::Greps::default()))
         .manage(std::sync::Arc::new(shell_cmd::Shells::default()))
+        .manage(ai::ClaudeHub::default())
         // Images, media, PDFs and fonts for the preview, read off the main thread.
         .register_asynchronous_uri_scheme_protocol("fbpreview", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -70,6 +72,9 @@ fn main() {
             // A window's open folders close with it.
             if let WindowEvent::Destroyed = event {
                 window.app_handle().state::<folders::Folders>().close_window(window.label());
+                // Its Claude Code process goes with it.
+                let (app, label) = (window.app_handle().clone(), window.label().to_string());
+                tauri::async_runtime::spawn(async move { ai::stop_window(&app.state::<ai::ClaudeHub>(), &label).await });
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -92,6 +97,17 @@ fn main() {
             grep_cmd::grep_start,
             grep_cmd::grep_cancel,
             shell_cmd::shell_run,
+            ai::claude_status,
+            ai::claude_send,
+            ai::claude_stop,
+            ai::claude_new,
+            ai::claude_set_context,
+            ai::claude_permission_reply,
+            ai::ui_reply,
+            ai::claude_sessions,
+            ai::claude_session_messages,
+            ai::read_attachment,
+            ai::voice_typing,
             shell_cmd::shell_cancel,
             indexer::index_status,
             indexer::index_rebuild,

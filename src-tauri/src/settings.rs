@@ -43,6 +43,19 @@ impl SettingsStore {
     pub fn current(&self) -> Settings {
         self.lock().0.clone()
     }
+
+    /// Save settings changed elsewhere (Claude's update_settings) and tell every window.
+    pub fn replace(&self, app: &tauri::AppHandle, next: Settings) -> Result<(), String> {
+        use tauri::{Emitter, Manager};
+        let mut guard = self.lock();
+        prefs::save(&self.path, &next)?;
+        *guard = (next.clone(), modified(&self.path));
+        drop(guard);
+        if let Some(indexer) = app.try_state::<std::sync::Arc<crate::indexer::Indexer>>() {
+            indexer.configure(&next);
+        }
+        app.emit("settings:changed", next).map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]

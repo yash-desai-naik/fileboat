@@ -57,6 +57,10 @@ pub struct Settings {
     pub sidebar_width: u32,
     /// The preview pane on the right.
     pub show_preview: bool,
+    /// The Claude pane on the right (beside the preview, as tabs).
+    pub show_claude: bool,
+    /// The model Claude Code uses in the pane ("" = Claude Code's own default).
+    pub claude_model: String,
     pub preview_width: u32,
     /// Wrap long lines in the preview's text.
     pub preview_wrap: bool,
@@ -117,6 +121,8 @@ impl Default for Settings {
             sidebar_view: "places".into(),
             sidebar_width: 240,
             show_preview: false,
+            show_claude: false,
+            claude_model: String::new(),
             preview_width: 360,
             preview_wrap: false,
             view_mode: "details".into(),
@@ -221,7 +227,8 @@ lightTheme: colour theme used in light mode: \"fileboat-light\" (default) | \"ca
 darkTheme: colour theme used in dark mode: \"fileboat-dark\" (default) | \"catppuccin-mocha\" | \"tokyo-night\" | \"github-dark\" | \"one-dark\" | \"rose-pine\" | \"gruvbox-dark\" | \"kanagawa-wave\" | \"nord\" | \"dracula\" | \"hc-dark\"
 density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
-showSidebar, showPreview (the preview pane), previewWrap (wrap long lines in the preview): true | false
+showSidebar, showPreview (the preview pane), showClaude (the Claude pane), previewWrap (wrap long lines in the preview): true | false
+claudeModel: \"\" (Claude Code's default) | \"opus\" | \"sonnet\" | \"haiku\" | a full model id
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 sidebarView: \"places\" | \"git\" (what the sidebar shows; the git panel is Ctrl+Shift+G)
 indexEnabled: true | false (keep a search index); indexRoots: [\"D:\\projects\"] (folders to index; [] = the home folder)
