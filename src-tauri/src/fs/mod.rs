@@ -1,10 +1,12 @@
 //! Folders: listing them, the folder model views read from, and paths.
 
 pub mod entry;
+pub mod group;
 pub mod model;
 pub mod natural;
 
 pub use entry::{Entry, Kind};
+pub use group::{Group, GroupBy};
 pub use model::{Folder, SortKey, View};
 
 use std::path::{Path, PathBuf};

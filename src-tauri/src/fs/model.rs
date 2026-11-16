@@ -2,10 +2,11 @@
 //! an order (sorted, hidden files filtered) the view reads a window of rows from.
 
 use super::entry::{Entry, Kind};
+use super::group::{self, Clock, Group, GroupBy};
 use super::natural;
 use serde::Deserialize;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
@@ -21,18 +22,22 @@ pub enum SortKey {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct View {
     pub sort: SortKey,
     pub descending: bool,
     /// Folders before files whatever the sort (direction only applies within each group).
     pub folders_first: bool,
     pub show_hidden: bool,
+    pub group: GroupBy,
+    /// The viewer's clock, for date groups: now (ms since 1970) and the local offset (minutes).
+    pub now: i64,
+    pub tz_offset_min: i32,
 }
 
 impl Default for View {
     fn default() -> Self {
-        View { sort: SortKey::Name, descending: false, folders_first: true, show_hidden: false }
+        View { sort: SortKey::Name, descending: false, folders_first: true, show_hidden: false, group: GroupBy::None, now: 0, tz_offset_min: 0 }
     }
 }
 
@@ -44,6 +49,10 @@ pub struct Folder {
     /// What the view shows, in order: indexes into `entries`.
     order: Vec<u32>,
     view: View,
+    /// The groups, in order (empty when not grouping).
+    groups: Vec<Group>,
+    /// Keys of collapsed groups: their rows aren't in `order`.
+    collapsed: HashSet<String>,
 }
 
 fn compare(a: &Entry, b: &Entry, view: &View) -> Ordering {
@@ -66,7 +75,7 @@ fn compare(a: &Entry, b: &Entry, view: &View) -> Ordering {
 
 impl Folder {
     pub fn new(path: PathBuf, view: View) -> Folder {
-        Folder { path, entries: Vec::new(), by_name: HashMap::new(), order: Vec::new(), view }
+        Folder { path, entries: Vec::new(), by_name: HashMap::new(), order: Vec::new(), view, groups: Vec::new(), collapsed: HashSet::new() }
     }
 
     pub fn view(&self) -> View {
@@ -144,7 +153,23 @@ impl Folder {
 
     pub fn set_view(&mut self, view: View) {
         if view != self.view {
+            if view.group != self.view.group {
+                self.collapsed.clear();
+            }
             self.view = view;
+            self.reorder();
+        }
+    }
+
+    /// The groups in order (empty when not grouping).
+    pub fn groups(&self) -> &[Group] {
+        &self.groups
+    }
+
+    /// Collapse or expand a group.
+    pub fn set_collapsed(&mut self, key: &str, collapsed: bool) {
+        let changed = if collapsed { self.collapsed.insert(key.to_string()) } else { self.collapsed.remove(key) };
+        if changed {
             self.reorder();
         }
     }
@@ -154,8 +179,41 @@ impl Folder {
         let entries = &self.entries;
         let mut order: Vec<u32> = (0..entries.len() as u32).filter(|&i| show_hidden || !entries[i as usize].hidden).collect();
         let view = self.view;
-        order.sort_by(|&a, &b| compare(&entries[a as usize], &entries[b as usize], &view));
-        self.order = order;
+        if view.group == GroupBy::None {
+            order.sort_by(|&a, &b| compare(&entries[a as usize], &entries[b as usize], &view));
+            self.order = order;
+            self.groups.clear();
+            return;
+        }
+        // Each entry's group, worked out once; rows sort by group, then as usual within it.
+        let clock = Clock { now: view.now, tz_offset_min: view.tz_offset_min };
+        let mut keyed: Vec<(group::GroupOf, u32)> =
+            order.into_iter().map(|i| (group::group_of(&entries[i as usize], view.group, &clock).expect("grouping"), i)).collect();
+        keyed.sort_by(|(ga, a), (gb, b)| {
+            ga.rank
+                .cmp(&gb.rank)
+                .then_with(|| natural::compare(&ga.sub, &gb.sub))
+                .then_with(|| compare(&entries[*a as usize], &entries[*b as usize], &view))
+        });
+        let mut groups: Vec<Group> = Vec::new();
+        let mut shown: Vec<u32> = Vec::with_capacity(keyed.len());
+        for (g, i) in keyed {
+            if groups.last().is_none_or(|last| last.key != g.key) {
+                let collapsed = self.collapsed.contains(&g.key);
+                groups.push(Group { key: g.key, label: g.label, start: shown.len(), count: 0, bytes: 0, collapsed });
+            }
+            let last = groups.last_mut().expect("a group");
+            last.count += 1;
+            let e = &entries[i as usize];
+            if e.kind != Kind::Folder {
+                last.bytes += e.size;
+            }
+            if !last.collapsed {
+                shown.push(i);
+            }
+        }
+        self.order = shown;
+        self.groups = groups;
     }
 }
 
@@ -205,12 +263,41 @@ mod tests {
     #[test]
     fn sorting_and_showing_hidden() {
         let mut f = sample();
-        f.set_view(View { sort: SortKey::Size, descending: true, folders_first: true, show_hidden: true });
+        f.set_view(View { sort: SortKey::Size, descending: true, folders_first: true, show_hidden: true, ..View::default() });
         assert_eq!(names(&f), vec!["src", "docs", ".git", "b.txt", "a9.rs", "A10.rs"]);
-        f.set_view(View { sort: SortKey::Modified, descending: false, folders_first: false, show_hidden: false });
+        f.set_view(View { sort: SortKey::Modified, descending: false, folders_first: false, show_hidden: false, ..View::default() });
         assert_eq!(names(&f), vec!["src", "A10.rs", "b.txt", "a9.rs", "docs"]);
         f.set_view(View { sort: SortKey::Type, ..View::default() });
         assert_eq!(names(&f), vec!["docs", "src", "a9.rs", "A10.rs", "b.txt"]);
+    }
+
+    #[test]
+    fn groups_by_type_with_collapsing() {
+        let mut f = sample();
+        f.set_view(View { group: GroupBy::Type, show_hidden: true, ..View::default() });
+        let summary: Vec<(String, usize, usize)> = f.groups().iter().map(|g| (g.label.clone(), g.start, g.count)).collect();
+        assert_eq!(
+            summary,
+            vec![("Folders".into(), 0, 3), ("rs".into(), 3, 2), ("txt".into(), 5, 1)],
+            "folders, then files by extension"
+        );
+        assert_eq!(names(&f), vec![".git", "docs", "src", "a9.rs", "A10.rs", "b.txt"]);
+        assert_eq!(f.groups()[1].bytes, 30);
+
+        f.set_collapsed("ext:rs", true);
+        assert_eq!(names(&f), vec![".git", "docs", "src", "b.txt"]);
+        let rs = &f.groups()[1];
+        assert_eq!((rs.collapsed, rs.start, rs.count), (true, 3, 2));
+        assert_eq!(f.groups()[2].start, 3, "the next group starts where the collapsed one would");
+        f.set_collapsed("ext:rs", false);
+        assert_eq!(f.len(), 6);
+
+        // Changing how to group starts with every group open.
+        f.set_collapsed("folder", true);
+        f.set_view(View { group: GroupBy::Letter, show_hidden: true, ..View::default() });
+        assert!(f.groups().iter().all(|g| !g.collapsed));
+        let letters: Vec<&str> = f.groups().iter().map(|g| g.label.as_str()).collect();
+        assert_eq!(letters, vec!["A", "B", "D", "G", "S"]);
     }
 
     #[test]
