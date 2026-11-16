@@ -1,6 +1,8 @@
 // No console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod settings;
+
 use tauri::Manager;
 
 fn main() {
@@ -13,6 +15,11 @@ fn main() {
                 let _ = window.set_focus();
             }
         }))
+        .setup(|app| {
+            app.manage(settings::SettingsStore::load()?);
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![settings::get_settings, settings::update_settings])
         .run(tauri::generate_context!())
         .expect("error while running Fileboat");
 }
