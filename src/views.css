@@ -186,3 +186,36 @@
 .status-selected {
   color: var(--text);
 }
+
+/* ---------- file type icons: colours from the theme, so every theme keeps them readable ---------- */
+
+.ft {
+  color: var(--text-3);
+}
+.ft-code {
+  color: var(--syn-keyword);
+}
+.ft-config {
+  color: var(--syn-type);
+}
+.ft-doc {
+  color: var(--text-2);
+}
+.ft-data {
+  color: var(--syn-property);
+}
+.ft-image {
+  color: var(--syn-string);
+}
+.ft-media {
+  color: var(--syn-number);
+}
+.ft-archive {
+  color: var(--warning);
+}
+.ft-program {
+  color: var(--success);
+}
+.ft-font {
+  color: var(--syn-function);
+}

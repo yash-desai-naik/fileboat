@@ -137,9 +137,30 @@ const TYPES: Record<string, string> = {
   url: "Internet shortcut",
 };
 
-export function describeType(e: Pick<Entry, "kind" | "ext" | "link">): string {
+/** Files known by their whole name. */
+const NAMED: Record<string, string> = {
+  ".gitignore": "Git ignore rules",
+  ".gitattributes": "Git attributes",
+  ".gitmodules": "Git submodules",
+  ".editorconfig": "EditorConfig",
+  ".env": "Environment",
+  ".npmrc": "npm settings",
+  ".nvmrc": "Node version",
+  ".prettierrc": "Prettier settings",
+  ".dockerignore": "Docker ignore rules",
+  dockerfile: "Dockerfile",
+  makefile: "Makefile",
+  license: "License",
+  readme: "Readme",
+  procfile: "Procfile",
+};
+
+export function describeType(e: Pick<Entry, "kind" | "ext" | "link" | "name">): string {
   if (e.kind === "folder") return e.link ? "Folder link" : "Folder";
   if (e.kind === "other") return e.link ? "Broken link" : "Special file";
+  const named = NAMED[e.name.toLowerCase()];
+  if (named) return named;
+  if (e.name.toLowerCase().startsWith(".env.")) return "Environment";
   if (!e.ext) return "File";
   const known = TYPES[e.ext];
   if (known) return known;

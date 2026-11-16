@@ -4,7 +4,8 @@ import type { Entry, FolderModel } from "../lib/folder";
 import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
-import { FileIcon, FolderIcon } from "../shell/Icons";
+import { FileTypeIcon } from "../shell/FileTypeIcon";
+import { FolderIcon } from "../shell/Icons";
 import { uiActions } from "../lib/ui";
 import type { Selection } from "./selection";
 
@@ -322,7 +323,7 @@ function Cells({ entry, mode }: { entry: Entry; mode: ViewMode }) {
   const folder = entry.kind === "folder";
   const name = (
     <span className="fl-cell fl-name" title={entry.name}>
-      <span className={`fl-icon${folder ? " folder" : ""}`}>{folder ? <FolderIcon size={15} /> : <FileIcon size={15} />}</span>
+      <span className={`fl-icon${folder ? " folder" : ""}`}>{folder ? <FolderIcon size={15} /> : <FileTypeIcon entry={entry} />}</span>
       <span className="fl-text">{entry.name}</span>
       {entry.link && <span className="fl-link" title="Link">↗</span>}
     </span>
