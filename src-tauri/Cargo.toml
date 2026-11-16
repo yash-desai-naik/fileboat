@@ -56,6 +56,10 @@ serde_yaml_ng = "0.10"
 ignore = "0.4"
 frizbee = "0.13"
 regex = "1"
+# Content search, as ripgrep does it.
+grep-searcher = "0.1"
+grep-regex = "0.1"
+grep-matcher = "0.1"
 
 [target.'cfg(windows)'.dependencies]
 # Already built for Tauri's windowing; used for the window's "Restore Down" rectangle, to open
