@@ -5,6 +5,7 @@ mod desktop;
 mod folders;
 mod launch;
 mod navigate;
+mod ops_cmd;
 mod places_cmd;
 mod settings;
 mod state;
@@ -59,6 +60,11 @@ fn main() {
             folders::folder_seek,
             folders::folder_close,
             folders::folders_reset,
+            folders::folder_refresh,
+            ops_cmd::op_new_folder,
+            ops_cmd::op_new_file,
+            ops_cmd::op_rename,
+            ops_cmd::op_check_name,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,

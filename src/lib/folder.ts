@@ -189,6 +189,11 @@ export class FolderModel {
     for (const k of far.slice(0, this.blocks.size - MAX_BLOCKS)) this.blocks.delete(k);
   }
 
+  /** Read the folder again from disk (F5). */
+  async refresh() {
+    await this.ask("folder_refresh", {}, null);
+  }
+
   /** Re-sort or show hidden files (the folder may have closed meanwhile: then nothing to do). */
   async setView(view: FolderViewSpec) {
     await this.ask("folder_view", { view }, 0);

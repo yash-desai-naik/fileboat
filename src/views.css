@@ -219,3 +219,48 @@
 .ft-font {
   color: var(--syn-function);
 }
+
+/* ---------- renaming in place ---------- */
+
+.rename {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--row-h) - 4px);
+  padding: 0 4px;
+  margin-left: -5px;
+  border: 1px solid var(--focus-ring);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.rename-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.rename-error {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: -5px;
+  z-index: 5;
+  max-width: 360px;
+  padding: 4px 8px;
+  border-radius: var(--radius-control);
+  background: var(--danger-fill);
+  color: var(--on-danger);
+  font-size: var(--fs-sm);
+  white-space: normal;
+  box-shadow: var(--shadow-popup);
+}
+/* The error tooltip must not be clipped by the row or cell. */
+.fl-row:has(.rename-error),
+.fl-cell:has(.rename-error) {
+  overflow: visible;
+  z-index: 3;
+}

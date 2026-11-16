@@ -122,9 +122,17 @@ impl Folders {
             let mut upserts = Vec::new();
             let mut removed = Vec::new();
             for p in inside {
-                match Entry::from_path(p) {
-                    Some(e) => upserts.push(e),
-                    None => removed.extend(p.file_name().map(|n| n.to_string_lossy().into_owned())),
+                let Some(name) = p.file_name().map(|n| n.to_string_lossy().into_owned()) else { continue };
+                // On Windows and macOS an old spelling still finds the file after a case-only
+                // rename: only the name it really has on disk is an entry.
+                let real = if cfg!(any(windows, target_os = "macos")) { fs::real_name(p) } else { Some(name.clone()) };
+                match real {
+                    Some(real) if real == name => upserts.extend(Entry::from_path(p)),
+                    Some(real) => {
+                        removed.push(name);
+                        upserts.extend(Entry::from_path(&path.join(real)));
+                    }
+                    None => removed.push(name),
                 }
             }
             if upserts.is_empty() && removed.is_empty() {
@@ -311,6 +319,16 @@ pub fn folder_seek(folders: State<'_, Folders>, id: String, prefix: String, from
     let n = f.folder.len();
     let rows: Vec<&Entry> = f.folder.rows(0, n).collect();
     Ok((0..n).map(|i| (from + i) % n.max(1)).find(|&i| rows[i].key.starts_with(&prefix)))
+}
+
+/// Read the folder again from disk (F5; or when its changes can't be watched, e.g. some network
+/// shares). The view hears `Changed` when done.
+#[tauri::command]
+pub fn folder_refresh(folders: State<'_, Folders>, id: String) -> Result<(), String> {
+    let shared = folders.get(&id)?;
+    let path = shared.lock().unwrap().folder.path.clone();
+    std::thread::spawn(move || relist(&shared, &path));
+    Ok(())
 }
 
 /// The page (re)loaded: folders a previous page of this window left open are closed (a reload

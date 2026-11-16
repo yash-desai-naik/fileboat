@@ -1,4 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
 import type { Entry, FolderModel } from "../lib/folder";
 import { describeType, formatDate, formatSize } from "../lib/format";
@@ -51,13 +52,20 @@ interface Props {
   active: boolean;
   /** Middle-click on a folder. */
   onOpenInNewTab?: (entry: Entry) => void;
+  /** A name to start renaming once it's listed (a folder just created); `onRenameStarted` clears it. */
+  renameRequest?: string | null;
+  onRenameStarted?: () => void;
+  /** Rename `entry` to `newName`: resolves to an error to show, or null when done. */
+  onRename: (entry: Entry, newName: string) => Promise<string | null>;
 }
 
 /**
  * A folder's rows, drawn only where they're on screen. Details shows columns you can sort and
  * resize; List shows names only. Selection, keyboard and type-ahead work the same in both.
  */
-export function FileList({ model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab }: Props) {
+export function FileList(props: Props) {
+  const { model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab } = props;
+  const { renameRequest, onRenameStarted, onRename } = props;
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
@@ -115,6 +123,30 @@ export function FileList({ model, selection, mode, onOpen, select, onSelected, a
       cancelled = true;
     };
   }, [select, model, model.id, model.count, model.loading, selection, virtualizer, onSelected]);
+
+  // The name being renamed in place (F2, or a new folder), or null.
+  const [renaming, setRenaming] = useState<string | null>(null);
+
+  // Start renaming a requested name once it's listed (a new folder appears through the watcher).
+  useEffect(() => {
+    if (!renameRequest || !model.id || model.count === 0) return;
+    let cancelled = false;
+    void model.rowOf(renameRequest).then((row) => {
+      if (cancelled || row === null) return;
+      selection.set([renameRequest], row, renameRequest);
+      virtualizer.scrollToIndex(row, { align: "auto" });
+      setRenaming(renameRequest);
+      onRenameStarted?.();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [renameRequest, model, model.id, model.count, model.generation, selection, virtualizer, onRenameStarted]);
+
+  const finishRename = (focusList = true) => {
+    setRenaming(null);
+    if (focusList) scrollRef.current?.focus();
+  };
 
   const widths = COLUMNS.map((c) => settings.columnWidths[c.id] ?? c.width);
   const template = mode === "details" ? widths.map((w) => `${w}px`).join(" ") : "minmax(0, 1fr)";
@@ -308,7 +340,30 @@ export function FileList({ model, selection, mode, onOpen, select, onSelected, a
                 onMouseDown={(e) => onRowMouseDown(e, v.index)}
                 onDoubleClick={() => entry && onOpen(entry, v.index)}
               >
-                {entry ? <Cells entry={entry} mode={mode} /> : <span className="fl-cell muted">…</span>}
+                {entry ? (
+                  <Cells
+                    entry={entry}
+                    mode={mode}
+                    rename={
+                      renaming === entry.name
+                        ? {
+                            submit: async (newName) => {
+                              const error = await onRename(entry, newName);
+                              if (!error) {
+                                // Keep the renamed item selected; its row is found again once it moves.
+                                selection.set([newName], v.index, newName);
+                                finishRename();
+                              }
+                              return error;
+                            },
+                            cancel: () => finishRename(),
+                          }
+                        : null
+                    }
+                  />
+                ) : (
+                  <span className="fl-cell muted">…</span>
+                )}
               </div>
             );
           })}
@@ -319,13 +374,19 @@ export function FileList({ model, selection, mode, onOpen, select, onSelected, a
   );
 }
 
-function Cells({ entry, mode }: { entry: Entry; mode: ViewMode }) {
+interface RenameHandlers {
+  /** Resolves to an error to show (the box stays open), or null once renamed. */
+  submit: (newName: string) => Promise<string | null>;
+  cancel: () => void;
+}
+
+function Cells({ entry, mode, rename }: { entry: Entry; mode: ViewMode; rename: RenameHandlers | null }) {
   const folder = entry.kind === "folder";
   const name = (
-    <span className="fl-cell fl-name" title={entry.name}>
+    <span className="fl-cell fl-name" title={rename ? undefined : entry.name}>
       <span className={`fl-icon${folder ? " folder" : ""}`}>{folder ? <FolderIcon size={15} /> : <FileTypeIcon entry={entry} />}</span>
-      <span className="fl-text">{entry.name}</span>
-      {entry.link && <span className="fl-link" title="Link">↗</span>}
+      {rename ? <RenameInput name={entry.name} folder={folder} {...rename} /> : <span className="fl-text">{entry.name}</span>}
+      {entry.link && !rename && <span className="fl-link" title="Link">↗</span>}
     </span>
   );
   if (mode === "list") return name;
@@ -336,6 +397,75 @@ function Cells({ entry, mode }: { entry: Entry; mode: ViewMode }) {
       <span className="fl-cell muted">{describeType(entry)}</span>
       <span className="fl-cell mono muted right">{folder ? "" : formatSize(entry.size)}</span>
     </>
+  );
+}
+
+/**
+ * The name box for renaming in place. The name is selected without its extension (as in Explorer
+ * and Finder); problems with the name show as you type. Enter or clicking away renames, Esc cancels.
+ */
+function RenameInput({ name, folder, submit, cancel }: { name: string; folder: boolean } & RenameHandlers) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState(name);
+  const [error, setError] = useState<string | null>(null);
+  const busy = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const dot = name.lastIndexOf(".");
+    el.setSelectionRange(0, !folder && dot > 0 ? dot : name.length);
+  }, [name, folder]);
+
+  // Check the name as it's typed (after a short pause).
+  useEffect(() => {
+    if (value === name) {
+      setError(null);
+      return;
+    }
+    const timer = window.setTimeout(() => void invoke<string | null>("op_check_name", { name: value }).then(setError), 150);
+    return () => window.clearTimeout(timer);
+  }, [value, name]);
+
+  const commit = async () => {
+    if (busy.current) return;
+    if (value.trim() === name || !value.trim()) return cancel();
+    busy.current = true;
+    const problem = await submit(value.trim());
+    busy.current = false;
+    if (problem) {
+      setError(problem);
+      ref.current?.focus();
+    }
+  };
+
+  return (
+    <span className="rename">
+      <input
+        ref={ref}
+        className="rename-input"
+        value={value}
+        spellCheck={false}
+        aria-label="New name"
+        aria-invalid={!!error}
+        onChange={(e) => setValue(e.target.value)}
+        onMouseDown={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void commit();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancel();
+          }
+        }}
+        onBlur={() => void commit()}
+      />
+      {error && <span className="rename-error" role="alert">{error}</span>}
+    </span>
   );
 }
 

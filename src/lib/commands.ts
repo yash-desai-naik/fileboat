@@ -5,6 +5,7 @@ import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
 import { addFavourite, removeFavourite } from "./favourites";
+import { paneActions } from "./pane";
 import {
   activateTabAt,
   activeTab,
@@ -139,6 +140,10 @@ export function buildCommands(): Command[] {
     { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
     { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: goUp },
     { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
+    { id: "file.newFolder", category: "File", title: "New Folder", keys: ["Ctrl+Shift+N"], run: () => paneActions.newFolder() },
+    { id: "file.newFile", category: "File", title: "New File", keys: ["Ctrl+Alt+N"], run: () => paneActions.newFile() },
+    { id: "file.rename", category: "File", title: "Rename", keys: ["F2"], run: () => paneActions.rename() },
+    { id: "view.refresh", category: "View", title: "Refresh", keys: ["F5", "Ctrl+R"], run: () => paneActions.refresh() },
     { id: "favourites.add", category: "Favourites", title: "Add This Folder", keys: ["Ctrl+D"], run: () => addFavourite() },
     { id: "favourites.remove", category: "Favourites", title: "Remove This Folder", run: () => removeFavourite(activeTab().path) },
     { id: "tab.new", category: "Tabs", title: "New Tab", keys: ["Ctrl+T"], run: () => newTab() },

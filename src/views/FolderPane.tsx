@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/folder";
 import { getSettings, useSettings } from "../lib/settings";
+import { paneActions } from "../lib/pane";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { StatusBar } from "./StatusBar";
@@ -42,6 +43,53 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
 
+  // A name to rename as soon as it's listed (a new folder or file).
+  const [renameRequest, setRenameRequest] = useState<string | null>(null);
+  const onRenameStarted = useCallback(() => setRenameRequest(null), []);
+
+  // The active tab's pane answers the New / Rename / Refresh commands.
+  useEffect(() => {
+    if (!active || !model) return;
+    const create = (command: "op_new_folder" | "op_new_file") => async () => {
+      try {
+        const name = await invoke<string>(command, { dir: model.path });
+        setNotice(null);
+        setRenameRequest(name);
+        // If the folder can't be watched (some network shares), read it again to show the new item.
+        window.setTimeout(() => {
+          void model.rowOf(name).then((row) => {
+            if (row === null) void model.refresh();
+          });
+        }, 700);
+      } catch (err) {
+        setNotice(String(err));
+      }
+    };
+    paneActions.newFolder = create("op_new_folder");
+    paneActions.newFile = create("op_new_file");
+    paneActions.rename = async () => {
+      // The row at the cursor, asked fresh: a key pressed just before (End, an arrow) may not have
+      // recorded the row's name yet.
+      const [entry] = selection.focus >= 0 ? await model.rows(selection.focus, selection.focus + 1) : [];
+      const name = entry?.name ?? selection.focusName;
+      if (name) setRenameRequest(name);
+    };
+    paneActions.refresh = () => void model.refresh();
+  }, [active, model, selection]);
+
+  const rename = useCallback(
+    async (entry: Entry, newName: string): Promise<string | null> => {
+      if (!model) return null;
+      try {
+        await invoke("op_rename", { path: childPath(model.path, entry.name), newName });
+        return null;
+      } catch (err) {
+        return String(err);
+      }
+    },
+    [model],
+  );
+
   if (!model) return null;
 
   const open = (entry: Entry) => {
@@ -75,6 +123,9 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
         onSelected={onSelected}
         active={active}
         onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
+        renameRequest={renameRequest}
+        onRenameStarted={onRenameStarted}
+        onRename={rename}
       />
       <StatusBar model={model} selection={selection} active={active} />
     </div>

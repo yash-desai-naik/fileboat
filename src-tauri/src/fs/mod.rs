@@ -28,6 +28,30 @@ pub fn list(path: &Path, batch_size: usize, mut on_batch: impl FnMut(Vec<Entry>)
     Ok(())
 }
 
+/// The name a path really has on disk. Windows and macOS ignore case, so "readme.txt" can name
+/// a file stored as "README.txt"; after a case-only rename, events mention both spellings.
+#[cfg(windows)]
+pub fn real_name(path: &Path) -> Option<String> {
+    use windows::Win32::Storage::FileSystem::{FindClose, FindFirstFileW, WIN32_FIND_DATAW};
+    use windows::core::HSTRING;
+    let mut data = WIN32_FIND_DATAW::default();
+    let handle = unsafe { FindFirstFileW(&HSTRING::from(path.as_os_str()), &mut data) }.ok()?;
+    let _ = unsafe { FindClose(handle) };
+    let end = data.cFileName.iter().position(|&c| c == 0).unwrap_or(data.cFileName.len());
+    Some(String::from_utf16_lossy(&data.cFileName[..end]))
+}
+
+/// The name a path really has on disk (see the Windows version): found in its folder ignoring case.
+#[cfg(not(windows))]
+pub fn real_name(path: &Path) -> Option<String> {
+    let wanted = path.file_name()?.to_string_lossy().to_lowercase();
+    std::fs::read_dir(path.parent()?)
+        .ok()?
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .find(|n| n.to_lowercase() == wanted)
+}
+
 /// A folder error in plain words, naming the folder.
 pub fn describe(path: &Path, e: &std::io::Error) -> String {
     use std::io::ErrorKind::*;
@@ -169,6 +193,20 @@ mod tests {
         assert_eq!(resolve("C:", None), PathBuf::from("C:\\"));
         assert_eq!(resolve("C:/Users/../Windows", None), PathBuf::from("C:\\Windows"));
         assert_eq!(resolve("C:\\..", None), PathBuf::from("C:\\"));
+    }
+
+    #[test]
+    fn real_names_keep_their_case() {
+        let dir = std::env::temp_dir().join(format!("fileboat-realname-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("README.txt"), "x").unwrap();
+        assert_eq!(real_name(&dir.join("README.txt")).as_deref(), Some("README.txt"));
+        if cfg!(any(windows, target_os = "macos")) {
+            assert_eq!(real_name(&dir.join("readme.txt")).as_deref(), Some("README.txt"));
+        }
+        assert_eq!(real_name(&dir.join("nope.txt")), None);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
