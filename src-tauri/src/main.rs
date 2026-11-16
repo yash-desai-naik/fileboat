@@ -2,11 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod desktop;
+mod folders;
 mod settings;
 mod update;
 mod window;
 
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 
 fn main() {
     tauri::Builder::default()
@@ -20,6 +21,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(update::UpdateState::default())
+        .manage(folders::Folders::default())
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -30,6 +32,12 @@ fn main() {
             update::start_background_checks(app.handle().clone());
             Ok(())
         })
+        .on_window_event(|window, event| {
+            // A window's open folders close with it.
+            if let WindowEvent::Destroyed = event {
+                window.app_handle().state::<folders::Folders>().close_window(window.label());
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             settings::get_settings,
             settings::update_settings,
@@ -38,6 +46,13 @@ fn main() {
             desktop::app_paths,
             desktop::open_app_folder,
             desktop::open_releases_page,
+            desktop::open_path,
+            folders::folder_open,
+            folders::folder_rows,
+            folders::folder_view,
+            folders::folder_row_of,
+            folders::folder_seek,
+            folders::folder_close,
             update::update_check,
             update::update_status,
             update::update_install,

@@ -36,8 +36,9 @@ tokio = { version = "1", features = ["time"] }
 url = "2"
 
 [target.'cfg(windows)'.dependencies]
-# Already built for Tauri's windowing; used for the window's "Restore Down" rectangle.
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+# Already built for Tauri's windowing; used for the window's "Restore Down" rectangle and to open
+# files with their default app (ShellExecute).
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell"] }
 
 [profile.release]
 # "thin" LTO in parallel units: builds several times faster and needs far less RAM than full

@@ -33,7 +33,7 @@ pub fn describe(path: &Path, e: &std::io::Error) -> String {
     use std::io::ErrorKind::*;
     let shown = path.display();
     match e.kind() {
-        NotFound => format!("{shown} doesn't exist (any more)."),
+        NotFound => format!("{shown} doesn't exist."),
         PermissionDenied => format!("You don't have permission to open {shown}."),
         NotADirectory => format!("{shown} is a file, not a folder."),
         _ => format!("Couldn't open {shown}: {e}"),
