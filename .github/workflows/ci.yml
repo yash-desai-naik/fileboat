@@ -1,16 +1,20 @@
-# Type-checks, builds and tests every push to master and every pull request, on Windows and macOS.
+# Type-checks, builds and tests on Windows and macOS when a pull request is merged into master,
+# or when run by hand (Actions → CI → Run workflow). Plain pushes don't run it.
 name: CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
+    branches: [master]
+    types: [closed]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   check:
+    # A closed pull request runs this only if it was merged.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     strategy:
       fail-fast: false
       matrix:

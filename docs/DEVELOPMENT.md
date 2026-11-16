@@ -72,8 +72,9 @@ npm run typecheck                    # TypeScript
 (cd src-tauri && cargo test --lib)   # Rust: settings, paths, themes and their contrast rules
 ```
 
-CI (`.github/workflows/ci.yml`) runs these and builds the app on Windows and macOS for every push
-and pull request.
+CI (`.github/workflows/ci.yml`) runs these and builds the app on Windows and macOS when a pull
+request is merged into master, or when started by hand (Actions → CI → Run workflow). Plain pushes
+don't run it, so run the checks above before pushing.
 
 ## Build the installer
 
