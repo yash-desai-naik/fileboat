@@ -137,6 +137,19 @@ export function buildCommands(): Command[] {
     { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
     { id: "help.updates", category: "Help", title: "Check for Updates…", run: () => void checkForUpdates() },
     {
+      id: "view.gitPanel",
+      category: "View",
+      title: "Git Panel",
+      keys: ["Ctrl+Shift+G"],
+      checked: s.showSidebar && s.sidebarView === "git",
+      // Opens the sidebar on the git panel, or goes back to places.
+      run: () => {
+        const now = getSettings();
+        const open = now.showSidebar && now.sidebarView === "git";
+        updateSettings(open ? { sidebarView: "places" } : { showSidebar: true, sidebarView: "git" });
+      },
+    },
+    {
       id: "view.toggleSidebar",
       category: "View",
       title: "Toggle Sidebar",

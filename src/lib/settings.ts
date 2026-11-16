@@ -19,6 +19,8 @@ export interface Settings {
   density: Density;
   uiZoom: number;
   showSidebar: boolean;
+  /** What the sidebar shows: places or the git panel. */
+  sidebarView: "places" | "git";
   sidebarWidth: number;
   showPreview: boolean;
   previewWidth: number;

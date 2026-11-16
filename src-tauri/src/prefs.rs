@@ -52,6 +52,8 @@ pub struct Settings {
     /// Whole-UI zoom factor (Ctrl+= / Ctrl+-).
     pub ui_zoom: f64,
     pub show_sidebar: bool,
+    /// What the sidebar shows: "places" | "git".
+    pub sidebar_view: String,
     pub sidebar_width: u32,
     /// The preview pane on the right.
     pub show_preview: bool,
@@ -98,6 +100,7 @@ impl Default for Settings {
             density: "default".into(),
             ui_zoom: 1.0,
             show_sidebar: true,
+            sidebar_view: "places".into(),
             sidebar_width: 240,
             show_preview: false,
             preview_width: 360,
@@ -152,6 +155,9 @@ impl Settings {
         if !matches!(self.group_by.as_str(), "none" | "type" | "modified" | "size" | "letter") {
             self.group_by = d.group_by;
         }
+        if !matches!(self.sidebar_view.as_str(), "places" | "git") {
+            self.sidebar_view = d.sidebar_view.clone();
+        }
         if !matches!(self.git_ignored.as_str(), "dim" | "hide" | "show") {
             self.git_ignored = d.git_ignored;
         }
@@ -191,6 +197,7 @@ density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
 showSidebar, showPreview (the preview pane), previewWrap (wrap long lines in the preview): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
+sidebarView: \"places\" | \"git\" (what the sidebar shows; the git panel is Ctrl+Shift+G)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 groupBy: \"none\" | \"type\" | \"modified\" | \"size\" | \"letter\" (group rows under headers)

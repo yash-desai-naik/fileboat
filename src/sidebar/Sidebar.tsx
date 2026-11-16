@@ -3,7 +3,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { formatSize } from "../lib/format";
 import { fmtShortcut } from "../lib/platform";
 import { addFavourite, removeFavourite } from "../lib/favourites";
-import { useSettings } from "../lib/settings";
+import { updateSettings, useSettings } from "../lib/settings";
+import { GitPanel } from "./GitPanel";
 import { activeTab, navigate, newTab, samePath, tabTitle, useTabs } from "../lib/tabs";
 import { ChevronIcon, CloseSmallIcon, DownloadIcon, DriveIcon, FolderIcon, HomeIcon, NetworkDriveIcon, StarIcon } from "../shell/Icons";
 
@@ -30,7 +31,7 @@ interface Places {
  * Favourites, home folders and drives. Click to go there, middle-click for a new tab. Drives
  * are read again whenever the window gets focus (a USB stick may have been plugged in).
  */
-export function Sidebar() {
+function Places() {
   const settings = useSettings();
   useTabs();
   const current = activeTab().path;
@@ -134,6 +135,30 @@ export function Sidebar() {
             return item(`drive:${d.path}`, d.path, name, d.kind === "network" ? <NetworkDriveIcon /> : <DriveIcon />, extra);
           }),
         )}
+    </div>
+  );
+}
+
+/** The sidebar: places (favourites, home, drives) or the git panel. */
+export function Sidebar() {
+  const { sidebarView } = useSettings();
+  return (
+    <div className="sidebar-inner">
+      <div className="segmented sidebar-switch" role="tablist" aria-label="Sidebar">
+        <button className={`seg${sidebarView === "places" ? " active" : ""}`} role="tab" aria-selected={sidebarView === "places"} onClick={() => updateSettings({ sidebarView: "places" })}>
+          Places
+        </button>
+        <button
+          className={`seg${sidebarView === "git" ? " active" : ""}`}
+          role="tab"
+          aria-selected={sidebarView === "git"}
+          title={`Git (${fmtShortcut("Ctrl+Shift+G")})`}
+          onClick={() => updateSettings({ sidebarView: "git" })}
+        >
+          Git
+        </button>
+      </div>
+      {sidebarView === "git" ? <GitPanel /> : <Places />}
     </div>
   );
 }
