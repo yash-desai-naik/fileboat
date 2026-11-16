@@ -8,6 +8,19 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Git, live:** inside a repository every file shows its status (the name in the status colour
+  and M, A, D, R, U or ! for a conflict), folders with changes inside show a dot, and files git
+  ignores are dimmed, hidden or shown normally (a setting). The status bar shows the branch,
+  ahead/behind, a merge or rebase in progress and how many files changed. All of it follows
+  changes made anywhere: in Fileboat, an editor or the `git` command line.
+- **Git panel** (`Ctrl+Shift+G`, beside Places in the sidebar): changed files as Conflicts, Staged,
+  Changes and Untracked, with stage, unstage and discard; commit (`Ctrl+Enter`); switch to or
+  create a branch; fetch, pull and push with progress; stash and pop. Everything runs your own
+  `git`, so hooks, signing and credentials work as in your terminal.
+- **Diffs** of changed files in the preview pane (inline or side by side; unstaged or staged).
+- **Git menu** on files and folders: Stage, Unstage, Discard Changes, Show Diff, Add to .gitignore,
+  Open on the Web and Copy Permalink (GitHub, GitLab, Bitbucket). **Group by Git status.** In the
+  command bar, `#` lists changed files, branches and recent commits.
 - **Preview pane** (`Alt+P`): follows the selection and updates when the file changes on disk.
   Code with highlighting for over a hundred languages (line numbers, folding, wrap); the first
   512 KB of big files with Load more; the encoding (UTF-8, UTF-16, legacy code pages) and line

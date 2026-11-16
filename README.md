@@ -10,9 +10,10 @@ WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 
 > Status: **in development.** You can browse folders in tabs (Columns, List and Details views,
 > grouping, folder sizes, a view remembered per folder), preview any file (code, Markdown, data,
-> images, media, PDFs, fonts, archives; Quick Look with Space) and work with files: copy, move,
-> rename, delete, undo, the clipboard and drag and drop (shared with Explorer), and context menus.
-> Git, search and the Claude pane come next. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
+> images, media, PDFs, fonts, archives; Quick Look with Space), use git (live status on every
+> file, the branch, a git panel to stage, commit, pull and push, diffs) and work with files: copy,
+> move, rename, delete, undo, the clipboard and drag and drop (shared with Explorer), and context
+> menus. Search and the Claude pane come next. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
 > how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What it will do (v1)

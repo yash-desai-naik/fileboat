@@ -40,6 +40,10 @@ Rust, `src-tauri/src/`:
     completion);
   - `ops`: creating and renaming (`mod.rs`), deleting (`delete.rs`), copying and moving with
     progress, name clashes and cancel (`transfer.rs`), and the undo log (`undo.rs`);
+  - `git`: a folder's repository (found by walking up to `.git`), HEAD, the branch and a merge or
+    rebase in progress (read from `.git`); status from the user's `git status --porcelain=v2`
+    (no console window, `--no-optional-locks`) and what each row shows (`status.rs`); and the
+    writes, each a fixed `git` command (`write.rs`);
   - `preview`: which viewer shows a file (by name, then by content), text in any encoding (only
     the start of big files), bytes for the hex view, archive lists, YAML/TOML/JSON for the tree,
     and a folder's summary;
@@ -54,6 +58,11 @@ Rust, `src-tauri/src/`:
   - `preview_cmd`: the preview's commands (read off the main thread) and the `fbpreview` scheme
     that serves images, media, PDFs and fonts with Range support; it serves only files the
     preview was given a token for, and the app's CSP allows it for those uses only;
+  - `repos`: live git status: one status worker and one recursive watch per repository with an
+    open folder, coalesced, rested and ignoring changes in ignored folders; marks go into the
+    folder models and the UI hears `git-changed`. `git_cmd` holds the git commands (info, the
+    panel's files, stage / commit / branches / stash, fetch / pull / push with progress events,
+    diffs, web links);
   - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
     recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
@@ -86,6 +95,8 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
   highlighted code (`CodeView.tsx`, CodeMirror 6), Markdown (`Markdown.tsx`, marked + DOMPurify)
   and the tree and table (`structured.tsx`). The pane, the editor, Markdown and each language
   are separate chunks, loaded when first needed. `lib/current.ts` is what the active tab is on.
+- `sidebar/`: Places (favourites, home folders, drives) and the git panel (`GitPanel.tsx`);
+  `lib/git.ts` is the UI's side of a repository (`useGitInfo`, the `git-changed` event).
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.
