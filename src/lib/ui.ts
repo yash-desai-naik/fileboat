@@ -5,4 +5,5 @@
 export const uiActions = {
   /** Open the command bar with this text (">" for commands, "" to go to a file or folder…). */
   openCommandBar: (_text: string = ">") => {},
+  openSettings: () => {},
 };

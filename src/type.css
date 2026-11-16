@@ -8,11 +8,18 @@
 
 /* Uppercase section labels: small, bold, tracked, muted. */
 .pane-title,
+.form-section-head,
 [cmdk-group-heading] {
   font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Titles */
+.dialog-title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /* Controls */

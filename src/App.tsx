@@ -5,6 +5,7 @@ import { updateSettings, useSettings } from "./lib/settings";
 import { useNoBrowserContextMenu, useShortcuts } from "./lib/shortcuts";
 import { uiActions } from "./lib/ui";
 import { CommandBar } from "./palette/CommandBar";
+import { SettingsPage } from "./settings/SettingsPage";
 import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
@@ -19,6 +20,8 @@ export function App() {
   // The command bar's opening text, or null when it's closed.
   const [commandBar, setCommandBar] = useState<string | null>(null);
   uiActions.openCommandBar = (text = ">") => setCommandBar(text);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  uiActions.openSettings = () => setSettingsOpen(true);
 
   // Rebuilt when settings change so check marks stay current.
   const commands = useMemo(() => buildCommands(), [settings]);
@@ -98,6 +101,7 @@ export function App() {
       </div>
 
       {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
+      {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

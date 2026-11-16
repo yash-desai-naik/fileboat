@@ -59,3 +59,28 @@ pub fn update_settings(store: State<'_, SettingsStore>, patch: Value) -> Result<
     *guard = (next.clone(), modified(&store.path));
     Ok(next)
 }
+
+/// Open settings.json in the user's default editor for .json files (Notepad / TextEdit if none).
+#[tauri::command]
+pub fn open_settings_file(store: State<'_, SettingsStore>) -> Result<String, String> {
+    let path = &store.path;
+    #[cfg(windows)]
+    let status = std::process::Command::new("cmd")
+        .args(["/C", "start", "", &path.to_string_lossy()])
+        .status();
+    #[cfg(target_os = "macos")]
+    let status = std::process::Command::new("open").arg("-t").arg(path).status();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let status = std::process::Command::new("xdg-open").arg(path).status();
+    match status {
+        Ok(s) if s.success() => Ok(path.display().to_string()),
+        _ => {
+            #[cfg(windows)]
+            let fallback = std::process::Command::new("notepad.exe").arg(path).spawn();
+            #[cfg(not(windows))]
+            let fallback = std::process::Command::new("open").arg(path).spawn();
+            fallback.map_err(|e| e.to_string())?;
+            Ok(path.display().to_string())
+        }
+    }
+}

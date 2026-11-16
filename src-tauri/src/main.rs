@@ -28,6 +28,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             settings::get_settings,
             settings::update_settings,
+            settings::open_settings_file,
             window::window_fit_restore,
         ])
         .run(tauri::generate_context!())

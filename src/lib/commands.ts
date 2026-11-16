@@ -84,6 +84,7 @@ export function buildCommands(): Command[] {
       run: () => uiActions.openCommandBar(">"),
     },
     { id: "commandBar.help", category: "Help", title: "Command Bar Modes", run: () => uiActions.openCommandBar("?") },
+    { id: "settings.open", category: "Preferences", title: "Open Settings", keys: ["Ctrl+,"], run: () => uiActions.openSettings() },
     {
       id: "view.toggleSidebar",
       category: "View",
