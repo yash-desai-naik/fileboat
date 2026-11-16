@@ -46,13 +46,17 @@ interface Props {
   /** A name to select once it's listed (the folder you came up from); `onSelected` clears it. */
   select?: string | null;
   onSelected?: () => void;
+  /** The tab is showing (hidden tabs keep their state but don't take the keyboard). */
+  active: boolean;
+  /** Middle-click on a folder. */
+  onOpenInNewTab?: (entry: Entry) => void;
 }
 
 /**
  * A folder's rows, drawn only where they're on screen. Details shows columns you can sort and
  * resize; List shows names only. Selection, keyboard and type-ahead work the same in both.
  */
-export function FileList({ model, selection, mode, onOpen, select, onSelected }: Props) {
+export function FileList({ model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab }: Props) {
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
@@ -83,10 +87,11 @@ export function FileList({ model, selection, mode, onOpen, select, onSelected }:
 
   // The keyboard stays in the view when you open a folder (unless you were typing elsewhere).
   useEffect(() => {
+    if (!active) return;
     uiActions.focusList = () => scrollRef.current?.focus();
-    const active = document.activeElement;
-    if (!active || active === document.body || active.closest(".filelist")) scrollRef.current?.focus();
-  }, []);
+    const focused = document.activeElement;
+    if (!focused || focused === document.body || focused.closest(".filelist, .tabs")) scrollRef.current?.focus();
+  }, [active]);
 
   // Select the requested name once it's listed; give up when the listing ends without it.
   // (The first rows can arrive before the folder's id does: wait for both.)
@@ -214,6 +219,12 @@ export function FileList({ model, selection, mode, onOpen, select, onSelected }:
   const onRowMouseDown = (e: MouseEvent, i: number) => {
     const entry = model.row(i);
     if (!entry) return;
+    if (e.button === 1) {
+      // Middle-click opens a folder in a new tab, as in browsers and Explorer.
+      e.preventDefault();
+      if (entry.kind === "folder") onOpenInNewTab?.(entry);
+      return;
+    }
     if (e.button === 2) {
       // Right-click keeps a selection that includes the row (for the context menu).
       if (!selection.has(entry.name)) selection.set([entry.name], i, entry.name);

@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { App } from "./App";
 import { loadSettings } from "./lib/settings";
+import { restoreTabs, saveTabs } from "./lib/tabs";
 import { applyTheme, resolveTheme } from "./themes";
 // JetBrains Mono, bundled: used only when it isn't installed (the installed copy comes first).
 import "@fontsource-variable/jetbrains-mono/wght.css";
@@ -41,8 +42,14 @@ window.setTimeout(() => {
   void appWindow.show().then(() => appWindow.setFocus()).catch(() => {});
 }, 1500);
 
-loadSettings()
-  .then((settings) => {
+// Save open tabs before the window closes (they're also saved a moment after each change).
+void appWindow.onCloseRequested(async () => {
+  await saveTabs();
+});
+
+// A reloaded page starts clean: folders the previous page opened are closed in Rust first.
+Promise.all([loadSettings(), restoreTabs(), invoke("folders_reset").catch(() => {})])
+  .then(([settings]) => {
     // Set the theme before the first render so the window never shows the wrong colours.
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     applyTheme(resolveTheme(settings, prefersDark));

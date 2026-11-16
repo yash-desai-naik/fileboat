@@ -112,6 +112,14 @@ export function ChevronIcon({ open, size = 12 }: { open: boolean; size?: number 
   );
 }
 
+export function PlusIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M8 3v10M3 8h10" />
+    </Svg>
+  );
+}
+
 export function ArrowLeftIcon(p: IconProps) {
   return (
     <Svg {...p}>

@@ -287,6 +287,13 @@ pub fn folder_seek(folders: State<'_, Folders>, id: String, prefix: String, from
     Ok((0..n).map(|i| (from + i) % n.max(1)).find(|&i| rows[i].key.starts_with(&prefix)))
 }
 
+/// The page (re)loaded: folders a previous page of this window left open are closed (a reload
+/// doesn't destroy the window, so they would otherwise stay open and watched).
+#[tauri::command]
+pub fn folders_reset(window: tauri::Window, folders: State<'_, Folders>) {
+    folders.close_window(window.label());
+}
+
 #[tauri::command]
 pub fn folder_close(folders: State<'_, Folders>, id: String) {
     folders.close(&id);

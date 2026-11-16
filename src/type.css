@@ -22,6 +22,11 @@
   letter-spacing: -0.01em;
 }
 
+/* The active tab's name */
+.tab.active .tab-title {
+  font-weight: 600;
+}
+
 /* Controls */
 .btn,
 .small-btn,

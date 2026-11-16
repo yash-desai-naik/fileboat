@@ -4,7 +4,18 @@ import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
-import { goBack, goForward, goUp } from "./tabs";
+import {
+  activateTabAt,
+  closeOtherTabs,
+  closeTab,
+  cycleTab,
+  duplicateTab,
+  goBack,
+  goForward,
+  goUp,
+  newTab,
+  reopenClosedTab,
+} from "./tabs";
 
 /**
  * Every action in the app, with its shortcuts. The command bar (`>`) lists them, the shortcut
@@ -126,6 +137,23 @@ export function buildCommands(): Command[] {
     { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
     { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: goUp },
     { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
+    { id: "tab.new", category: "Tabs", title: "New Tab", keys: ["Ctrl+T"], run: () => newTab() },
+    { id: "tab.close", category: "Tabs", title: "Close Tab", keys: ["Ctrl+W", "Ctrl+F4"], run: () => closeTab() },
+    { id: "tab.closeOthers", category: "Tabs", title: "Close Other Tabs", run: () => closeOtherTabs() },
+    { id: "tab.reopen", category: "Tabs", title: "Reopen Closed Tab", keys: ["Ctrl+Shift+T"], run: reopenClosedTab },
+    { id: "tab.duplicate", category: "Tabs", title: "Duplicate Tab", run: duplicateTab },
+    { id: "tab.next", category: "Tabs", title: "Next Tab", keys: ["Ctrl+Tab", "Ctrl+PageDown"], run: () => cycleTab(1) },
+    { id: "tab.previous", category: "Tabs", title: "Previous Tab", keys: ["Ctrl+Shift+Tab", "Ctrl+PageUp"], run: () => cycleTab(-1) },
+    ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(
+      (n): Command => ({
+        id: `tab.goto${n}`,
+        category: "Tabs",
+        title: n === 9 ? "Go to Last Tab" : `Go to Tab ${n}`,
+        keys: [`Ctrl+${n}`],
+        hidden: true,
+        run: () => activateTabAt(n),
+      }),
+    ),
     viewMode("list", "List", "Ctrl+Shift+2"),
     viewMode("details", "Details", "Ctrl+Shift+3"),
     {

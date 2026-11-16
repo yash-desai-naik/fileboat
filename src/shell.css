@@ -312,3 +312,86 @@
   display: grid;
   place-items: center;
 }
+
+/* ---------- tabs (in the title bar) ---------- */
+
+.tabs {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+}
+.tab {
+  flex: 0 1 200px;
+  min-width: 72px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  cursor: default;
+  outline: none;
+}
+.tab:hover {
+  background: var(--bg-hover);
+}
+.tab.active {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  color: var(--text);
+}
+.tab:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+.tab-icon {
+  flex: none;
+  display: grid;
+  color: var(--accent);
+}
+.tab-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tab-close {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  visibility: hidden;
+}
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  visibility: visible;
+}
+.tab-close:hover {
+  background: var(--bg-active);
+  color: var(--text);
+}
+.tab-new {
+  flex: none;
+}
+
+/* Every tab keeps its folder open; only the active one shows. */
+.folder-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.folder-pane[hidden] {
+  display: none;
+}

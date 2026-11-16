@@ -5,6 +5,7 @@ mod desktop;
 mod folders;
 mod navigate;
 mod settings;
+mod state;
 mod update;
 mod watch;
 mod window;
@@ -56,8 +57,11 @@ fn main() {
             folders::folder_row_of,
             folders::folder_seek,
             folders::folder_close,
+            folders::folders_reset,
             navigate::path_resolve,
             navigate::path_complete,
+            state::state_read,
+            state::state_write,
             update::update_check,
             update::update_status,
             update::update_install,

@@ -13,7 +13,8 @@ import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
 import { FolderPane } from "./views/FolderPane";
 import { Toolbar } from "./shell/Toolbar";
-import { activeTab, goBack, goForward, useTabs } from "./lib/tabs";
+import { activeTab, goBack, goForward, tabTitle, useTabs } from "./lib/tabs";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const SIDEBAR_DEFAULT = 240;
 const PREVIEW_DEFAULT = 360;
@@ -35,9 +36,13 @@ export function App() {
   useShortcuts(commands);
   useNoBrowserContextMenu();
 
-  useTabs();
+  const { tabs } = useTabs();
   const tab = activeTab();
   useMouseNavigation();
+
+  useEffect(() => {
+    void getCurrentWindow().setTitle(`${tabTitle(tab.path)} – Fileboat`).catch(() => {});
+  }, [tab.path]);
 
   const toggleSidebar = () => updateSettings({ showSidebar: !settings.showSidebar });
   const togglePreview = () => updateSettings({ showPreview: !settings.showPreview });
@@ -79,7 +84,9 @@ export function App() {
 
         <main className="center">
           <Toolbar />
-          <FolderPane tab={tab} />
+          {tabs.map((t) => (
+            <FolderPane key={t.id} tab={t} active={t.id === tab.id} />
+          ))}
         </main>
 
         {settings.showPreview && (

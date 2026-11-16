@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { fmtShortcut, IS_MAC } from "../lib/platform";
+import { TabStrip } from "./TabStrip";
 import {
   AppMark,
   CloseGlyph,
@@ -23,8 +24,8 @@ interface TitleBarProps {
 }
 
 /**
- * Custom 40 px title bar. Empty areas drag the window (and double-click maximises); the tab strip
- * will live in the middle. Windows gets Fileboat's caption buttons on the right; macOS keeps its
+ * Custom 40 px title bar with the tabs in the middle. Empty areas drag the window (and
+ * double-click maximises). Windows gets Fileboat's caption buttons on the right; macOS keeps its
  * traffic lights on the left, over the bar (see `.titlebar.mac`).
  */
 export function TitleBar({ sidebarOn, previewOn, onToggleSidebar, onTogglePreview, onOpenCommands }: TitleBarProps) {
@@ -54,7 +55,9 @@ export function TitleBar({ sidebarOn, previewOn, onToggleSidebar, onTogglePrevie
         </button>
       </div>
 
-      <div className="tb-center" data-tauri-drag-region />
+      <div className="tb-center" data-tauri-drag-region>
+        <TabStrip />
+      </div>
 
       <div className="tb-group" data-tauri-drag-region>
         <button className="icon-btn" title={`Show all commands (${fmtShortcut("Ctrl+Shift+P")})`} onClick={onOpenCommands}>

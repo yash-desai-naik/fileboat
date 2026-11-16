@@ -2,12 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/folder";
 import { getSettings, useSettings } from "../lib/settings";
-import { navigate, samePath, selected, settlePath, type Tab } from "../lib/tabs";
+import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { Selection } from "./selection";
 
-/** The active tab's folder in the center: its model, selection and view. */
-export function FolderPane({ tab }: { tab: Tab }) {
+/**
+ * A tab's folder in the center: its model, selection and view. Every tab keeps one (hidden when
+ * the tab isn't active), so switching back finds the same scroll position and selection.
+ */
+export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   const settings = useSettings();
   const [model, setModel] = useState<FolderModel | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -50,7 +53,7 @@ export function FolderPane({ tab }: { tab: Tab }) {
   };
 
   return (
-    <>
+    <div className="folder-pane" hidden={!active}>
       {notice && (
         <div className="pane-notice" role="alert">
           <span>{notice}</span>
@@ -69,7 +72,9 @@ export function FolderPane({ tab }: { tab: Tab }) {
         // still shown and would give up on a name it doesn't have.
         select={samePath(model.path, tab.path) ? tab.select : null}
         onSelected={onSelected}
+        active={active}
+        onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
       />
-    </>
+    </div>
   );
 }
