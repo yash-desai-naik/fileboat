@@ -13,10 +13,15 @@ export function Dialog({ title, onClose, children, footer, width = 520 }: Dialog
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Whatever had the keyboard before (the file list, usually) gets it back when the dialog closes.
+    const before = document.activeElement as HTMLElement | null;
     const first = ref.current?.querySelector<HTMLElement>(
       "input:not([disabled]), textarea:not([disabled]), select:not([disabled])",
     );
     first?.focus();
+    return () => {
+      if (before?.isConnected) before.focus();
+    };
   }, []);
 
   return (

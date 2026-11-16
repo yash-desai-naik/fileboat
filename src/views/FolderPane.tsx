@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/folder";
 import { getSettings, useSettings } from "../lib/settings";
 import { paneActions } from "../lib/pane";
+import { IS_MAC } from "../lib/platform";
+import { askConfirm } from "../shell/Confirm";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { StatusBar } from "./StatusBar";
@@ -75,6 +77,44 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       if (name) setRenameRequest(name);
     };
     paneActions.refresh = () => void model.refresh();
+    paneActions.delete = async (permanently: boolean) => {
+      const names = await selectedNames(model, selection);
+      if (!names.length) return;
+      const paths = names.map((n) => childPath(model.path, n));
+      const what = names.length === 1 ? `"${names[0]}"` : `${names.length} items`;
+      const bin = IS_MAC ? "the Trash" : "the Recycle Bin";
+      if (permanently) {
+        const ok = await askConfirm({
+          title: `Delete ${what} permanently?`,
+          body: <DeleteList names={names} note="They won't go to the Recycle Bin. This can't be undone." />,
+          confirm: "Delete permanently",
+          danger: true,
+        });
+        if (!ok) return;
+      }
+      const next = await survivor(model, selection);
+      try {
+        await invoke(permanently ? "op_delete" : "op_trash", { paths });
+      } catch (err) {
+        if (permanently) return setNotice(String(err));
+        // No Recycle Bin here (some network drives): offer to delete for good instead.
+        const ok = await askConfirm({
+          title: `Delete ${what} permanently?`,
+          body: <DeleteList names={names} note={`${String(err)}\n\nThey can't go to ${bin}. Delete them permanently instead? This can't be undone.`} />,
+          confirm: "Delete permanently",
+          danger: true,
+        });
+        if (!ok) return;
+        try {
+          await invoke("op_delete", { paths });
+        } catch (err2) {
+          return setNotice(String(err2));
+        }
+      }
+      setNotice(null);
+      // The next item takes the cursor, as in Explorer.
+      if (next) navigate(model.path, next);
+    };
   }, [active, model, selection]);
 
   const rename = useCallback(
@@ -129,5 +169,43 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       />
       <StatusBar model={model} selection={selection} active={active} />
     </div>
+  );
+}
+
+/** The selected names, or the item at the cursor when nothing is selected. */
+async function selectedNames(model: FolderModel, selection: Selection): Promise<string[]> {
+  if (selection.size) return [...selection.names];
+  if (selection.focus < 0) return [];
+  const [entry] = await model.rows(selection.focus, selection.focus + 1);
+  return entry ? [entry.name] : [];
+}
+
+/** The item to select once the selection is gone: the next one not selected, else the one before. */
+async function survivor(model: FolderModel, selection: Selection): Promise<string | null> {
+  const at = Math.max(0, selection.focus);
+  const start = Math.max(0, at - 200);
+  const names = await model.names(start, at + 200);
+  const gone = selection.size ? selection.names : new Set(names.slice(at - start, at - start + 1));
+  const after = names.slice(at - start).find((n) => !gone.has(n));
+  if (after) return after;
+  return [...names.slice(0, at - start)].reverse().find((n) => !gone.has(n)) ?? null;
+}
+
+function DeleteList({ names, note }: { names: string[]; note: string }) {
+  const shown = names.slice(0, 8);
+  return (
+    <>
+      <ul className="delete-list">
+        {shown.map((n) => (
+          <li key={n} className="mono">
+            {n}
+          </li>
+        ))}
+        {names.length > shown.length && <li className="muted">and {names.length - shown.length} more</li>}
+      </ul>
+      <p className="muted" style={{ whiteSpace: "pre-wrap" }}>
+        {note}
+      </p>
+    </>
   );
 }

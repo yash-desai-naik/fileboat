@@ -8,6 +8,7 @@ import { CommandBar } from "./palette/CommandBar";
 import { SettingsPage } from "./settings/SettingsPage";
 import { AboutDialog } from "./shell/AboutDialog";
 import { UpdateNotice } from "./shell/UpdateNotice";
+import { ConfirmHost } from "./shell/Confirm";
 import { FileIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
@@ -114,6 +115,7 @@ export function App() {
       {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
       <UpdateNotice />
+      <ConfirmHost />
     </div>
   );
 }

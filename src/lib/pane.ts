@@ -7,6 +7,8 @@ export const paneActions = {
   newFile: () => {},
   rename: () => {},
   refresh: () => {},
+  /** Delete the selection: to the Recycle Bin / Trash, or permanently (asks first). */
+  delete: (_permanently: boolean) => {},
 };
 
 export type PaneActions = typeof paneActions;

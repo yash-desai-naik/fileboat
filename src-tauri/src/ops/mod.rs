@@ -1,6 +1,8 @@
 //! Changing files: creating, renaming (and, in the following modules, deleting, copying, moving).
 //! Every function checks names first and answers in plain words.
 
+pub mod delete;
+
 use std::path::{Path, PathBuf};
 
 /// Names Windows reserves for devices, with or without an extension ("nul.txt" too).

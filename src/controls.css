@@ -40,6 +40,14 @@
   background: var(--accent-hover);
   border-color: var(--accent-hover);
 }
+.btn.danger {
+  background: var(--danger-fill);
+  border-color: var(--danger-fill);
+  color: var(--on-danger);
+}
+.btn.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
 .btn.primary:disabled {
   background: color-mix(in srgb, var(--accent-fill) 50%, var(--bg));
   border-color: transparent;
@@ -355,4 +363,14 @@ table.kv td {
   height: 1px;
   margin: 4px 6px;
   background: var(--border);
+}
+
+.delete-list {
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  max-height: 200px;
+  overflow: auto;
 }

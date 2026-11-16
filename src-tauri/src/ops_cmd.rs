@@ -28,6 +28,20 @@ pub fn op_rename(path: String, new_name: String) -> Result<String, String> {
     ops::rename(&PathBuf::from(path), new_name.trim()).map(|p| p.display().to_string())
 }
 
+/// Move to the Recycle Bin / Trash (in the background: a big folder can take a moment).
+#[tauri::command]
+pub async fn op_trash(paths: Vec<String>) -> Result<(), String> {
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    tauri::async_runtime::spawn_blocking(move || ops::delete::to_trash(&paths)).await.map_err(|e| e.to_string())?
+}
+
+/// Delete for good (the UI has asked first).
+#[tauri::command]
+pub async fn op_delete(paths: Vec<String>) -> Result<(), String> {
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    tauri::async_runtime::spawn_blocking(move || ops::delete::delete_permanently(&paths)).await.map_err(|e| e.to_string())?
+}
+
 /// Is this a usable name? (Checked as you type in the rename box.)
 #[tauri::command]
 pub fn op_check_name(name: String) -> Option<String> {

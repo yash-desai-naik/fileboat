@@ -37,6 +37,8 @@ tokio = { version = "1", features = ["time"] }
 url = "2"
 # File system events (ReadDirectoryChangesW, FSEvents): open folders update without polling.
 notify = "8"
+# The Recycle Bin (Windows) and the Trash (macOS).
+trash = "5"
 
 [target.'cfg(windows)'.dependencies]
 # Already built for Tauri's windowing; used for the window's "Restore Down" rectangle, to open

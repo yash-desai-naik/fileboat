@@ -65,6 +65,8 @@ fn main() {
             ops_cmd::op_new_file,
             ops_cmd::op_rename,
             ops_cmd::op_check_name,
+            ops_cmd::op_trash,
+            ops_cmd::op_delete,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,
