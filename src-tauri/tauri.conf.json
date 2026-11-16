@@ -52,7 +52,7 @@
       "signingIdentity": "-"
     },
     "publisher": "Fileboat",
-    "copyright": "Copyright (c) 2026 Yash Desai.",
+    "copyright": "Copyright (c) 2026 Yash Desai. MIT License.",
     "category": "DeveloperTool",
     "shortDescription": "A small, fast file explorer for developers",
     "longDescription": "Fileboat: a file explorer for developers with live git, fast search, previews and Claude Code built in."

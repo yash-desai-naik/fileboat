@@ -67,6 +67,15 @@ Theme palettes are based on Catppuccin, Tokyo Night, GitHub Primer, One Dark/One
 Gruvbox, Kanagawa, Nord and Dracula, all MIT-licensed. Only their colour values are used, some nudged
 for contrast (see [docs/THEMES.md](docs/THEMES.md)).
 
+## Contributing
+
+Issues and pull requests are welcome. Please keep the project's budget in mind: low memory, no idle
+CPU, and no Node.js at runtime.
+
+## License
+
+[MIT](LICENSE) © 2026 Yash Desai
+
 Fileboat is an independent project. It is not affiliated with or endorsed by Microsoft, Apple,
 Anthropic or any other company whose products it works with or mentions. Product names are
 trademarks of their owners.
