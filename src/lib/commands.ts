@@ -161,6 +161,8 @@ export function buildCommands(): Command[] {
     { id: "edit.cut", category: "Edit", title: "Cut", keys: ["Ctrl+X"], run: () => paneActions.cut() },
     { id: "edit.paste", category: "Edit", title: "Paste", keys: ["Ctrl+V"], run: () => paneActions.paste() },
     { id: "edit.copyPath", category: "Edit", title: "Copy Path", keys: ["Ctrl+Shift+C"], run: () => paneActions.copyPath() },
+    { id: "open.editor", category: "Open", title: "In Editor", keys: ["Ctrl+Shift+E"], run: () => paneActions.openInEditor() },
+    { id: "open.terminal", category: "Open", title: "Terminal Here", keys: ["Ctrl+`"], run: () => paneActions.terminalHere() },
     { id: "file.duplicate", category: "File", title: "Duplicate", run: () => paneActions.duplicate() },
     { id: "file.rename", category: "File", title: "Rename", keys: ["F2"], run: () => paneActions.rename() },
     { id: "view.refresh", category: "View", title: "Refresh", keys: ["F5", "Ctrl+R"], run: () => paneActions.refresh() },

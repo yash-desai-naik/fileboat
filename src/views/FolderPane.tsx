@@ -7,6 +7,7 @@ import { IS_MAC } from "../lib/platform";
 import { askConfirm } from "../shell/Confirm";
 import { startTransfer } from "../lib/jobs";
 import { copyFiles, cutFiles, pasteInto } from "../lib/clipboard";
+import { openInEditor, openTerminal } from "../lib/tools";
 import { showToast } from "../shell/Toast";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
@@ -90,6 +91,11 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       await navigator.clipboard.writeText(text);
       showToast(paths.length > 1 ? `Copied ${paths.length} paths` : `Copied ${text}`);
     };
+    paneActions.openInEditor = async () => {
+      const paths = await selectedPaths();
+      openInEditor(paths.length ? paths : [model.path]);
+    };
+    paneActions.terminalHere = () => openTerminal(model.path);
     paneActions.duplicate = async () => {
       const names = await selectedNames(model, selection);
       if (names.length) await startTransfer(names.map((n) => childPath(model.path, n)), model.path, "copy");

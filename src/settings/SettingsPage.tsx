@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { fmtShortcut, OS_NAME } from "../lib/platform";
 import { updateSettings, useSettings, type Settings } from "../lib/settings";
@@ -8,10 +8,12 @@ import { useAppVersion, versionLine } from "../shell/AboutDialog";
 import { uiActions } from "../lib/ui";
 import type { ThemeMode } from "../themes";
 import { ThemePicker } from "./ThemePicker";
+import { loadTools, type Tool } from "../lib/tools";
 
 type Def =
   | { key: keyof Settings; type: "select"; options: [string | number, string][] }
   | { key: keyof Settings; type: "toggle" }
+  | { key: "editor" | "terminal"; type: "tool" }
   | { key: "lightTheme" | "darkTheme"; type: "themes"; mode: ThemeMode };
 
 type Entry = Def & { section: string; label: string; help?: string };
@@ -100,6 +102,21 @@ const ENTRIES: Entry[] = [
     type: "toggle",
     label: "Show hidden files",
     help: `Files the system marks hidden. ${fmtShortcut("Ctrl+Shift+.")}`,
+  },
+
+  {
+    section: "Tools",
+    key: "editor",
+    type: "tool",
+    label: "Editor",
+    help: `For "Open in editor" (${fmtShortcut("Ctrl+Shift+E")}). Editors installed on this computer.`,
+  },
+  {
+    section: "Tools",
+    key: "terminal",
+    type: "tool",
+    label: "Terminal",
+    help: `For "Terminal here" (${fmtShortcut("Ctrl+`")}).`,
   },
 
   { section: "Layout", key: "showSidebar", type: "toggle", label: "Show the sidebar", help: fmtShortcut("Ctrl+B") },
@@ -238,7 +255,29 @@ function Control({ entry, settings }: { entry: Entry; settings: Settings }) {
           <span>{value ? "On" : "Off"}</span>
         </label>
       );
+    case "tool":
+      return <ToolSelect which={entry.key} value={String(value)} />;
     case "themes":
       return null; // drawn full width by ThemePicker
   }
+}
+
+/** The editors or terminals found on this computer, with "the first found" as the default. */
+function ToolSelect({ which, value }: { which: "editor" | "terminal"; value: string }) {
+  const [tools, setTools] = useState<Tool[] | null>(null);
+  useEffect(() => {
+    void loadTools().then((t) => setTools(which === "editor" ? t.editors : t.terminals));
+  }, [which]);
+  const first = tools?.[0]?.name;
+  return (
+    <select className="input" value={value} onChange={(e) => updateSettings({ [which]: e.target.value } as Partial<Settings>)}>
+      <option value="">{first ? `Automatic (${first})` : "Automatic"}</option>
+      {tools?.map((t) => (
+        <option key={t.id} value={t.id}>
+          {t.name}
+        </option>
+      ))}
+      {value && tools && !tools.some((t) => t.id === value) && <option value={value}>{value} (not found)</option>}
+    </select>
+  );
 }

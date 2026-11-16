@@ -12,6 +12,7 @@ mod ops_cmd;
 mod places_cmd;
 mod settings;
 mod state;
+mod tools_cmd;
 mod update;
 mod watch;
 mod window;
@@ -82,6 +83,9 @@ fn main() {
             clipboard::clipboard_clear_cut,
             dnd::drag_start,
             dnd::job_drop,
+            tools_cmd::tools_list,
+            tools_cmd::open_in_editor,
+            tools_cmd::open_terminal,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,

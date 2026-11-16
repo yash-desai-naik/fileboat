@@ -29,6 +29,10 @@ export interface Settings {
   columnWidths: Record<string, number>;
   /** Folders pinned in the sidebar, in order. */
   favourites: string[];
+  /** Editor id for "Open in editor", "" for the first found. */
+  editor: string;
+  /** Terminal id for "Terminal here", "" for the first found. */
+  terminal: string;
   checkUpdates: boolean;
   skippedUpdate: string;
 }

@@ -7,3 +7,4 @@ pub mod paths;
 pub mod places;
 pub mod prefs;
 pub mod themes;
+pub mod tools;

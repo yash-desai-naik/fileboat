@@ -19,6 +19,10 @@ export const paneActions = {
   paste: () => {},
   /** Copy the selection's full paths as text. */
   copyPath: () => {},
+  /** The selection (or the folder) in the editor chosen in Settings. */
+  openInEditor: () => {},
+  /** A terminal in this folder. */
+  terminalHere: () => {},
 };
 
 export type PaneActions = typeof paneActions;

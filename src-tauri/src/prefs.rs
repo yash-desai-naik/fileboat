@@ -69,6 +69,10 @@ pub struct Settings {
     pub column_widths: BTreeMap<String, u32>,
     /// Folders pinned in the sidebar, in order.
     pub favourites: Vec<String>,
+    /// "Open in editor": an editor id ("vscode", "cursor", "zed"…), "" for the first one found.
+    pub editor: String,
+    /// "Terminal here": a terminal id ("windows-terminal", "pwsh", "iterm"…), "" for the first found.
+    pub terminal: String,
     /// Look for a new version on GitHub at start-up and once a day.
     pub check_updates: bool,
     /// A version the user chose to skip (no notice for it; a manual check still shows it).
@@ -94,6 +98,8 @@ impl Default for Settings {
             show_hidden: false,
             column_widths: BTreeMap::new(),
             favourites: Vec::new(),
+            editor: String::new(),
+            terminal: String::new(),
             check_updates: true,
             skipped_update: String::new(),
         }
@@ -167,6 +173,8 @@ sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 viewMode: \"details\" | \"list\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
 favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
+editor: \"\" (the first found) | \"vscode\" | \"vscode-insiders\" | \"cursor\" | \"windsurf\" | \"zed\" | \"sublime\" | \"notepad++\" | \"jetbrains-idea\" (and other JetBrains IDEs) | \"notepad\" | \"textedit\"
+terminal: \"\" (the first found) | \"windows-terminal\" | \"pwsh\" | \"powershell\" | \"cmd\" | \"git-bash\" | \"wsl\" | \"terminal\" | \"iterm\" | \"ghostty\" | \"warp\" | \"wezterm\"
 columnWidths: {\"name\": 320, \"modified\": 150, \"type\": 140, \"size\": 90} (Details view, 40 to 2000 pixels each)
 checkUpdates: look for a new Fileboat version at start-up and once a day
 skippedUpdate: a version not to be told about again (\"\" = none)";
