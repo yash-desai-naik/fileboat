@@ -22,7 +22,7 @@ pub struct Text {
 
 /// Read up to `limit` bytes of `path` as text.
 pub fn read_text(path: &Path, limit: u64) -> Result<Text, String> {
-    let file = std::fs::File::open(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let file = crate::osfs::open(path).map_err(|e| crate::fs::describe(path, &e))?;
     let total = file.metadata().map(|m| m.len()).unwrap_or(0);
     let mut bytes = Vec::with_capacity(limit.min(total) as usize);
     file.take(limit).read_to_end(&mut bytes).map_err(|e| crate::fs::describe(path, &e))?;

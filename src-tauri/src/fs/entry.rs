@@ -116,7 +116,7 @@ impl Entry {
         // A directory entry's metadata is the link's own, never its target's.
         let meta = e.metadata().ok()?;
         if meta.file_type().is_symlink() {
-            let target = std::fs::metadata(e.path()).ok();
+            let target = crate::osfs::metadata(e.path()).ok();
             Some(Entry::build(name, &meta, target.as_ref()))
         } else {
             Some(Entry::build(name, &meta, Some(&meta)))
@@ -126,9 +126,9 @@ impl Entry {
     /// From a path (a single changed file, reported by a file system event).
     pub fn from_path(path: &std::path::Path) -> Option<Entry> {
         let name = path.file_name()?.to_string_lossy().into_owned();
-        let meta = std::fs::symlink_metadata(path).ok()?;
+        let meta = crate::osfs::symlink_metadata(path).ok()?;
         if meta.file_type().is_symlink() {
-            let target = std::fs::metadata(path).ok();
+            let target = crate::osfs::metadata(path).ok();
             Some(Entry::build(name, &meta, target.as_ref()))
         } else {
             Some(Entry::build(name, &meta, Some(&meta)))

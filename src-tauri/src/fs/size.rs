@@ -42,7 +42,7 @@ pub fn tree_size(root: &Path, mut cancelled: impl FnMut() -> bool) -> Option<Tre
     let mut stack: Vec<PathBuf> = vec![root.to_path_buf()];
     let mut seen: u64 = 0;
     while let Some(dir) = stack.pop() {
-        let Ok(read) = std::fs::read_dir(&dir) else {
+        let Ok(read) = crate::osfs::read_dir(&dir) else {
             total.partial = true;
             continue;
         };

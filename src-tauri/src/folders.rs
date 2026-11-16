@@ -365,7 +365,7 @@ pub fn folder_open(
     on_event: Channel<FolderEvent>,
 ) -> Result<Opened, String> {
     let path = fs::resolve(&path, base.as_deref().map(std::path::Path::new));
-    let meta = std::fs::metadata(&path).map_err(|e| fs::describe(&path, &e))?;
+    let meta = fileboat_core::osfs::metadata(&path).map_err(|e| fs::describe(&path, &e))?;
     if !meta.is_dir() {
         return Err(format!("{} is a file, not a folder.", path.display()));
     }

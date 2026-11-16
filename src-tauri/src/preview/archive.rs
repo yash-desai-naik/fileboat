@@ -32,7 +32,7 @@ const TAR_TIME: Duration = Duration::from_secs(2);
 /// List up to `limit` entries of the archive at `path`.
 pub fn list_archive(path: &Path, limit: usize) -> Result<ArchiveList, String> {
     let lower = path.to_string_lossy().to_lowercase();
-    let file = std::fs::File::open(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let file = crate::osfs::open(path).map_err(|e| crate::fs::describe(path, &e))?;
     if lower.ends_with(".tar.gz") || lower.ends_with(".tgz") {
         list_tar(flate2::read::GzDecoder::new(BufReader::new(file)), limit)
     } else if lower.ends_with(".tar") {

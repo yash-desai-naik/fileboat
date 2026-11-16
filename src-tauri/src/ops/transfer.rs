@@ -98,7 +98,7 @@ pub fn copy_name(dir: &Path, name: &str) -> String {
             format!("{stem} - Copy ({n}){ext}")
         }
     };
-    (1..).map(candidate).find(|c| fs::symlink_metadata(dir.join(c)).is_err()).expect("a free name")
+    (1..).map(candidate).find(|c| crate::osfs::symlink_metadata(dir.join(c)).is_err()).expect("a free name")
 }
 
 fn same_file(a: &Path, b: &Path) -> bool {
@@ -119,7 +119,7 @@ fn inside(inner: &Path, outer: &Path) -> bool {
 /// Count what a copy will go through into `p.total_bytes` / `p.total_items` (links aren't
 /// followed), telling `ctl` as the count grows: a big tree takes a moment to count.
 fn measure(path: &Path, p: &mut Progress, ctl: &dyn Control) {
-    let Ok(meta) = fs::symlink_metadata(path) else { return };
+    let Ok(meta) = crate::osfs::symlink_metadata(path) else { return };
     p.total_items += 1;
     if meta.is_dir() {
         measure_dir(path, p, ctl);
@@ -129,7 +129,7 @@ fn measure(path: &Path, p: &mut Progress, ctl: &dyn Control) {
 }
 
 fn measure_dir(dir: &Path, p: &mut Progress, ctl: &dyn Control) {
-    for (i, e) in fs::read_dir(dir).into_iter().flatten().flatten().enumerate() {
+    for (i, e) in crate::osfs::read_dir(dir).into_iter().flatten().flatten().enumerate() {
         if ctl.cancelled() {
             return;
         }
@@ -191,7 +191,7 @@ impl Run<'_> {
 
     /// The target exists: ask, and return the path to write to (None = skip).
     fn resolve(&mut self, source: &Path, target: &Path) -> Result<Option<PathBuf>, String> {
-        let (sm, tm) = (fs::metadata(source).ok(), fs::metadata(target).ok());
+        let (sm, tm) = (crate::osfs::metadata(source).ok(), crate::osfs::metadata(target).ok());
         let conflict = Conflict {
             source: source.to_path_buf(),
             target: target.to_path_buf(),
@@ -226,18 +226,18 @@ impl Run<'_> {
     /// Copy `src` to `dst` (a file, or a folder merged into an existing one).
     fn copy(&mut self, src: &Path, dst: &Path) -> Result<bool, String> {
         self.check()?;
-        let meta = fs::symlink_metadata(src).map_err(|e| format!("Couldn't read \"{}\": {e}", name_of(src)))?;
+        let meta = crate::osfs::symlink_metadata(src).map_err(|e| format!("Couldn't read \"{}\": {e}", name_of(src)))?;
         if meta.is_dir() {
-            match fs::symlink_metadata(dst) {
+            match crate::osfs::symlink_metadata(dst) {
                 Ok(m) if m.is_dir() => {} // an existing folder of that name: merge into it
                 Ok(_) => {
                     let Some(dst) = self.resolve(src, dst)? else { return Ok(false) };
                     return self.copy(src, &dst);
                 }
-                Err(_) => fs::create_dir(dst).map_err(|e| format!("Couldn't create \"{}\": {e}", name_of(dst)))?,
+                Err(_) => crate::osfs::create_dir(dst).map_err(|e| format!("Couldn't create \"{}\": {e}", name_of(dst)))?,
             }
             self.tick(src, 0, 1);
-            let mut children: Vec<PathBuf> = fs::read_dir(src)
+            let mut children: Vec<PathBuf> = crate::osfs::read_dir(src)
                 .map_err(|e| format!("Couldn't read \"{}\": {e}", name_of(src)))?
                 .flatten()
                 .map(|e| e.path())
@@ -248,7 +248,7 @@ impl Run<'_> {
             }
             return Ok(true);
         }
-        let dst = if fs::symlink_metadata(dst).is_ok() {
+        let dst = if crate::osfs::symlink_metadata(dst).is_ok() {
             match self.resolve(src, dst)? {
                 Some(p) => p,
                 None => {
@@ -267,13 +267,13 @@ impl Run<'_> {
         let fail = |e: std::io::Error| format!("Couldn't copy \"{}\": {e}", name_of(src));
         if len < CHUNKED {
             // The system's own copy (CopyFileEx on Windows): fast, keeps dates and attributes.
-            fs::copy(src, dst).map_err(fail)?;
+            crate::osfs::copy(src, dst).map_err(fail)?;
             self.tick(src, len, 1);
             return Ok(());
         }
         let result = (|| -> Result<(), String> {
-            let mut from = fs::File::open(src).map_err(fail)?;
-            let mut to = fs::OpenOptions::new().write(true).create_new(true).open(dst).map_err(fail)?;
+            let mut from = crate::osfs::open(src).map_err(fail)?;
+            let mut to = crate::osfs::open_with(fs::OpenOptions::new().write(true).create_new(true), dst).map_err(fail)?;
             let mut buf = vec![0u8; 1024 * 1024];
             loop {
                 self.check()?;
@@ -285,12 +285,12 @@ impl Run<'_> {
                 self.tick(src, n as u64, 0);
             }
             // Keep the modified date and read-only flag, as the system copy does.
-            let meta = fs::metadata(src).map_err(fail)?;
+            let meta = crate::osfs::metadata(src).map_err(fail)?;
             if let Ok(t) = meta.modified() {
                 let _ = to.set_modified(t);
             }
             drop(to);
-            let _ = fs::set_permissions(dst, meta.permissions());
+            let _ = crate::osfs::set_permissions(dst, meta.permissions());
             Ok(())
         })();
         match result {
@@ -300,7 +300,7 @@ impl Run<'_> {
             }
             Err(e) => {
                 // Never leave half a file behind.
-                let _ = fs::remove_file(dst);
+                let _ = crate::osfs::remove_file(dst);
                 Err(e)
             }
         }
@@ -337,13 +337,13 @@ pub fn transfer(sources: &[PathBuf], dest: &Path, mode: Mode, ctl: &dyn Control)
             if same_place {
                 continue; // moving into the folder it's already in: nothing to do
             }
-            if fs::symlink_metadata(&target).is_ok() {
+            if crate::osfs::symlink_metadata(&target).is_ok() {
                 match run.resolve(s, &target)? {
                     Some(t) => target = t,
                     None => continue,
                 }
             }
-            match fs::rename(s, &target) {
+            match crate::osfs::rename(s, &target) {
                 Ok(()) => {
                     let (b, n) = size_of(&target, ctl);
                     run.tick(&target, b, n);
@@ -363,7 +363,7 @@ pub fn transfer(sources: &[PathBuf], dest: &Path, mode: Mode, ctl: &dyn Control)
                 // Copying into its own folder makes a second copy beside it.
                 target = dest.join(copy_name(dest, &name.to_string_lossy()));
             }
-            let existed = fs::symlink_metadata(&target).is_ok();
+            let existed = crate::osfs::symlink_metadata(&target).is_ok();
             if run.copy(s, &target)? && !existed {
                 out.created.push(target);
             }

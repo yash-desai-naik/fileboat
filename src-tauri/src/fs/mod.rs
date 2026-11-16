@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 /// is fully read). Entries that vanish or can't be read while listing are skipped. Stops early
 /// when `on_batch` returns false (the folder was closed).
 pub fn list(path: &Path, batch_size: usize, mut on_batch: impl FnMut(Vec<Entry>) -> bool) -> Result<(), String> {
-    let read = std::fs::read_dir(path).map_err(|e| describe(path, &e))?;
+    let read = crate::osfs::read_dir(path).map_err(|e| describe(path, &e))?;
     let mut batch = Vec::with_capacity(batch_size);
     for item in read {
         let Ok(item) = item else { continue };
@@ -49,7 +49,7 @@ pub fn real_name(path: &Path) -> Option<String> {
 #[cfg(not(windows))]
 pub fn real_name(path: &Path) -> Option<String> {
     let wanted = path.file_name()?.to_string_lossy().to_lowercase();
-    std::fs::read_dir(path.parent()?)
+    crate::osfs::read_dir(path.parent()?)
         .ok()?
         .flatten()
         .map(|e| e.file_name().to_string_lossy().into_owned())
@@ -82,7 +82,7 @@ pub fn complete(input: &str, base: Option<&Path>, limit: usize) -> Vec<PathBuf> 
             _ => (resolved, String::new()),
         }
     };
-    let Ok(read) = std::fs::read_dir(&dir) else { return Vec::new() };
+    let Ok(read) = crate::osfs::read_dir(&dir) else { return Vec::new() };
     let mut found: Vec<Entry> = read
         .filter_map(|e| Entry::from_dir_entry(&e.ok()?))
         .filter(|e| e.kind == Kind::Folder && e.key.starts_with(&prefix) && (!e.hidden || prefix.starts_with('.')))

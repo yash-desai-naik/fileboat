@@ -56,10 +56,10 @@ fn reverse(op: &Op) -> Result<(), String> {
         Op::Trashed { paths, at } => restore_from_trash(paths, *at),
         Op::Moved(pairs) => {
             for (from, to) in pairs.iter().rev() {
-                if std::fs::symlink_metadata(from).is_ok() {
+                if crate::osfs::symlink_metadata(from).is_ok() {
                     return Err(format!("\"{}\" exists again where it was moved from, so it isn't moved back.", name_of(from)));
                 }
-                std::fs::rename(to, from).map_err(|e| format!("Couldn't move \"{}\" back: {e}", name_of(to)))?;
+                crate::osfs::rename(to, from).map_err(|e| format!("Couldn't move \"{}\" back: {e}", name_of(to)))?;
             }
             Ok(())
         }
@@ -70,14 +70,14 @@ fn reverse(op: &Op) -> Result<(), String> {
 /// Undo "new": an untouched new item (empty folder, empty file) is removed; one with content
 /// since then goes to the Recycle Bin / Trash, so nothing written into it is lost.
 fn remove_new(path: &Path) -> Result<(), String> {
-    let Ok(meta) = std::fs::symlink_metadata(path) else { return Ok(()) };
+    let Ok(meta) = crate::osfs::symlink_metadata(path) else { return Ok(()) };
     let untouched = if meta.is_dir() {
-        std::fs::read_dir(path).map(|mut d| d.next().is_none()).unwrap_or(false)
+        crate::osfs::read_dir(path).map(|mut d| d.next().is_none()).unwrap_or(false)
     } else {
         meta.len() == 0
     };
     if untouched {
-        let r = if meta.is_dir() { std::fs::remove_dir(path) } else { std::fs::remove_file(path) };
+        let r = if meta.is_dir() { crate::osfs::remove_dir(path) } else { crate::osfs::remove_file(path) };
         r.map_err(|e| format!("Couldn't remove \"{}\": {e}", name_of(path)))
     } else {
         super::delete::to_trash(&[path.to_path_buf()])

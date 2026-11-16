@@ -31,19 +31,19 @@ pub fn delete_permanently(paths: &[PathBuf]) -> Result<(), String> {
 }
 
 fn remove(p: &Path) -> std::io::Result<()> {
-    let meta = std::fs::symlink_metadata(p)?;
+    let meta = crate::osfs::symlink_metadata(p)?;
     let ft = meta.file_type();
     if ft.is_symlink() {
         // A link to a folder (or a junction) is removed as a folder on Windows, a file elsewhere.
-        return std::fs::remove_file(p).or_else(|_| std::fs::remove_dir(p));
+        return crate::osfs::remove_file(p).or_else(|_| crate::osfs::remove_dir(p));
     }
     if ft.is_dir() {
-        for child in std::fs::read_dir(p)? {
+        for child in crate::osfs::read_dir(p)? {
             remove(&child?.path())?;
         }
-        return retry_writable(p, &meta, |p| std::fs::remove_dir(p));
+        return retry_writable(p, &meta, |p| crate::osfs::remove_dir(p));
     }
-    retry_writable(p, &meta, |p| std::fs::remove_file(p))
+    retry_writable(p, &meta, |p| crate::osfs::remove_file(p))
 }
 
 /// Run `op`; if it's refused and the item is read-only, make it writable and try once more.
@@ -53,7 +53,7 @@ fn retry_writable(p: &Path, meta: &std::fs::Metadata, op: impl Fn(&Path) -> std:
             let mut perms = meta.permissions();
             #[allow(clippy::permissions_set_readonly_false)]
             perms.set_readonly(false);
-            std::fs::set_permissions(p, perms)?;
+            crate::osfs::set_permissions(p, perms)?;
             op(p)
         }
         other => other,

@@ -175,8 +175,8 @@ fn is_hidden(name: &str, _meta: &std::fs::Metadata) -> bool {
 
 /// What a path is and which viewer shows it.
 pub fn info(path: &Path) -> Result<Info, String> {
-    let link_meta = std::fs::symlink_metadata(path).map_err(|e| crate::fs::describe(path, &e))?;
-    let meta = std::fs::metadata(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let link_meta = crate::osfs::symlink_metadata(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let meta = crate::osfs::metadata(path).map_err(|e| crate::fs::describe(path, &e))?;
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.display().to_string());
     let (viewer, mime) = if meta.is_dir() {
         (Viewer::Folder, "")
@@ -185,7 +185,7 @@ pub fn info(path: &Path) -> Result<Info, String> {
     } else {
         let mut head = Vec::with_capacity(SNIFF);
         if meta.len() > 0 {
-            std::fs::File::open(path)
+            crate::osfs::open(path)
                 .and_then(|f| f.take(SNIFF as u64).read_to_end(&mut head))
                 .map_err(|e| crate::fs::describe(path, &e))?;
         }
@@ -226,7 +226,7 @@ pub fn mime_of(path: &Path) -> &'static str {
 /// Up to `len` bytes from `offset` (the hex view), at most 64 KB.
 pub fn read_bytes(path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, String> {
     use std::io::{Seek, SeekFrom};
-    let mut f = std::fs::File::open(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let mut f = crate::osfs::open(path).map_err(|e| crate::fs::describe(path, &e))?;
     f.seek(SeekFrom::Start(offset)).map_err(|e| e.to_string())?;
     let mut out = Vec::with_capacity(len.min(65536));
     f.take(len.min(65536) as u64).read_to_end(&mut out).map_err(|e| e.to_string())?;
@@ -245,7 +245,7 @@ pub struct FolderSummary {
 
 /// Count a folder's items and read its README (the first of README.md, README, README.txt…).
 pub fn folder_summary(path: &Path) -> Result<FolderSummary, String> {
-    let read = std::fs::read_dir(path).map_err(|e| crate::fs::describe(path, &e))?;
+    let read = crate::osfs::read_dir(path).map_err(|e| crate::fs::describe(path, &e))?;
     let (mut files, mut folders) = (0, 0);
     let mut readmes: Vec<(u8, String)> = Vec::new();
     for item in read.flatten() {
@@ -269,7 +269,7 @@ pub fn folder_summary(path: &Path) -> Result<FolderSummary, String> {
     readmes.sort();
     let readme = readmes.into_iter().find_map(|(_, name)| {
         let p = path.join(&name);
-        let meta = std::fs::metadata(&p).ok()?;
+        let meta = crate::osfs::metadata(&p).ok()?;
         if not_downloaded(&meta) {
             return None;
         }

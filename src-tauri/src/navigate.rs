@@ -20,7 +20,7 @@ pub struct Resolved {
 #[tauri::command]
 pub fn path_resolve(input: String, base: Option<String>) -> Resolved {
     let path = fs::resolve(&input, base.as_deref().map(Path::new));
-    let kind = match std::fs::metadata(&path) {
+    let kind = match fileboat_core::osfs::metadata(&path) {
         Ok(m) if m.is_dir() => "folder",
         Ok(_) => "file",
         Err(_) => "missing",

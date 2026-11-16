@@ -147,7 +147,7 @@ fn parse_range(range: &str, len: u64) -> Option<(u64, u64)> {
 }
 
 fn serve_file(path: &std::path::Path, range: Option<&str>) -> Result<Response<Vec<u8>>, StatusCode> {
-    let mut file = std::fs::File::open(path).map_err(|_| StatusCode::NOT_FOUND)?;
+    let mut file = fileboat_core::osfs::open(path).map_err(|_| StatusCode::NOT_FOUND)?;
     let len = file.metadata().map_err(|_| StatusCode::NOT_FOUND)?.len();
     let base = Response::builder()
         .header(header::CONTENT_TYPE, preview::mime_of(path))

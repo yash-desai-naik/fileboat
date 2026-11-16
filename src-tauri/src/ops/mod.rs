@@ -8,10 +8,7 @@ pub mod undo;
 use std::path::{Path, PathBuf};
 
 /// Names Windows reserves for devices, with or without an extension ("nul.txt" too).
-const RESERVED: [&str; 22] = [
-    "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2",
-    "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
-];
+use crate::osfs::RESERVED;
 
 /// Is `name` usable for a file or folder here? Checks what the OS would refuse (or accept but
 /// make awkward), so the user gets a clear reason instead of an OS error code.
@@ -75,7 +72,7 @@ fn io_error(what: &str, path: &Path, e: std::io::Error) -> String {
 pub fn create_folder(dir: &Path, name: &str) -> Result<PathBuf, String> {
     check_name(name)?;
     let path = dir.join(name);
-    std::fs::create_dir(&path).map_err(|e| io_error("create", &path, e))?;
+    crate::osfs::create_dir(&path).map_err(|e| io_error("create", &path, e))?;
     Ok(path)
 }
 
@@ -83,7 +80,7 @@ pub fn create_folder(dir: &Path, name: &str) -> Result<PathBuf, String> {
 pub fn create_file(dir: &Path, name: &str) -> Result<PathBuf, String> {
     check_name(name)?;
     let path = dir.join(name);
-    std::fs::OpenOptions::new().write(true).create_new(true).open(&path).map_err(|e| io_error("create", &path, e))?;
+    crate::osfs::open_with(std::fs::OpenOptions::new().write(true).create_new(true), &path).map_err(|e| io_error("create", &path, e))?;
     Ok(path)
 }
 
@@ -100,19 +97,19 @@ pub fn rename(path: &Path, new_name: &str) -> Result<PathBuf, String> {
     let case_only = old_name.to_lowercase() == new_name.to_lowercase();
     if case_only {
         let temp = dir.join(unique_name(dir, &format!("{old_name}.fileboat-rename")));
-        std::fs::rename(path, &temp).map_err(|e| io_error("rename", path, e))?;
-        if let Err(e) = std::fs::rename(&temp, &target) {
+        crate::osfs::rename(path, &temp).map_err(|e| io_error("rename", path, e))?;
+        if let Err(e) = crate::osfs::rename(&temp, &target) {
             // Put it back as it was.
-            let _ = std::fs::rename(&temp, path);
+            let _ = crate::osfs::rename(&temp, path);
             return Err(io_error("rename", path, e));
         }
         return Ok(target);
     }
     // std::fs::rename replaces an existing file on some systems: never do that silently.
-    if std::fs::symlink_metadata(&target).is_ok() {
+    if crate::osfs::symlink_metadata(&target).is_ok() {
         return Err(format!("\"{new_name}\" already exists here."));
     }
-    std::fs::rename(path, &target).map_err(|e| io_error("rename", path, e))?;
+    crate::osfs::rename(path, &target).map_err(|e| io_error("rename", path, e))?;
     Ok(target)
 }
 

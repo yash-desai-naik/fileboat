@@ -8,6 +8,7 @@ pub mod grep;
 pub mod index;
 pub mod mcp;
 pub mod ops;
+pub mod osfs;
 pub mod paths;
 pub mod places;
 pub mod prefs;
