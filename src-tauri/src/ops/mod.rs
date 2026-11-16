@@ -2,6 +2,7 @@
 //! Every function checks names first and answers in plain words.
 
 pub mod delete;
+pub mod transfer;
 pub mod undo;
 
 use std::path::{Path, PathBuf};
