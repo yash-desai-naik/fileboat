@@ -70,6 +70,68 @@ pub fn os(path: &Path) -> Cow<'_, Path> {
     Cow::Borrowed(path)
 }
 
+/// When `e` says a file is in use, the programs that have it open, as Windows knows them
+/// ("Microsoft Word", "Notepad"), else None. Folders aren't tracked by Windows this way.
+#[cfg(windows)]
+pub fn in_use(path: &Path, e: &io::Error) -> Option<Vec<String>> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::Foundation::ERROR_SUCCESS;
+    use windows::Win32::System::RestartManager::{RmEndSession, RmGetList, RmRegisterResources, RmStartSession, CCH_RM_SESSION_KEY, RM_PROCESS_INFO};
+    use windows::core::{PCWSTR, PWSTR};
+    // Sharing violation, lock violation, or access denied (what a delete of an open file gets).
+    if !matches!(e.raw_os_error(), Some(32 | 33 | 5)) || std::fs::symlink_metadata(os(path)).is_ok_and(|m| m.is_dir()) {
+        return None;
+    }
+    let wide: Vec<u16> = os(path).as_os_str().encode_wide().chain(Some(0)).collect();
+    let mut session = 0u32;
+    let mut key = [0u16; CCH_RM_SESSION_KEY as usize + 1];
+    unsafe {
+        if RmStartSession(&mut session, None, PWSTR(key.as_mut_ptr())) != ERROR_SUCCESS {
+            return None;
+        }
+        let mut names = Vec::new();
+        if RmRegisterResources(session, Some(&[PCWSTR(wide.as_ptr())]), None, None) == ERROR_SUCCESS {
+            let mut infos = vec![RM_PROCESS_INFO::default(); 16];
+            let (mut needed, mut count, mut reasons) = (0u32, infos.len() as u32, 0u32);
+            if RmGetList(session, &mut needed, &mut count, Some(infos.as_mut_ptr()), &mut reasons) == ERROR_SUCCESS {
+                for info in &infos[..count as usize] {
+                    let end = info.strAppName.iter().position(|&c| c == 0).unwrap_or(info.strAppName.len());
+                    let name = String::from_utf16_lossy(&info.strAppName[..end]);
+                    if !name.is_empty() && !names.contains(&name) {
+                        names.push(name);
+                    }
+                }
+            }
+        }
+        let _ = RmEndSession(session);
+        (!names.is_empty()).then_some(names)
+    }
+}
+
+#[cfg(not(windows))]
+pub fn in_use(_path: &Path, _e: &io::Error) -> Option<Vec<String>> {
+    None
+}
+
+/// "Word", "Word and Notepad", "Word, Excel and Notepad".
+pub fn and_list(names: &[String]) -> String {
+    match names {
+        [] => String::new(),
+        [one] => one.clone(),
+        [init @ .., last] => format!("{} and {last}", init.join(", ")),
+    }
+}
+
+/// Why `e` happened to `path`, in words: the programs that have it open when Windows knows,
+/// "it's open in another program" for a sharing violation, else the system's message.
+pub fn explain(path: &Path, e: &io::Error) -> String {
+    match in_use(path, e) {
+        Some(programs) => format!("it's open in {}", and_list(&programs)),
+        None if matches!(e.raw_os_error(), Some(32 | 33)) && cfg!(windows) => "it's open in another program".into(),
+        None => e.to_string(),
+    }
+}
+
 pub fn metadata<P: AsRef<Path>>(p: P) -> io::Result<Metadata> {
     std::fs::metadata(os(p.as_ref()))
 }

@@ -62,9 +62,12 @@ fn io_error(what: &str, path: &Path, e: std::io::Error) -> String {
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.display().to_string());
     match e.kind() {
         AlreadyExists => format!("\"{name}\" already exists here."),
-        PermissionDenied => format!("You don't have permission to {what} \"{name}\". It may be open in another program, or read-only."),
+        PermissionDenied => match crate::osfs::in_use(path, &e) {
+            Some(_) => format!("Couldn't {what} \"{name}\": {}.", crate::osfs::explain(path, &e)),
+            None => format!("You don't have permission to {what} \"{name}\". It may be open in another program, or read-only."),
+        },
         NotFound => format!("\"{name}\" doesn't exist (any more)."),
-        _ => format!("Couldn't {what} \"{name}\": {e}"),
+        _ => format!("Couldn't {what} \"{name}\": {}.", crate::osfs::explain(path, &e)),
     }
 }
 

@@ -18,32 +18,40 @@ pub fn to_trash(paths: &[PathBuf]) -> Result<(), String> {
 /// read-only files (git objects, for one) are made writable first, as Explorer does.
 pub fn delete_permanently(paths: &[PathBuf]) -> Result<(), String> {
     for p in paths {
-        remove(p).map_err(|e| {
-            let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| p.display().to_string());
+        remove(p).map_err(|(at, e)| {
+            let name_of = |p: &Path| p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| p.display().to_string());
+            let name = name_of(p);
+            // Inside a folder, name the item that couldn't go: "report.docx" in it is open in Word.
+            let who = if at != *p { format!("\"{}\" in it is", name_of(&at)) } else { "it's".to_string() };
+            if let Some(programs) = crate::osfs::in_use(&at, &e) {
+                return format!("Couldn't delete \"{name}\": {who} open in {}.", crate::osfs::and_list(&programs));
+            }
             match e.kind() {
-                std::io::ErrorKind::PermissionDenied => format!("Couldn't delete \"{name}\": it's in use by another program, or you don't have permission."),
-                std::io::ErrorKind::NotFound => format!("\"{name}\" doesn't exist (any more)."),
-                _ => format!("Couldn't delete \"{name}\": {e}"),
+                std::io::ErrorKind::PermissionDenied => format!("Couldn't delete \"{name}\": {who} in use by another program, or you don't have permission."),
+                std::io::ErrorKind::NotFound if at == *p => format!("\"{name}\" doesn't exist (any more)."),
+                _ => format!("Couldn't delete \"{name}\" ({}): {}.", name_of(&at), crate::osfs::explain(&at, &e)),
             }
         })?;
     }
     Ok(())
 }
 
-fn remove(p: &Path) -> std::io::Result<()> {
-    let meta = crate::osfs::symlink_metadata(p)?;
+/// Remove `p` and everything in it; on failure, the item that couldn't be removed and why.
+fn remove(p: &Path) -> Result<(), (PathBuf, std::io::Error)> {
+    let here = |e| (p.to_path_buf(), e);
+    let meta = crate::osfs::symlink_metadata(p).map_err(here)?;
     let ft = meta.file_type();
     if ft.is_symlink() {
         // A link to a folder (or a junction) is removed as a folder on Windows, a file elsewhere.
-        return crate::osfs::remove_file(p).or_else(|_| crate::osfs::remove_dir(p));
+        return crate::osfs::remove_file(p).or_else(|_| crate::osfs::remove_dir(p)).map_err(here);
     }
     if ft.is_dir() {
-        for child in crate::osfs::read_dir(p)? {
-            remove(&child?.path())?;
+        for child in crate::osfs::read_dir(p).map_err(here)? {
+            remove(&child.map_err(here)?.path())?;
         }
-        return retry_writable(p, &meta, |p| crate::osfs::remove_dir(p));
+        return retry_writable(p, &meta, |p| crate::osfs::remove_dir(p)).map_err(here);
     }
-    retry_writable(p, &meta, |p| crate::osfs::remove_file(p))
+    retry_writable(p, &meta, |p| crate::osfs::remove_file(p)).map_err(here)
 }
 
 /// Run `op`; if it's refused and the item is read-only, make it writable and try once more.

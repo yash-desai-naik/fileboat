@@ -185,3 +185,27 @@ fn utf16_with_bom() {
     assert!(preview::info(&file).unwrap().viewer != preview::Viewer::Binary);
     fs::remove_dir_all(&root).unwrap();
 }
+
+/// A file another program holds open: the message says which program, when Windows knows.
+#[cfg(windows)]
+#[test]
+fn locked_files_name_the_program() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = temp_dir("locked");
+    fs::create_dir(root.join("folder")).unwrap();
+    let file = root.join("folder").join("report.docx");
+    fs::write(&file, "x").unwrap();
+    // Open with no sharing at all, as Word does.
+    let held = fs::OpenOptions::new().read(true).write(true).share_mode(0).open(&file).unwrap();
+
+    let err = delete::delete_permanently(std::slice::from_ref(&root.join("folder"))).unwrap_err();
+    assert!(err.contains("\"report.docx\" in it is open in "), "{err}");
+    let err = ops::rename(&file, "renamed.docx").unwrap_err();
+    assert!(err.contains("it's open in "), "{err}");
+    let dest = temp_dir("locked-dest");
+    let err = transfer::transfer(std::slice::from_ref(&file), &dest, transfer::Mode::Copy, &quiet()).unwrap_err();
+    assert!(err.contains("it's open in "), "{err}");
+
+    drop(held);
+    delete::delete_permanently(&[root, dest]).unwrap();
+}

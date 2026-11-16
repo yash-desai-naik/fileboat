@@ -264,7 +264,7 @@ impl Run<'_> {
     }
 
     fn copy_file(&mut self, src: &Path, dst: &Path, len: u64) -> Result<(), String> {
-        let fail = |e: std::io::Error| format!("Couldn't copy \"{}\": {e}", name_of(src));
+        let fail = |e: std::io::Error| format!("Couldn't copy \"{}\": {}.", name_of(src), crate::osfs::explain(src, &e));
         if len < CHUNKED {
             // The system's own copy (CopyFileEx on Windows): fast, keeps dates and attributes.
             crate::osfs::copy(src, dst).map_err(fail)?;
@@ -356,7 +356,7 @@ pub fn transfer(sources: &[PathBuf], dest: &Path, mode: Mode, ctl: &dyn Control)
                         out.moved.push((s.clone(), target));
                     }
                 }
-                Err(e) => return Err(format!("Couldn't move \"{}\": {e}", name_of(s))),
+                Err(e) => return Err(format!("Couldn't move \"{}\": {}.", name_of(s), crate::osfs::explain(s, &e))),
             }
         } else {
             if same_place {
