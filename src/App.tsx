@@ -7,6 +7,7 @@ import { uiActions } from "./lib/ui";
 import { CommandBar } from "./palette/CommandBar";
 import { SettingsPage } from "./settings/SettingsPage";
 import { AboutDialog } from "./shell/AboutDialog";
+import { UpdateNotice } from "./shell/UpdateNotice";
 import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
@@ -106,6 +107,7 @@ export function App() {
       {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
       {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      <UpdateNotice />
     </div>
   );
 }

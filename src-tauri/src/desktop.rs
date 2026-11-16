@@ -45,3 +45,9 @@ pub fn open_app_folder(which: String) -> Result<(), String> {
     };
     open_with_desktop(&dir)
 }
+
+/// Fileboat's releases on GitHub, in the default browser (a fixed address, nothing from the page).
+#[tauri::command]
+pub fn open_releases_page() -> Result<(), String> {
+    open_with_desktop(std::path::Path::new("https://github.com/yash-desai-naik/fileboat/releases"))
+}

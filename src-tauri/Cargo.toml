@@ -28,6 +28,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # %APPDATA% and %LOCALAPPDATA% without needing Tauri (the core is window-free).
 dirs = "7"
+# Updates from GitHub releases, signature-checked against the key in tauri.conf.json.
+tauri-plugin-updater = "2"
+# Tauri's own async runtime; timers for the daily update check.
+tokio = { version = "1", features = ["time"] }
+# FILEBOAT_UPDATE_URL (a test feed) is parsed as a URL.
+url = "2"
 
 [target.'cfg(windows)'.dependencies]
 # Already built for Tauri's windowing; used for the window's "Restore Down" rectangle.

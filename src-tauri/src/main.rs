@@ -3,6 +3,7 @@
 
 mod desktop;
 mod settings;
+mod update;
 mod window;
 
 use tauri::Manager;
@@ -17,6 +18,8 @@ fn main() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(update::UpdateState::default())
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -24,6 +27,7 @@ fn main() {
                 window::place_centered(&main, None);
             }
             app.manage(settings::SettingsStore::load()?);
+            update::start_background_checks(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -33,6 +37,10 @@ fn main() {
             window::window_fit_restore,
             desktop::app_paths,
             desktop::open_app_folder,
+            desktop::open_releases_page,
+            update::update_check,
+            update::update_status,
+            update::update_install,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Fileboat");

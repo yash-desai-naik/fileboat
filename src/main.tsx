@@ -10,6 +10,7 @@ import "./styles.css";
 import "./controls.css";
 import "./shell.css";
 import "./palette.css";
+import "./update.css";
 import "./type.css";
 
 const appWindow = getCurrentWindow();

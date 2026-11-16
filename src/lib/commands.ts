@@ -3,6 +3,7 @@ import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
+import { checkForUpdates } from "./update";
 
 /**
  * Every action in the app, with its shortcuts. The command bar (`>`) lists them, the shortcut
@@ -86,6 +87,7 @@ export function buildCommands(): Command[] {
     { id: "commandBar.help", category: "Help", title: "Command Bar Modes", run: () => uiActions.openCommandBar("?") },
     { id: "settings.open", category: "Preferences", title: "Open Settings", keys: ["Ctrl+,"], run: () => uiActions.openSettings() },
     { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
+    { id: "help.updates", category: "Help", title: "Check for Updates…", run: () => void checkForUpdates() },
     {
       id: "view.toggleSidebar",
       category: "View",

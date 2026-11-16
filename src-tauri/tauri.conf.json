@@ -56,5 +56,16 @@
     "category": "DeveloperTool",
     "shortDescription": "A small, fast file explorer for developers",
     "longDescription": "Fileboat: a file explorer for developers with live git, fast search, previews and Claude Code built in."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4REJCMkQ3MjEwOThDRDYKUldUV2pBa2gxN0xiT1B2R08wQ3lXeEh0a2REbmhJUHk5b1kxazlYY1p0Q3BCblc1ajBSTml2YXAK",
+      "endpoints": [
+        "https://github.com/yash-desai-naik/fileboat/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

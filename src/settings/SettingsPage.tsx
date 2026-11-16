@@ -69,6 +69,14 @@ const ENTRIES: Entry[] = [
 
   { section: "Layout", key: "showSidebar", type: "toggle", label: "Show the sidebar", help: fmtShortcut("Ctrl+B") },
   { section: "Layout", key: "showPreview", type: "toggle", label: "Show the preview pane", help: fmtShortcut("Alt+P") },
+
+  {
+    section: "Start-up",
+    key: "checkUpdates",
+    type: "toggle",
+    label: "Check for updates automatically",
+    help: "At start-up and once a day, Fileboat asks GitHub for its latest version (nothing about you is sent). You decide when to install.",
+  },
 ];
 
 /** Ctrl+, : every setting, searchable. Changes apply and save immediately. */
