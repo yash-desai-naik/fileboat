@@ -1,0 +1,258 @@
+/* Fileboat design tokens and base styles.
+   Warm neutral surfaces with one blue accent, soft radii, solid surfaces only (no blur, no
+   transparency behind text, so ClearType stays crisp). Colours come from the theme
+   (src/themes); components use the variables, never colours of their own. */
+
+:root {
+  /* The system's UI font for chrome and file names; JetBrains Mono (installed copy first, bundled
+     copy as fallback) for paths, sizes, dates, code and key caps. */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "JetBrains Mono Variable", "Cascadia Mono", Consolas, monospace;
+
+  /* Type scale */
+  --fs-xs: 11px; /* badges, key caps */
+  --fs-sm: 12px; /* hints, metadata, uppercase section labels */
+  --fs-md: 13px; /* body: sidebar, tabs, buttons, file lists */
+  --fs-lg: 15px; /* dialog titles, command bar input */
+  --fs-xl: 20px; /* page titles */
+  --fs-mono: 12px; /* monospace next to body text looks larger: one step down */
+  /* Weights: 400 body · 500 controls · 600 names and headers · 700 labels and titles */
+
+  --ui-size: var(--fs-md);
+  --radius-control: 6px;
+  --radius-pill: 8px;
+  --radius-popup: 12px;
+  --titlebar-h: 40px;
+  --toolbar-h: 36px;
+  --statusbar-h: 24px;
+  /* One height for the sidebar header and the right pane's header, so they line up. */
+  --panehead-h: 36px;
+  --row-h: 24px;
+}
+
+:root[data-density="compact"] {
+  --row-h: 22px;
+  --toolbar-h: 32px;
+  --panehead-h: 32px;
+}
+
+:root[data-density="comfortable"] {
+  --row-h: 28px;
+  --toolbar-h: 40px;
+}
+
+/* Colour themes. src/themes/themes.json is the source of truth: src/themes/index.ts writes every
+   colour variable for the chosen theme at start. These two blocks are the Fileboat themes as a
+   fallback for the very first paint, generated from themes.json; keep them equal to it. */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #262624;
+  --bg-chrome: #1f1e1d;
+  --bg-sidebar: #1f1e1d;
+  --bg-elevated: #30302e;
+  --bg-hover: #31302d;
+  --bg-active: #3b3a36;
+  --border: #353430;
+  --border-strong: #4a4943;
+  --text: #f5f4ee;
+  --text-2: #c2c0b6;
+  --text-3: #9a9890;
+  --accent: #6aa8ec;
+  --accent-text: #ffffff;
+  --accent-tint: #343e47;
+  --accent-soft: rgba(106, 168, 236, 0.22);
+  --selection: #2b3a4d;
+  --zebra: #2a2a27;
+  --control-fill: #33322f;
+  --control-fill-hover: #3d3c38;
+  --surface-raised: #45443f;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --danger: #f2715e;
+  --scrim: rgba(0, 0, 0, 0.45);
+  --shadow-popup: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --scrollbar: #4d4c46;
+  --scrollbar-hover: #65645e;
+  --accent-fill: #2f6fc0;
+  --accent-hover: #2464b4;
+  --focus-ring: #6aa8ec;
+  --warning: #d29922;
+  --success: #46a971;
+  --info: #589ed8;
+  --on-danger: #ffffff;
+  --danger-fill: #ca4c3c;
+  --danger-bg: #3e2f2b;
+  --success-bg: #273026;
+  --warning-bg: #3b3424;
+  --grid-line: rgba(255, 255, 255, 0.07);
+  --edit-changed: #3b3218;
+  --edit-added: #183a24;
+  --edit-deleted: #43201f;
+  --search-match: #623315;
+  --search-current: #9e6a03;
+  --editor-gutter: #6e7681;
+  --editor-gutter-active: #c2c0b6;
+  --editor-current-stmt: rgba(255, 255, 255, 0.045);
+  --editor-bracket: rgba(255, 255, 255, 0.12);
+  --editor-bracket-outline: #888888;
+  --syn-keyword: #569cd6;
+  --syn-type: #4ec9b0;
+  --syn-function: #dcdcaa;
+  --syn-string: #ce9178;
+  --syn-number: #b5cea8;
+  --syn-literal: #569cd6;
+  --syn-property: #9cdcfe;
+  --syn-operator: #d4d4d4;
+  --syn-comment: #6a9955;
+  --syn-invalid: #f44747;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #faf9f5;
+  --bg-chrome: #f3f1ea;
+  --bg-sidebar: #efede5;
+  --bg-elevated: #ffffff;
+  --bg-hover: #e9e6dc;
+  --bg-active: #e1ddd0;
+  --border: #e4e1d7;
+  --border-strong: #d3cfc2;
+  --text: #141413;
+  --text-2: #5e5d59;
+  --text-3: #6d6b63;
+  --accent: #2563a8;
+  --accent-text: #ffffff;
+  --accent-tint: #cfdae7;
+  --accent-soft: rgba(37, 99, 168, 0.14);
+  --selection: #d3e2f4;
+  --zebra: #f4f2eb;
+  --control-fill: #ece9e0;
+  --control-fill-hover: #e3dfd3;
+  --surface-raised: #ffffff;
+  --shadow-raised: 0 1px 2px rgba(40, 30, 20, 0.14), 0 0 0 1px rgba(40, 30, 20, 0.05);
+  --danger: #b5352a;
+  --scrim: rgba(20, 20, 19, 0.22);
+  --shadow-popup: 0 12px 32px rgba(40, 30, 20, 0.16);
+  --scrollbar: #cdc9bc;
+  --scrollbar-hover: #b3b0a4;
+  --accent-fill: #2a66b0;
+  --accent-hover: #1f5ca5;
+  --focus-ring: #2563a8;
+  --warning: #8a6400;
+  --success: #2e7d32;
+  --info: #0000ff;
+  --on-danger: #ffffff;
+  --danger-fill: #b5352a;
+  --danger-bg: #f2e1dd;
+  --success-bg: #e2eade;
+  --warning-bg: #ede7d8;
+  --grid-line: rgba(0, 0, 0, 0.07);
+  --edit-changed: #fff1cc;
+  --edit-added: #dcf5e3;
+  --edit-deleted: #fbe0e0;
+  --search-match: #f8c9ab;
+  --search-current: #f6b94d;
+  --editor-gutter: #9a9a9a;
+  --editor-gutter-active: #5e5d59;
+  --editor-current-stmt: rgba(0, 0, 0, 0.035);
+  --editor-bracket: rgba(0, 0, 0, 0.1);
+  --editor-bracket-outline: #b9b9b9;
+  --syn-keyword: #0000ff;
+  --syn-type: #227c96;
+  --syn-function: #795e26;
+  --syn-string: #a31515;
+  --syn-number: #008355;
+  --syn-literal: #0000ff;
+  --syn-property: #001080;
+  --syn-operator: #1f1f1f;
+  --syn-comment: #008000;
+  --syn-invalid: #cd3131;
+}
+
+/* ---------- base ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-chrome);
+  color: var(--text);
+  font: 400 var(--ui-size) / 1.45 var(--font-ui);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+input,
+textarea,
+code {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  /* Show code as typed: no "!=" or "->" ligatures. */
+  font-variant-ligatures: none;
+}
+
+.muted {
+  color: var(--text-3);
+}
+
+::selection {
+  background: var(--selection);
+  color: inherit;
+}
+
+body.resizing,
+body.resizing * {
+  cursor: col-resize !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border: 3px solid transparent;
+  border-radius: 6px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

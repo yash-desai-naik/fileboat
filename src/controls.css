@@ -1,0 +1,157 @@
+/* Shared controls: buttons, inputs, checkboxes, notices, segmented controls. */
+
+.small {
+  font-size: var(--fs-sm);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Buttons are soft filled chips (no outline); the primary one is solid accent. */
+.btn {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--control-fill);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.btn:hover:not(:disabled) {
+  background: var(--control-fill-hover);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.btn:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+.btn.primary {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-text);
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.btn.primary:disabled {
+  background: color-mix(in srgb, var(--accent-fill) 50%, var(--bg));
+  border-color: transparent;
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.input {
+  height: 28px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--focus-ring);
+}
+.input::placeholder {
+  color: var(--text-3);
+}
+.input.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+}
+.input[readonly] {
+  background: var(--bg-chrome);
+}
+select.input {
+  padding-right: 4px;
+}
+textarea.input {
+  height: auto;
+  padding: 8px;
+  resize: vertical;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+
+.inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-strong);
+  white-space: pre-wrap;
+  user-select: text;
+}
+.notice.ok {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+.notice.error {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* Segmented control: a soft track; the selected option is a raised chip. */
+.segmented {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--control-fill);
+}
+.seg {
+  flex: 1;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+.seg:hover {
+  color: var(--text);
+}
+.seg.active {
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+}
+.seg:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}

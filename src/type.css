@@ -1,0 +1,24 @@
+/* Typography hierarchy for the whole app (loaded last, so it wins). Levels come from size,
+   weight, case and colour:
+     700  uppercase section labels, dialog and page titles
+     600  names, table headers, the active tab
+     500  controls: buttons, segmented tabs, menu items, chips, key caps
+     400  everything else: body text, hints
+   Components add their classes here as they arrive. */
+
+/* Controls */
+.btn,
+.seg,
+kbd {
+  font-weight: 500;
+}
+.btn.primary,
+.seg.active {
+  font-weight: 600;
+}
+
+/* Secondary text stays regular. */
+.muted,
+.small {
+  font-weight: 400;
+}

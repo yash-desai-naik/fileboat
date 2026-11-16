@@ -3,5 +3,9 @@
   "identifier": "default",
   "description": "Permissions for the app's windows",
   "windows": ["*"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-background-color",
+    "core:webview:allow-set-webview-zoom"
+  ]
 }
