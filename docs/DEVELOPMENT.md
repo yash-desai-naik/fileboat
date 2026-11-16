@@ -218,7 +218,10 @@ powershell -ExecutionPolicy Bypass -File scripts\measure.ps1 -Exe src-tauri\targ
 | M0 (2026-11-16) | release, no folder open, Windows 11 | 115 MB across 7 processes (WebView2 GPU 55, browser 29, renderer 16, app 5) | 0.06 % |
 | M1 (2026-11-16) | release, home folder open (46 items) | 125 MB (GPU 57, browser 28, renderer 24, app 5) | 0.09 % |
 | M1 (2026-11-16) | release, a 200,000-file folder open in a second tab | 186 MB (GPU 61, app 55, renderer 31, browser 28) | 0.02 % |
+| M9 (2026-11-16) | release, two tabs, the Fileboat repository in front (live git status, git panel, preview pane), search index of the home folder and `D:\projects` loaded | 143 MB (renderer 63, GPU 43, browser 21, app 7) | 0.03 % |
 
 The 200,000-file folder costs about 50 MB in Rust (~250 bytes per entry) and almost nothing in the
 WebView, which only draws the rows on screen. The per-entry size can come down later (names and
 extensions stored once, compactly).
+
+The Windows installer is 5.3 MB (0.1.0); the WebView2 runtime comes with Windows 10 and 11.

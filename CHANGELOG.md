@@ -8,6 +8,15 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Files in use:** when a file can't be deleted, renamed, copied or moved because a program has it
+  open, Fileboat says which program (on Windows), and which file inside a folder.
+- **Awkward names** that WSL, git or a Mac can make and Windows' own tools trip over (a trailing dot
+  or space, device names like `con.txt`) open, preview, copy, rename and delete like any other.
+- **A folder deleted while open** takes its tab to the nearest folder above it that still exists.
+- **Huge repositories:** where `git status` takes over 10 seconds, it stops running on every change;
+  "status paused" in the status bar runs it when you ask.
+- **Cloud files** (OneDrive, iCloud) are still never downloaded by browsing; their preview offers
+  Download to preview.
 - **Icons:** Fileboat's own, drawn for developers: a shape per kind with its mark and colour,
   language colours, and special files and folders (`package.json`, `Cargo.toml`, `.git`,
   `node_modules`, `src`, `docs`…). Or Minimal, your system's own icons (Windows), or any **VS Code
