@@ -39,12 +39,14 @@ url = "2"
 notify = "8"
 # The Recycle Bin (Windows) and the Trash (macOS).
 trash = "5"
+# Dragging files out of Fileboat into other apps (a system drag with the file list).
+drag = "2"
 
 [target.'cfg(windows)'.dependencies]
 # Already built for Tauri's windowing; used for the window's "Restore Down" rectangle, to open
 # files with their default app (ShellExecute), to list drives with their free space, and for the
 # file clipboard shared with Explorer.
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Storage_FileSystem", "Win32_NetworkManagement_WNet", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Ole"] }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Storage_FileSystem", "Win32_NetworkManagement_WNet", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Ole", "Win32_UI_Input_KeyboardAndMouse"] }
 
 [target.'cfg(unix)'.dependencies]
 # Already built for Tauri; free space on volumes (statvfs).

@@ -3,6 +3,7 @@
 
 mod clipboard;
 mod desktop;
+mod dnd;
 mod folders;
 mod jobs;
 mod launch;
@@ -79,6 +80,8 @@ fn main() {
             clipboard::clipboard_set,
             clipboard::clipboard_get,
             clipboard::clipboard_clear_cut,
+            dnd::drag_start,
+            dnd::job_drop,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,

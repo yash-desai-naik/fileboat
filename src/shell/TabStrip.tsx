@@ -33,6 +33,7 @@ export function TabStrip() {
             aria-selected={active}
             tabIndex={active ? 0 : -1}
             className={`tab${active ? " active" : ""}`}
+            data-drop-path={t.path}
             title={t.path === "~" ? "Home" : t.path}
             onMouseDown={(e) => {
               if (e.button === 1) {

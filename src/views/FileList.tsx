@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
 import { childPath, type Entry, type FolderModel } from "../lib/folder";
 import { isCut, useCutPaths } from "../lib/clipboard";
+import { dragOut } from "../lib/dnd";
 import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
@@ -183,6 +184,29 @@ export function FileList(props: Props) {
 
   const typed = useRef({ text: "", at: 0 });
 
+  // Dragging rows: a press on a row that then moves a few pixels starts a system drag of the
+  // selection (other apps get the files; Fileboat's own drop handling catches drops here).
+  const press = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const onMove = (e: globalThis.MouseEvent) => {
+      const p = press.current;
+      if (!p || (e.buttons & 1) === 0) {
+        press.current = null;
+        return;
+      }
+      if (Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y) < 6) return;
+      press.current = null;
+      dragOut([...selection.names].map((n) => childPath(model.path, n)));
+    };
+    const onUp = () => (press.current = null);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [model, selection]);
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const page = Math.max(1, Math.floor((scrollRef.current?.clientHeight ?? rowH * 10) / rowH) - 1);
     const at = selection.focus;
@@ -266,9 +290,11 @@ export function FileList(props: Props) {
       return;
     }
     if (e.button !== 0) return;
+    // Pressing on a selected row keeps the selection, so several rows can be dragged together.
+    press.current = { x: e.clientX, y: e.clientY };
     if (modPressed(e)) selection.toggle(entry.name, i);
     else if (e.shiftKey) void selectRange(i, entry.name);
-    else selection.set([entry.name], i, entry.name);
+    else if (!selection.has(entry.name) || selection.size === 1) selection.set([entry.name], i, entry.name);
   };
 
   const sortBy = (sort: SortBy) =>
@@ -290,6 +316,7 @@ export function FileList(props: Props) {
       <div
         ref={scrollRef}
         className="fl-scroll"
+        data-drop-path={model.path}
         tabIndex={0}
         role="grid"
         aria-label={`Files in ${model.name}`}
@@ -334,6 +361,13 @@ export function FileList(props: Props) {
             return (
               <div
                 key={v.key}
+                data-drop-path={entry?.kind === "folder" ? childPath(model.path, entry.name) : undefined}
+                onClick={(e) => {
+                  // A plain click on one of several selected rows selects just it (once no drag began).
+                  if (entry && e.button === 0 && !modPressed(e) && !e.shiftKey && selection.size > 1 && selection.has(entry.name)) {
+                    selection.set([entry.name], v.index, entry.name);
+                  }
+                }}
                 className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}${
                   entry && isCut(cut, childPath(model.path, entry.name)) ? " cut" : ""
                 }`}

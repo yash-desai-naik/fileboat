@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { App } from "./App";
 import { loadSettings } from "./lib/settings";
 import { openFromOutside, restoreTabs, saveTabs } from "./lib/tabs";
+import { listenForDrops } from "./lib/dnd";
 import { listen } from "@tauri-apps/api/event";
 import { applyTheme, resolveTheme } from "./themes";
 // JetBrains Mono, bundled: used only when it isn't installed (the installed copy comes first).
@@ -62,6 +63,7 @@ Promise.all([loadSettings(), restoreTabs(), invoke("folders_reset").catch(() => 
       if (p) void openFromOutside(p);
     });
     void listen<string>("open-path", (e) => void openFromOutside(e.payload));
+    listenForDrops();
     showWhenPainted();
   })
   .catch((err) => {

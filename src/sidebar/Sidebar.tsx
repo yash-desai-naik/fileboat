@@ -63,6 +63,7 @@ export function Sidebar() {
       role="button"
       tabIndex={0}
       className={`side-item${samePath(path, current) ? " current" : ""}`}
+      data-drop-path={path}
       title={path}
       onClick={() => navigate(path)}
       onKeyDown={(e) => e.key === "Enter" && navigate(path)}

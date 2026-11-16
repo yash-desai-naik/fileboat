@@ -206,7 +206,12 @@ export function AddressBar({ path, onNavigate }: Props) {
       <div className="crumbs" ref={crumbsRef}>
         {segments.map((s, i) => (
           <span key={s.path} className="crumb-part">
-            <button className={`crumb${i === segments.length - 1 ? " current" : ""}`} onClick={() => onNavigate(s.path)} title={s.path}>
+            <button
+              className={`crumb${i === segments.length - 1 ? " current" : ""}`}
+              onClick={() => onNavigate(s.path)}
+              title={s.path}
+              data-drop-path={s.path}
+            >
               {s.label}
             </button>
             <button className="crumb-sep" title={`Folders in ${s.label}`} onClick={(e) => void openSiblings(s, e.currentTarget)}>
