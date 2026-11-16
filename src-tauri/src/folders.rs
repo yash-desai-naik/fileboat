@@ -1,15 +1,18 @@
 //! Open folders, one model per view, kept in Rust. The view asks for the rows on screen
 //! (`folder_rows`) and hears about changes on its channel; a 200,000-file folder never sits in
-//! the WebView.
+//! the WebView. Open folders are watched, so changes made by other programs show at once.
 
 use fileboat_core::fs::{self, Entry, Folder, View};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tauri::ipc::Channel;
 use tauri::State;
+
+use crate::watch::{Changes, Watch};
 
 /// What a view hears about its folder.
 #[derive(Clone, Serialize)]
@@ -40,29 +43,117 @@ impl OpenFolder {
 
 pub type Shared = Arc<Mutex<OpenFolder>>;
 
+/// The app's open folders. Cloning is cheap (shared), so the watcher's thread holds one too.
+#[derive(Clone, Default)]
+pub struct Folders(Arc<Inner>);
+
 #[derive(Default)]
-pub struct Folders {
+struct Inner {
     next: AtomicU64,
     open: Mutex<HashMap<String, Shared>>,
+    /// Started with the first folder; None if the OS refused (folders then aren't live).
+    watch: OnceLock<Option<Watch>>,
+}
+
+/// Paths compare without case on Windows and macOS (their usual file systems ignore it).
+fn same_path(a: &Path, b: &Path) -> bool {
+    if cfg!(any(windows, target_os = "macos")) {
+        a.as_os_str().to_string_lossy().to_lowercase() == b.as_os_str().to_string_lossy().to_lowercase()
+    } else {
+        a == b
+    }
 }
 
 impl Folders {
     pub fn get(&self, id: &str) -> Result<Shared, String> {
-        self.open.lock().unwrap().get(id).cloned().ok_or_else(|| "That folder is no longer open.".into())
+        self.0.open.lock().unwrap().get(id).cloned().ok_or_else(|| "That folder is no longer open.".into())
+    }
+
+    fn watch(&self) -> Option<&Watch> {
+        self.0
+            .watch
+            .get_or_init(|| {
+                let folders = self.clone();
+                Watch::start(move |changes| folders.apply(changes)).ok()
+            })
+            .as_ref()
     }
 
     fn close(&self, id: &str) {
-        if let Some(f) = self.open.lock().unwrap().remove(id) {
-            f.lock().unwrap().alive = false;
+        let Some(f) = self.0.open.lock().unwrap().remove(id) else { return };
+        let path = {
+            let mut f = f.lock().unwrap();
+            f.alive = false;
+            f.folder.path.clone()
+        };
+        if let Some(w) = self.watch() {
+            w.unwatch(&path);
         }
     }
 
     /// A window closed: forget its folders.
     pub fn close_window(&self, window: &str) {
         let ids: Vec<String> =
-            self.open.lock().unwrap().iter().filter(|(_, f)| f.lock().unwrap().window == window).map(|(k, _)| k.clone()).collect();
+            self.0.open.lock().unwrap().iter().filter(|(_, f)| f.lock().unwrap().window == window).map(|(k, _)| k.clone()).collect();
         for id in ids {
             self.close(&id);
+        }
+    }
+
+    /// Changes from the watcher: re-read the changed names in each open folder they belong to
+    /// (outside the lock), apply them, and tell the views.
+    fn apply(&self, changes: Changes) {
+        let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
+        for shared in open {
+            let path = shared.lock().unwrap().folder.path.clone();
+            if changes.rescan {
+                relist(&shared, &path);
+                continue;
+            }
+            let inside: Vec<&PathBuf> = changes.paths.iter().filter(|p| p.parent().is_some_and(|d| same_path(d, &path))).collect();
+            // The folder itself may be gone: Windows reports its files being deleted, not the
+            // watched folder, so check whenever anything in or about it changed.
+            let touched = !inside.is_empty() || changes.paths.iter().any(|p| same_path(p, &path));
+            if touched && !path.is_dir() {
+                let message = format!("{} was deleted or moved.", path.display());
+                let _ = shared.lock().unwrap().channel.send(FolderEvent::Error { message });
+                continue;
+            }
+            let mut upserts = Vec::new();
+            let mut removed = Vec::new();
+            for p in inside {
+                match Entry::from_path(p) {
+                    Some(e) => upserts.push(e),
+                    None => removed.extend(p.file_name().map(|n| n.to_string_lossy().into_owned())),
+                }
+            }
+            if upserts.is_empty() && removed.is_empty() {
+                continue;
+            }
+            let mut f = shared.lock().unwrap();
+            if f.alive {
+                f.folder.apply(upserts, &removed);
+                f.changed();
+            }
+        }
+    }
+}
+
+/// Read a folder again from scratch (the OS lost track of its changes).
+fn relist(shared: &Shared, path: &Path) {
+    let mut all = Vec::new();
+    let result = fs::list(path, 4096, |batch| {
+        all.extend(batch);
+        true
+    });
+    let mut f = shared.lock().unwrap();
+    match result {
+        Ok(()) => {
+            f.folder.replace(all);
+            f.changed();
+        }
+        Err(message) => {
+            let _ = f.channel.send(FolderEvent::Error { message });
         }
     }
 }
@@ -98,14 +189,17 @@ pub fn folder_open(
     if !meta.is_dir() {
         return Err(format!("{} is a file, not a folder.", path.display()));
     }
-    let id = format!("f{}", folders.next.fetch_add(1, Ordering::Relaxed));
+    let id = format!("f{}", folders.0.next.fetch_add(1, Ordering::Relaxed));
     let shared: Shared = Arc::new(Mutex::new(OpenFolder {
         folder: Folder::new(path.clone(), view),
         window: window.label().to_string(),
         channel: on_event,
         alive: true,
     }));
-    folders.open.lock().unwrap().insert(id.clone(), shared.clone());
+    folders.0.open.lock().unwrap().insert(id.clone(), shared.clone());
+    if let Some(w) = folders.watch() {
+        w.watch(&path);
+    }
 
     let listing = path.clone();
     std::thread::spawn(move || {

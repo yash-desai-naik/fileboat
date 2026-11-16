@@ -5,6 +5,7 @@ mod desktop;
 mod folders;
 mod settings;
 mod update;
+mod watch;
 mod window;
 
 use tauri::{Manager, WindowEvent};
