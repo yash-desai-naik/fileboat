@@ -5,7 +5,7 @@ import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
 import { addFavourite, removeFavourite } from "./favourites";
-import { paneActions } from "./pane";
+import { paneActions, undoLast } from "./pane";
 import {
   activateTabAt,
   activeTab,
@@ -140,6 +140,7 @@ export function buildCommands(): Command[] {
     { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
     { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: goUp },
     { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
+    { id: "edit.undo", category: "Edit", title: "Undo", keys: ["Ctrl+Z"], run: () => void undoLast() },
     { id: "file.newFolder", category: "File", title: "New Folder", keys: ["Ctrl+Shift+N"], run: () => paneActions.newFolder() },
     { id: "file.newFile", category: "File", title: "New File", keys: ["Ctrl+Alt+N"], run: () => paneActions.newFile() },
     {

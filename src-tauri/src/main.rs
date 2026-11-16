@@ -26,6 +26,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(update::UpdateState::default())
         .manage(folders::Folders::default())
+        .manage(fileboat_core::ops::undo::UndoLog::default())
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -67,6 +68,7 @@ fn main() {
             ops_cmd::op_check_name,
             ops_cmd::op_trash,
             ops_cmd::op_delete,
+            ops_cmd::op_undo,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,
