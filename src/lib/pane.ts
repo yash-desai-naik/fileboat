@@ -29,6 +29,8 @@ export const paneActions = {
   contextMenu: () => {},
   /** The system's Properties / Get Info for the selection or the folder. */
   properties: () => {},
+  /** Select these names in the folder (returns how many were found). */
+  selectNames: async (_names: string[]): Promise<number> => 0,
 };
 
 export type PaneActions = typeof paneActions;

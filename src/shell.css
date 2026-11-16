@@ -421,3 +421,59 @@
   color: var(--accent);
   font-weight: 700;
 }
+
+/* The right side: Preview and Claude as tabs when both are open */
+.rightpane-stack {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sidebar);
+}
+.rightpane-stack > .rightpane {
+  flex: 1;
+  min-height: 0;
+}
+.right-tabs {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.right-tabs button {
+  padding: 4px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+}
+.right-tabs button.on {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+/* Claude: the chat's project vs. where you are */
+.ai-switch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--border);
+}
+.ai-switch span {
+  flex: 1;
+  min-width: 0;
+}
+.ai-path {
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.ai-path:hover {
+  color: var(--accent);
+}

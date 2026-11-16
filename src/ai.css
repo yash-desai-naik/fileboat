@@ -1,0 +1,734 @@
+/* Claude pane: laid out like Claude Code's VS Code panel (timeline with dots, one composer box). */
+
+.ai {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-md);
+}
+
+/* ---------- header ---------- */
+
+.ai-head {
+  height: var(--panehead-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ai-chat-title {
+  flex: 1;
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+.ai-head .icon-btn {
+  color: var(--text-2);
+}
+.ai-head .icon-btn:hover {
+  color: var(--text);
+}
+
+.ai-mark {
+  flex: none;
+  fill: var(--accent);
+}
+.ai-mark.spin {
+  animation: ai-spin 2.4s linear infinite;
+}
+@keyframes ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-mark.spin {
+    animation: none;
+  }
+}
+
+/* ---------- timeline ---------- */
+
+.ai-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: text;
+}
+
+.ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: auto 0;
+  padding: 16px 8px;
+  text-align: center;
+}
+.ai-empty p {
+  margin: 0;
+}
+.ai-empty-title {
+  margin-top: 6px !important;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.ai-empty-note {
+  max-width: 340px;
+  color: var(--text-3);
+  font-size: var(--fs-md);
+}
+.ai-suggestions {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+.ai-suggestion {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+}
+.ai-suggestion:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* Your messages: time on the right, then a bordered box, full width. */
+.ai-user-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ai-time {
+  align-self: flex-end;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.ai-user {
+  padding: 8px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Claude's steps: a dot in the gutter, a thin line joining consecutive steps. */
+.ai-step {
+  position: relative;
+  display: flex;
+  gap: 9px;
+  min-width: 0;
+}
+.ai-step:has(+ .ai-step)::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 15px;
+  bottom: -9px;
+  width: 1px;
+  background: var(--border-strong);
+}
+.ai-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.ai-dot.ok {
+  background: var(--success);
+}
+.ai-dot.error {
+  background: var(--danger);
+}
+.ai-dot.running {
+  background: var(--accent);
+  animation: ai-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ai-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.ai-step-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-msg {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.ai-msg code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--bg-active);
+  font-size: var(--fs-md);
+}
+.ai-prose {
+  margin: 0;
+}
+.ai-caret {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+}
+
+.ai-code {
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ai-code-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px;
+  background: var(--bg-chrome);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.ai-code pre {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+
+/* Tool steps: name + summary; click for the IN / OUT boxes. */
+.ai-tool-head {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  max-width: 100%;
+  padding: 1px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.ai-tool-name {
+  flex: none;
+  font-weight: 600;
+}
+.ai-tool-sum {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+}
+.ai-tool-head:hover .ai-tool-sum {
+  color: var(--text-2);
+}
+.ai-io {
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ai-io-row {
+  display: flex;
+  min-width: 0;
+}
+.ai-io-row + .ai-io-row {
+  border-top: 1px solid var(--border);
+}
+.ai-io-label {
+  flex: none;
+  width: 38px;
+  padding: 6px 0 0 8px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ai-io pre {
+  flex: 1;
+  min-width: 0;
+  max-height: 260px;
+  margin: 0;
+  padding: 6px 8px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-io pre.error {
+  color: var(--danger);
+}
+
+.ai-error-text {
+  color: var(--danger);
+  white-space: pre-wrap;
+}
+
+/* Status notes: italic and muted, like the extension's. */
+.ai-done,
+.ai-note-line {
+  padding-left: 16px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  font-style: italic;
+}
+.ai-note-line {
+  margin: 4px 0;
+  font-size: var(--fs-md);
+}
+
+.ai-working {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--fs-md);
+}
+.ai-working-word {
+  color: var(--accent);
+}
+
+.ai-note {
+  padding: 8px 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+.ai-note.error {
+  border: 1px solid var(--danger);
+  background: var(--danger-bg);
+}
+
+/* Permission prompt: numbered choices, like the CLI. */
+.ai-perm {
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+.ai-perm.allowed,
+.ai-perm.denied {
+  padding: 6px 12px;
+  border-color: var(--border);
+  background: transparent;
+}
+.ai-perm.denied .ai-perm-title {
+  color: var(--danger);
+}
+.ai-perm-title {
+  font-weight: 600;
+}
+.ai-perm.allowed .ai-perm-title,
+.ai-perm.denied .ai-perm-title {
+  font-weight: 400;
+  font-size: var(--fs-md);
+  color: var(--text-3);
+}
+.ai-perm-detail {
+  max-height: 200px;
+  margin: 8px 0;
+  padding: 7px 9px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  white-space: pre-wrap;
+}
+.ai-perm.allowed .ai-perm-detail,
+.ai-perm.denied .ai-perm-detail {
+  display: none;
+}
+.ai-perm-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ai-perm-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.ai-perm-option:hover,
+.ai-perm-option:focus-visible {
+  outline: none;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+.ai-perm-option:first-child:focus-visible {
+  border-color: var(--focus-ring);
+}
+.ai-perm-option kbd {
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text-2);
+  font: 500 var(--fs-xs) var(--font-mono);
+  text-align: center;
+}
+
+/* ---------- composer ---------- */
+
+.ai-compose {
+  position: relative;
+  flex: none;
+  padding: 8px 10px 10px;
+}
+
+/* "@" list: opens above the input. */
+.ai-mention-pop {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% - 4px);
+  z-index: 20;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-popup);
+}
+.ai-mention-group {
+  padding: 6px 8px 2px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ai-mention-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ai-mention-row.active {
+  background: var(--bg-active);
+}
+.ai-mention-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+.ai-mention-icon.k-object,
+.ai-att.k-object .ai-att-icon {
+  color: var(--accent);
+}
+.ai-mention-icon.k-connection,
+.ai-att.k-connection .ai-att-icon {
+  color: var(--success);
+}
+.ai-mention-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ai-mention-detail {
+  flex: none;
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.ai-mention-hint {
+  padding: 6px 8px 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+
+/* Attached context: chips above the text. */
+.ai-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px 0;
+}
+.ai-att {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 4px 0 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--control-fill);
+  font-size: var(--fs-sm);
+}
+.ai-att-icon {
+  display: grid;
+  color: var(--text-3);
+}
+.ai-att-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ai-att-remove {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-3);
+  line-height: 1;
+  cursor: pointer;
+}
+.ai-att-remove:hover {
+  background: var(--control-fill-hover);
+  color: var(--text);
+}
+.ai-bar-btn {
+  flex: none;
+  color: var(--text-3);
+}
+.ai-bar-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+.ai-compose-note {
+  padding: 2px 12px 4px;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+.ai-composer {
+  position: relative;
+}
+.ai-composer.dropping {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+.ai-drop-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Under a sent message: what came with it. */
+.ai-user-atts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ai-user-att {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--control-fill);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.ai-composer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  cursor: text;
+}
+.ai-composer:focus-within {
+  border-color: var(--focus-ring);
+}
+.ai-input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  max-height: 220px;
+  padding: 12px 14px 8px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: var(--fs-md) / 1.55 var(--font-ui);
+}
+.ai-input::placeholder {
+  color: var(--text-3);
+}
+.ai-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 7px 7px 10px;
+  border-top: 1px solid var(--border);
+  cursor: default;
+}
+.ai-chip-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.ai-chip-dot.on {
+  background: var(--success);
+}
+.ai-mode {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ai-mode svg {
+  color: var(--text-3);
+}
+/* In a narrow pane, keep the connection's name readable: the mode shrinks to its icon. */
+.ai-compose {
+  container-type: inline-size;
+}
+@container (max-width: 480px) {
+  .ai-mode-text {
+    display: none;
+  }
+}
+.ai-chip:first-child {
+  min-width: 9ch;
+}
+.ai-chip {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.ai-chip svg {
+  flex: none;
+  color: var(--text-3);
+}
+.ai-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-model {
+  flex: none;
+}
+.ai-send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent-fill);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.ai-send:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.ai-send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ai-send.stop {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* ---------- Markdown bits ---------- */
+
+.ai-h {
+  margin: 8px 0 2px;
+  font-weight: 600;
+}
+.ai-li {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0;
+}
+.ai-li-mark {
+  flex: none;
+  min-width: 2ch;
+  color: var(--text-2);
+  text-align: right;
+  padding-right: 0.5ch;
+}
+.ai-gap {
+  height: 6px;
+}
+.ai-table {
+  margin: 6px 0;
+  border-collapse: collapse;
+  font-size: var(--fs-md);
+}
+.ai-table th,
+.ai-table td {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.ai-table th {
+  background: var(--bg-chrome);
+  font-weight: 600;
+}

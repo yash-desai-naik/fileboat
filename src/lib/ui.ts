@@ -13,4 +13,6 @@ export const uiActions = {
   focusList: () => {},
   /** Quick Look (Space): the selected file large, over the window. */
   toggleQuickLook: () => {},
+  /** Open the Claude pane (and bring it to the front when it shares the right side). */
+  showClaude: () => {},
 };

@@ -76,9 +76,10 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
         const s = getSearch(tab.id);
         if (s.open && s.query.trim()) return;
         const count = selection.size;
-        if (count !== 1) return setCurrent({ folder: model.path, entry: null, count });
+        const names = [...selection.names].slice(0, 200);
+        if (count !== 1) return setCurrent({ folder: model.path, entry: null, count, names });
         void model.entries([...selection.names]).then(([entry]) => {
-          if (!stale) setCurrent({ folder: model.path, entry: entry ?? null, count: entry ? 1 : 0 });
+          if (!stale) setCurrent({ folder: model.path, entry: entry ?? null, count: entry ? 1 : 0, names });
         });
       }, 80);
     };
@@ -148,6 +149,12 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       openInEditor(paths.length ? paths : [model.path]);
     };
     paneActions.terminalHere = () => openTerminal(model.path);
+    paneActions.selectNames = async (names: string[]) => {
+      const rows = await Promise.all(names.map((n) => model.rowOf(n).then((r) => [n, r] as const)));
+      const found = rows.filter(([, r]) => r !== null) as [string, number][];
+      if (found.length) selection.set(found.map(([n]) => n), found[0][1], found[0][0]);
+      return found.length;
+    };
     paneActions.properties = async () => {
       const [path] = await selectedPaths();
       void invoke("show_properties", { path: path ?? model.path }).catch((err) => setNotice(String(err)));

@@ -18,8 +18,10 @@ const appWindow = getCurrentWindow();
 interface TitleBarProps {
   sidebarOn: boolean;
   previewOn: boolean;
+  claudeOn: boolean;
   onToggleSidebar: () => void;
   onTogglePreview: () => void;
+  onToggleClaude: () => void;
   onOpenCommands: () => void;
 }
 
@@ -28,7 +30,7 @@ interface TitleBarProps {
  * double-click maximises). Windows gets Fileboat's caption buttons on the right; macOS keeps its
  * traffic lights on the left, over the bar (see `.titlebar.mac`).
  */
-export function TitleBar({ sidebarOn, previewOn, onToggleSidebar, onTogglePreview, onOpenCommands }: TitleBarProps) {
+export function TitleBar({ sidebarOn, previewOn, claudeOn, onToggleSidebar, onTogglePreview, onToggleClaude, onOpenCommands }: TitleBarProps) {
   const [maximized, setMaximized] = useState(false);
 
   useEffect(() => {
@@ -71,6 +73,9 @@ export function TitleBar({ sidebarOn, previewOn, onToggleSidebar, onTogglePrevie
         >
           <PreviewIcon />
         </button>
+        <button className="icon-btn" title={`Toggle Claude (${fmtShortcut("Ctrl+Alt+B")})`} aria-pressed={claudeOn} onClick={onToggleClaude}>
+          <ClaudeIcon />
+        </button>
       </div>
 
       {/* macOS draws its own traffic lights on the left; the custom buttons are Windows-only. */}
@@ -92,5 +97,16 @@ export function TitleBar({ sidebarOn, previewOn, onToggleSidebar, onTogglePrevie
         </div>
       )}
     </header>
+  );
+}
+
+/** Claude's starburst, in the title bar's icon style. */
+function ClaudeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+      {[0, 30, 60, 90, 120, 150].map((a) => (
+        <rect key={a} x="7.25" y="1.5" width="1.5" height="13" rx="0.75" transform={`rotate(${a} 8 8)`} />
+      ))}
+    </svg>
   );
 }

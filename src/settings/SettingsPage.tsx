@@ -174,6 +174,21 @@ const ENTRIES: Entry[] = [
   { section: "Search index", key: "indexHidden", type: "toggle", label: "Index hidden files and folders", help: "The ones the system marks hidden (dotfiles are indexed either way)." },
   { section: "Search index", key: "indexRoots", type: "index", label: "Folders, exclusions and rules", help: "indexRoots indexExcludes indexIncludes node_modules rules" },
 
+  {
+    section: "Claude",
+    key: "claudeModel",
+    type: "select",
+    label: "Model",
+    help: "The model your Claude Code uses in the pane (Ctrl+Alt+B). Your own login and plan; Fileboat sends nothing anywhere itself.",
+    options: [
+      ["", "Claude Code's default"],
+      ["opus", "Opus"],
+      ["sonnet", "Sonnet"],
+      ["haiku", "Haiku"],
+    ],
+  },
+  { section: "Layout", key: "showClaude", type: "toggle", label: "Show the Claude pane", help: fmtShortcut("Ctrl+Alt+B") },
+
   { section: "Layout", key: "showSidebar", type: "toggle", label: "Show the sidebar", help: fmtShortcut("Ctrl+B") },
   { section: "Layout", key: "showPreview", type: "toggle", label: "Show the preview pane", help: fmtShortcut("Alt+P") },
 

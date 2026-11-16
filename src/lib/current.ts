@@ -12,6 +12,8 @@ export interface Current {
   entry: Entry | null;
   /** How many are selected. */
   count: number;
+  /** The selected names (the first 200), for Claude's context. */
+  names?: string[];
 }
 
 let current: Current | null = null;
@@ -24,6 +26,7 @@ function same(a: Current | null, b: Current | null): boolean {
   return (
     a.folder === b.folder &&
     a.count === b.count &&
+    (a.names ?? []).join("|") === (b.names ?? []).join("|") &&
     (ea === eb || (!!ea && !!eb && ea.name === eb.name && ea.size === eb.size && ea.modified === eb.modified && ea.kind === eb.kind))
   );
 }

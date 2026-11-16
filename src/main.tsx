@@ -5,6 +5,8 @@ import { App } from "./App";
 import { loadSettings } from "./lib/settings";
 import { loadFolderViews } from "./lib/folderViews";
 import { loadRecents } from "./lib/recents";
+import "./lib/agentBridge";
+import "./ai.css";
 import { openFromOutside, restoreTabs, saveTabs } from "./lib/tabs";
 import { listenForDrops } from "./lib/dnd";
 import { listen } from "@tauri-apps/api/event";

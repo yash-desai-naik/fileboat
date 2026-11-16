@@ -140,6 +140,14 @@ export function buildCommands(): Command[] {
     { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
     { id: "help.updates", category: "Help", title: "Check for Updates…", run: () => void checkForUpdates() },
     {
+      id: "view.toggleClaude",
+      category: "View",
+      title: "Toggle Claude Pane",
+      keys: ["Ctrl+Alt+B"],
+      checked: s.showClaude,
+      run: () => (getSettings().showClaude ? updateSettings({ showClaude: false }) : uiActions.showClaude()),
+    },
+    {
       id: "view.gitPanel",
       category: "View",
       title: "Git Panel",

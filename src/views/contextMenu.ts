@@ -10,6 +10,8 @@ import { newTab } from "../lib/tabs";
 import { openInEditor, openTerminal, type Tools } from "../lib/tools";
 import type { MenuItem } from "../shell/Menu";
 import { showToast } from "../shell/Toast";
+import { queueMentions } from "../lib/claude";
+import { uiActions } from "../lib/ui";
 import { askConfirm } from "../shell/Confirm";
 import { requestDiff } from "../lib/current";
 import type { RepoInfo } from "../lib/git";
@@ -237,6 +239,14 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
     });
   }
   items.push({ label: "Copy Path", submenu: pathForms(paths) });
+  items.push({
+    label: "Ask Claude",
+    hint: fmtShortcut("Ctrl+Alt+B"),
+    onSelect: () => {
+      queueMentions(ctx.entries.map((e) => ({ path: childPath(ctx.folder, e.name), folder: e.kind === "folder" })));
+      uiActions.showClaude();
+    },
+  });
   const git = gitItems(ctx, paths);
   if (git.length) items.push({ label: "Git", submenu: git });
   items.push(

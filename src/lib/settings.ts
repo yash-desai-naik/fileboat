@@ -23,6 +23,10 @@ export interface Settings {
   sidebarView: "places" | "git";
   sidebarWidth: number;
   showPreview: boolean;
+  /** The Claude pane on the right. */
+  showClaude: boolean;
+  /** "" = Claude Code's own default model. */
+  claudeModel: string;
   previewWidth: number;
   /** Wrap long lines in the preview's text. */
   previewWrap: boolean;

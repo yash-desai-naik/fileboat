@@ -1,0 +1,313 @@
+import { invoke } from "@tauri-apps/api/core";
+import { useSyncExternalStore } from "react";
+import { stripContext } from "../ai/mentions";
+
+export type ChatItem =
+  | {
+      kind: "user";
+      text: string;
+      /** When it was sent (ms since 1970), if known. */
+      at?: number;
+      /** What came with it: @ mentions, files, images (labels only). */
+      attachments?: string[];
+    }
+  | { kind: "assistant"; text: string; streaming?: boolean }
+  | { kind: "tool"; id: string; name: string; input: unknown; result?: string; isError?: boolean }
+  | { kind: "permission"; id: string; toolName: string; input: Record<string, unknown>; state: "pending" | "allowed" | "denied" }
+  | { kind: "done"; ms?: number; note?: string }
+  | { kind: "error"; text: string };
+
+export interface ClaudeStatus {
+  installed: boolean;
+  path: string | null;
+  running: boolean;
+  session: string | null;
+  /** Where the chat runs (a repository's root, or a folder). */
+  folder: string;
+  /** Where a new chat would start now (differs after moving into another repository). */
+  here: string;
+  /** Claude Code's own default model (~/.claude/settings.json), e.g. "opus". */
+  defaultModel: string | null;
+}
+
+export interface PastChat {
+  id: string;
+  title: string;
+  modified: number;
+}
+
+/** Mirrors `AiContext` in src-tauri/src/claude.rs: what Claude sees through get_context. */
+export interface AiContext {
+  folder: string | null;
+  selection: string[];
+  preview: string | null;
+  view: string | null;
+  search: string | null;
+}
+
+interface State {
+  items: ChatItem[];
+  running: boolean;
+  /** Index of the assistant item receiving streamed text. */
+  streaming: number | null;
+  /** Message ids whose text arrived by streaming (their final copy is skipped). */
+  streamed: Set<string>;
+  stoppedByUser: boolean;
+  /** The model answering, as Claude Code reports it (e.g. "claude-opus-5-5"). */
+  model: string | null;
+}
+
+let state: State = { items: [], running: false, streaming: null, streamed: new Set(), stoppedByUser: false, model: null };
+const listeners = new Set<() => void>();
+
+function set(patch: Partial<State>) {
+  state = { ...state, ...patch };
+  for (const l of listeners) l();
+}
+
+export function useChat() {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => state,
+  );
+}
+
+function textOf(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((c) => (c && typeof c === "object" && (c as { type?: string }).type === "text" ? (c as { text: string }).text : ""))
+      .join("");
+  }
+  return "";
+}
+
+/** Apply one Claude Code stream-JSON message (live, or replayed from a saved chat). */
+export function applyEvent(ev: Record<string, unknown>, live: boolean) {
+  const items = [...state.items];
+  const type = ev.type as string;
+
+  if (type === "system" && ev.subtype === "init" && typeof ev.model === "string") {
+    set({ model: ev.model });
+    return;
+  }
+
+  if (type === "stream_event") {
+    const e = ev.event as Record<string, unknown>;
+    if (e?.type === "message_start") {
+      const id = (e.message as { id?: string })?.id;
+      if (id) state.streamed.add(id);
+    } else if (e?.type === "content_block_start" && (e.content_block as { type?: string })?.type === "text") {
+      items.push({ kind: "assistant", text: "", streaming: true });
+      set({ items, streaming: items.length - 1 });
+      return;
+    } else if (e?.type === "content_block_delta") {
+      const delta = e.delta as { type?: string; text?: string };
+      if (delta?.type === "text_delta" && state.streaming !== null) {
+        const it = items[state.streaming];
+        if (it?.kind === "assistant") items[state.streaming] = { ...it, text: it.text + (delta.text ?? "") };
+        set({ items });
+      }
+      return;
+    } else if (e?.type === "content_block_stop" && state.streaming !== null) {
+      const it = items[state.streaming];
+      if (it?.kind === "assistant") items[state.streaming] = { ...it, streaming: false };
+      set({ items, streaming: null });
+    }
+    return;
+  }
+
+  if (type === "assistant") {
+    const msg = ev.message as { id?: string; content?: unknown; model?: string };
+    // Replayed chats have no init message: the model comes with each answer instead.
+    const model = typeof msg?.model === "string" && !msg.model.startsWith("<") ? msg.model : state.model;
+    const streamedAlready = live && msg?.id ? state.streamed.has(msg.id) : false;
+    for (const block of Array.isArray(msg?.content) ? msg.content : []) {
+      const b = block as { type: string; text?: string; id?: string; name?: string; input?: unknown };
+      if (b.type === "text" && !streamedAlready && b.text?.trim()) items.push({ kind: "assistant", text: b.text });
+      if (b.type === "tool_use") {
+        items.push({ kind: "tool", id: b.id ?? "", name: (b.name ?? "").replace(/^mcp__fileboat__/, "fileboat › "), input: b.input });
+      }
+    }
+    set({ items, model });
+    return;
+  }
+
+  if (type === "user") {
+    const msg = ev.message as { content?: unknown };
+    const content = msg?.content;
+    // Saved chats carry an ISO timestamp per message.
+    const parsed = typeof ev.timestamp === "string" ? Date.parse(ev.timestamp) : NaN;
+    const at = Number.isNaN(parsed) ? undefined : parsed;
+    // A saved message: show what the user typed; the attached @ context is summarised.
+    const userItem = (raw: string, images: number): ChatItem => {
+      const { text, hadContext } = stripContext(raw);
+      const attachments = [...(hadContext ? ["@ context"] : []), ...(images ? [`${images} image${images > 1 ? "s" : ""}`] : [])];
+      return { kind: "user", text, at, attachments: attachments.length ? attachments : undefined };
+    };
+    if (Array.isArray(content)) {
+      const images = content.filter((c) => (c as { type?: string })?.type === "image").length;
+      for (const block of content) {
+        const b = block as { type: string; tool_use_id?: string; content?: unknown; is_error?: boolean; text?: string };
+        if (b.type === "tool_result") {
+          const i = items.findIndex((x) => x.kind === "tool" && x.id === b.tool_use_id);
+          if (i >= 0) {
+            const tool = items[i] as Extract<ChatItem, { kind: "tool" }>;
+            items[i] = { ...tool, result: textOf(b.content), isError: !!b.is_error };
+          }
+        } else if (b.type === "text" && !live && b.text?.trim()) {
+          items.push(userItem(b.text, images));
+        }
+      }
+    } else if (typeof content === "string" && !live && content.trim()) {
+      items.push(userItem(content, 0));
+    }
+    set({ items });
+    return;
+  }
+
+  if (type === "result") {
+    const r = ev as { duration_ms?: number; is_error?: boolean; result?: string; subtype?: string };
+    if (r.is_error) items.push({ kind: "error", text: r.result || `Claude Code stopped (${r.subtype ?? "error"}).` });
+    items.push({ kind: "done", ms: r.duration_ms });
+    // Folders show Claude's changes by themselves (they're watched).
+    set({ items, running: false, streaming: null });
+  }
+}
+
+export function onPermission(p: { id: string; toolName: string; input: Record<string, unknown> }) {
+  set({ items: [...state.items, { kind: "permission", ...p, state: "pending" }] });
+}
+
+export function onExit(stderr: string) {
+  if (!state.running) return;
+  const items = [...state.items];
+  if (!state.stoppedByUser) {
+    items.push({
+      kind: "error",
+      text: `Claude Code stopped unexpectedly.${stderr ? `\n${stderr.split("\n").slice(-6).join("\n")}` : ""}`,
+    });
+  }
+  set({ items, running: false, streaming: null });
+}
+
+/** What can come with a message: context text for @ mentions, and images. */
+export interface SendExtras {
+  /** Appended to the message for Claude (hidden in the chat). */
+  context?: string;
+  images?: { mediaType: string; data: string }[];
+  /** Labels shown under the message (e.g. "@main.rs"). */
+  attachments?: string[];
+}
+
+export async function send(text: string, context: AiContext, extras: SendExtras = {}) {
+  const attachments = extras.attachments?.length ? extras.attachments : undefined;
+  set({ items: [...state.items, { kind: "user", text, at: Date.now(), attachments }], running: true, stoppedByUser: false });
+  try {
+    const full = extras.context ? `${text}\n\n${extras.context}` : text;
+    await invoke("claude_send", { text: full, context, images: extras.images ?? [] });
+  } catch (err) {
+    set({ items: [...state.items, { kind: "error", text: String(err) }], running: false });
+  }
+}
+
+export async function stop() {
+  set({ stoppedByUser: true });
+  await invoke("claude_stop");
+  if (state.running) set({ items: [...state.items, { kind: "done", note: "Stopped" }], running: false, streaming: null });
+}
+
+/** Stop the process when the pane closes (frees its memory); the chat resumes on the next message. */
+export async function shutdown() {
+  set({ stoppedByUser: true });
+  await invoke("claude_stop");
+  set({ running: false, streaming: null });
+}
+
+/** Forget the model Claude Code last reported (the model setting changed). */
+export function clearModel() {
+  if (state.model !== null) set({ model: null });
+}
+
+/** Start over with nothing in the chat. */
+export function resetChat() {
+  set({ items: [], running: false, streaming: null, streamed: new Set(), stoppedByUser: false });
+}
+
+export async function newChat() {
+  await invoke("claude_new", { resume: null });
+  set({ items: [], running: false, streaming: null, streamed: new Set() });
+}
+
+export async function openPastChat(id: string) {
+  const messages = await invoke<Record<string, unknown>[]>("claude_session_messages", { id });
+  await invoke("claude_new", { resume: id });
+  set({ items: [], running: false, streaming: null, streamed: new Set() });
+  for (const m of messages) applyEvent(m, false);
+  set({ items: [...state.items, { kind: "done", note: "Earlier chat – your next message continues it" }] });
+}
+
+/** Show the chat the window is still in (after a reload of the page): its messages, no restart. */
+export async function restoreChat(id: string) {
+  if (state.items.length) return;
+  const messages = await invoke<Record<string, unknown>[]>("claude_session_messages", { id }).catch(() => []);
+  if (state.items.length || !messages.length) return;
+  for (const m of messages) applyEvent(m, false);
+}
+
+export async function answerPermission(id: string, allow: boolean, always: boolean) {
+  set({
+    items: state.items.map((it) =>
+      it.kind === "permission" && it.id === id ? { ...it, state: allow ? "allowed" : "denied" } : it,
+    ),
+  });
+  await invoke("claude_permission_reply", { id, allow, always });
+}
+
+/**
+ * A friendly model name: "claude-opus-5-5" -> "Opus 5.5", "claude-sonnet-4-5-20250929" -> "Sonnet 4.5",
+ * "opus" -> "Opus", "opus[1m]" -> "Opus (1M)". Anything else is shown as given.
+ */
+export function modelLabel(id: string): string {
+  const m = /^(?:claude-)?(opus|sonnet|haiku|fable)(?:-(\d+)(?:-(\d{1,2}))?)?(?:-\d{8})?(\[1m\])?$/i.exec(id.trim());
+  if (!m) return id;
+  const family = m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
+  const version = m[2] ? ` ${m[2]}${m[3] ? `.${m[3]}` : ""}` : "";
+  return `${family}${version}${m[4] ? " (1M)" : ""}`;
+}
+
+export const claudeApi = {
+  status: () => invoke<ClaudeStatus>("claude_status"),
+  sessions: () => invoke<PastChat[]>("claude_sessions"),
+  setContext: (context: AiContext) => invoke<void>("claude_set_context", { context }),
+};
+
+// ---------- "Ask Claude" from a menu: items for the composer ----------
+
+let queued: { path: string; folder: boolean }[] = [];
+const queueListeners = new Set<() => void>();
+
+/** Put these paths in the chat input as @ mentions (the pane opens and picks them up). */
+export function queueMentions(paths: { path: string; folder: boolean }[]) {
+  queued = [...queued, ...paths];
+  for (const l of queueListeners) l();
+}
+
+/** Take what was queued (once). */
+export function takeQueued(): { path: string; folder: boolean }[] {
+  const out = queued;
+  queued = [];
+  return out;
+}
+
+export function onQueued(l: () => void): () => void {
+  queueListeners.add(l);
+  return () => {
+    queueListeners.delete(l);
+  };
+}
