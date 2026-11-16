@@ -141,6 +141,8 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
   if (onlyFolders) items.push({ label: "Add to Favourites", onSelect: () => paths.forEach((p) => addFavourite(p)) });
   items.push({ label: `Show in ${FILE_MANAGER}`, onSelect: run("reveal_in_file_manager", { path: paths[0] }) });
   items.push({ label: IS_MAC ? "Get Info" : "Properties", hint: IS_MAC ? undefined : "Alt+Enter", onSelect: run("show_properties", { path: paths[0] }) });
+  // Windows: Explorer's own menu, with what shell extensions add (7-Zip, TortoiseGit, Send to…).
+  if (!IS_MAC) items.push("separator", { label: "Show More Options", hint: "Shift: more", onSelect: run("native_menu", { paths, folder }) });
   return items;
 }
 
@@ -200,5 +202,6 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     { label: "Add to Favourites", hint: fmtShortcut("Ctrl+D"), onSelect: () => addFavourite(folder) },
     { label: `Open in ${FILE_MANAGER}`, onSelect: run("open_path", { path: folder }) },
     { label: IS_MAC ? "Get Info" : "Properties", onSelect: run("show_properties", { path: folder }) },
+    ...(IS_MAC ? [] : (["separator", { label: "Show More Options", onSelect: run("native_menu", { paths: [], folder }) }] as MenuItem[])),
   ];
 }

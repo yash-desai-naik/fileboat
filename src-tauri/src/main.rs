@@ -7,6 +7,7 @@ mod dnd;
 mod folders;
 mod jobs;
 mod launch;
+mod native_menu;
 mod navigate;
 mod ops_cmd;
 mod places_cmd;
@@ -61,6 +62,7 @@ fn main() {
             desktop::reveal_in_file_manager,
             desktop::show_properties,
             desktop::open_with_dialog,
+            native_menu::native_menu,
             folders::folder_open,
             folders::folder_rows,
             folders::folder_names,
