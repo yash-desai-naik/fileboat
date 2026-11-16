@@ -8,6 +8,13 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Claude pane** (`Ctrl+Alt+B`): your own Claude Code (your login, no Node.js) in a side pane,
+  working in the repository you're browsing, with that project's `CLAUDE.md`, chats and memory. It
+  sees your folder, selection, preview and search; `@` adds files and folders, images can be
+  pasted; Ask Claude on any file. Fileboat's own tools let it search the index, list folders, read
+  git status, show and select files, run any command and change settings; creating, renaming,
+  moving or deleting files asks you first and can be undone with `Ctrl+Z`. Earlier chats resume;
+  closing the pane stops Claude Code.
 - **Search** (`Ctrl+F` here, `Ctrl+Shift+F` everywhere): results as you type, matched letters
   highlighted, the preview following; Enter opens, `Ctrl+Enter` shows it in its folder, `Alt+Enter`
   opens a tab. Words match fuzzily; filters narrow it down: `ext:rs,ts`, `kind:image`,

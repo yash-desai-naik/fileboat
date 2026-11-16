@@ -48,6 +48,8 @@ Rust, `src-tauri/src/`:
     the developer defaults (`rules.rs`), the parallel walk that fills it and reconciles one folder
     (`walk.rs`), and searching it with filters and fuzzy names (`query.rs`);
   - `grep`: content search with ripgrep's crates;
+  - `claude`: finding Claude Code, its arguments and prompt, where a chat works (the repository
+    root); `mcp`: Fileboat's MCP tool server (from Tableboat) and its tools;
   - `preview`: which viewer shows a file (by name, then by content), text in any encoding (only
     the start of big files), bytes for the hex view, archive lists, YAML/TOML/JSON for the tree,
     and a folder's summary;
@@ -70,6 +72,8 @@ Rust, `src-tauri/src/`:
   - `indexer`: the live index (load and reconcile at start-up or build, recursive watches,
     periodic saves, background priority) and its commands; `grep_cmd` streams content search;
     `shell_cmd` runs the command bar's `!` commands;
+  - `ai`: the Claude pane's processes (one Claude Code per window, stream-JSON) and its commands;
+    `ai/host.rs` connects the tools to the index, settings, undo log and window;
   - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
     recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
@@ -107,6 +111,9 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
 - Search: `lib/search.ts` (per-tab search state, the index's status), `views/SearchBox.tsx` (the
   toolbar box) and `views/SearchResults.tsx`; `settings/IndexSettings.tsx`; `lib/recents.ts`
   (recent folders for Go to).
+- `ai/`: the Claude pane (`AiPane.tsx`), its input (`Composer.tsx`) and `@` mentions;
+  `lib/claude.ts` is the chat (stream events to items); `lib/agentBridge.ts` does Claude's window
+  actions.
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.

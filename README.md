@@ -14,7 +14,8 @@ WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 > file, the branch, a git panel to stage, commit, pull and push, diffs) and work with files: copy,
 > move, rename, delete, undo, the clipboard and drag and drop (shared with Explorer), and context
 > menus. Search as you type here or everywhere (an index that knows what developers never search),
-> search inside files, and jump anywhere from the command bar. The Claude pane comes next. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
+> search inside files, jump anywhere from the command bar, and ask your own Claude Code about the
+> project you're browsing in a side pane. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
 > how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What it will do (v1)
