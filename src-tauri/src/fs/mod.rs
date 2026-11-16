@@ -4,10 +4,12 @@ pub mod entry;
 pub mod group;
 pub mod model;
 pub mod natural;
+pub mod size;
 
 pub use entry::{Entry, Kind};
 pub use group::{Group, GroupBy};
 pub use model::{Folder, SortKey, View};
+pub use size::{tree_size, TreeSize};
 
 use std::path::{Path, PathBuf};
 

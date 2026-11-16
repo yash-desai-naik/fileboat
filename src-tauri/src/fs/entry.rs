@@ -18,8 +18,10 @@ pub enum Kind {
 pub struct Entry {
     pub name: String,
     pub kind: Kind,
-    /// Bytes for files; 0 for folders (sized separately, later).
+    /// Bytes for files; for folders 0, or everything under them once sized (`sized`).
     pub size: u64,
+    /// A folder whose `size` has been worked out.
+    pub sized: bool,
     /// Milliseconds since 1970, or 0 when unknown.
     pub modified: f64,
     pub created: f64,
@@ -90,6 +92,7 @@ impl Entry {
             key: name.to_lowercase().into_boxed_str(),
             kind,
             size: if kind == Kind::File { meta.len() } else { 0 },
+            sized: false,
             modified: millis(meta.modified()),
             created: millis(meta.created()),
             ext,

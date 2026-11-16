@@ -33,11 +33,22 @@ pub struct View {
     /// The viewer's clock, for date groups: now (ms since 1970) and the local offset (minutes).
     pub now: i64,
     pub tz_offset_min: i32,
+    /// Work out folder sizes (in the background, by the app).
+    pub folder_sizes: bool,
 }
 
 impl Default for View {
     fn default() -> Self {
-        View { sort: SortKey::Name, descending: false, folders_first: true, show_hidden: false, group: GroupBy::None, now: 0, tz_offset_min: 0 }
+        View {
+            sort: SortKey::Name,
+            descending: false,
+            folders_first: true,
+            show_hidden: false,
+            group: GroupBy::None,
+            now: 0,
+            tz_offset_min: 0,
+            folder_sizes: false,
+        }
     }
 }
 
@@ -156,9 +167,44 @@ impl Folder {
             if view.group != self.view.group {
                 self.collapsed.clear();
             }
+            // Turning folder sizes on alone moves no rows; turning them off forgets them.
+            let mut resort = View { folder_sizes: view.folder_sizes, ..self.view } != view;
+            if self.view.folder_sizes && !view.folder_sizes {
+                for e in self.entries.iter_mut().filter(|e| e.sized) {
+                    e.size = 0;
+                    e.sized = false;
+                }
+                resort = true;
+            }
             self.view = view;
+            if resort {
+                self.reorder();
+            }
+        }
+    }
+
+    /// Folders (not links to them) whose size isn't known yet.
+    pub fn unsized_folders(&self) -> Vec<String> {
+        self.entries.iter().filter(|e| e.kind == Kind::Folder && !e.sized && !e.link).map(|e| e.name.clone()).collect()
+    }
+
+    /// Set folder sizes (name, bytes); re-orders if that moves rows. Returns whether any changed.
+    pub fn set_sizes<'a>(&mut self, sizes: impl IntoIterator<Item = (&'a str, u64)>) -> bool {
+        let mut changed = false;
+        for (name, bytes) in sizes {
+            let Some(&i) = self.by_name.get(name) else { continue };
+            let e = &mut self.entries[i as usize];
+            if e.kind == Kind::Folder && (!e.sized || e.size != bytes) {
+                e.size = bytes;
+                e.sized = true;
+                changed = true;
+            }
+        }
+        // Sizes show in the Size column and group totals; rows move only when sorted or grouped by size.
+        if changed {
             self.reorder();
         }
+        changed
     }
 
     /// The groups in order (empty when not grouping).
@@ -205,7 +251,7 @@ impl Folder {
             let last = groups.last_mut().expect("a group");
             last.count += 1;
             let e = &entries[i as usize];
-            if e.kind != Kind::Folder {
+            if e.kind != Kind::Folder || e.sized {
                 last.bytes += e.size;
             }
             if !last.collapsed {
@@ -233,6 +279,7 @@ mod tests {
             hidden,
             link: false,
             readonly: false,
+            sized: false,
         }
     }
 
@@ -298,6 +345,26 @@ mod tests {
         assert!(f.groups().iter().all(|g| !g.collapsed));
         let letters: Vec<&str> = f.groups().iter().map(|g| g.label.as_str()).collect();
         assert_eq!(letters, vec!["A", "B", "D", "G", "S"]);
+    }
+
+    #[test]
+    fn folder_sizes_sort_and_add_to_group_totals() {
+        let mut f = sample();
+        assert_eq!(f.unsized_folders().len(), 3);
+        f.set_view(View { sort: SortKey::Size, descending: true, ..View::default() });
+        assert!(f.set_sizes([("docs", 5000), ("src", 10)]));
+        assert_eq!(&names(&f)[..2], ["docs", "src"]);
+        assert!(!f.set_sizes([("docs", 5000)]), "the same size again changes nothing");
+        assert!(!f.set_sizes([("b.txt", 1)]), "files keep their own size");
+        assert_eq!(f.unsized_folders(), vec![".git"]);
+        f.set_view(View { group: GroupBy::Type, show_hidden: true, ..View::default() });
+        assert_eq!(f.groups()[0].bytes, 5010, "sized folders count; .git isn't sized yet");
+
+        // Turning sizes off forgets them.
+        f.set_view(View { folder_sizes: true, ..View::default() });
+        assert!(f.unsized_folders() == vec![".git"]);
+        f.set_view(View::default());
+        assert_eq!(f.unsized_folders().len(), 3);
     }
 
     #[test]
