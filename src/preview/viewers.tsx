@@ -7,6 +7,7 @@ import type { ArchiveList, FolderPreview, Info, Text } from "./types";
 
 // Loaded with the first text file shown (images and PDFs don't need it).
 const CodeView = lazy(() => import("./CodeView"));
+const Markdown = lazy(() => import("./Markdown"));
 
 /** The first read of a text file; "Load more" doubles it. */
 export const TEXT_START = 512 * 1024;
@@ -16,7 +17,7 @@ export function usePreviewUrl(path: string, reload: string): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let stale = false;
-    setUrl(null);
+    // A reload keeps the old picture until the new one is ready (the viewer is per path).
     void invoke<string>("preview_url", { path }).then((token) => {
       // The reload key makes a changed file load again instead of from the cache.
       if (!stale) setUrl(`${convertFileSrc(token, "fbpreview")}?v=${encodeURIComponent(reload)}`);
@@ -28,12 +29,15 @@ export function usePreviewUrl(path: string, reload: string): string | null {
   return url;
 }
 
-/** A command's result for `deps`, with loading and error states. */
+/**
+ * A command's result for `deps`, with loading and error states. A reload keeps the previous
+ * result on screen until the new one arrives (each viewer shows one path), so a file that
+ * changes on disk updates in place, without a flash or losing the scroll position.
+ */
 export function useLoad<T>(load: () => Promise<T>, deps: unknown[]): { data: T | null; error: string | null } {
   const [state, setState] = useState<{ data: T | null; error: string | null }>({ data: null, error: null });
   useEffect(() => {
     let stale = false;
-    setState({ data: null, error: null });
     load().then(
       (data) => !stale && setState({ data, error: null }),
       (err) => !stale && setState({ data: null, error: String(err) }),
@@ -300,14 +304,19 @@ export function FolderViewer({ info, reload }: { info: Info; reload: string }) {
       {data.readme && (
         <div className="pv-readme">
           <div className="pv-subhead">{data.readme[0]}</div>
-          <PlainText text={data.readme[1]} />
+          {/\.(md|markdown)$/i.test(data.readme[0]) ? (
+            <Suspense fallback={<Loading />}>
+              <Markdown text={data.readme[1]} folder={info.path} />
+            </Suspense>
+          ) : (
+            <PlainText text={data.readme[1]} />
+          )}
         </div>
       )}
     </>
   );
 }
 
-const Markdown = lazy(() => import("./Markdown"));
 
 /** How each kind of file was last shown (Preview or Source, Tree or Text…), for this run. */
 const lastMode = new Map<string, string>();

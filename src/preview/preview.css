@@ -462,3 +462,35 @@
   color: var(--text-3);
   text-align: right;
 }
+
+/* Quick Look */
+.quicklook-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.35);
+}
+.quicklook {
+  position: relative;
+  width: min(1100px, 82vw);
+  height: 82vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.4);
+}
+.quicklook .pv-head {
+  padding-right: 40px;
+}
+.quicklook-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+}

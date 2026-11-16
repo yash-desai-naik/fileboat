@@ -184,6 +184,8 @@ export function buildCommands(): Command[] {
     { id: "file.duplicate", category: "File", title: "Duplicate", run: () => paneActions.duplicate() },
     { id: "file.rename", category: "File", title: "Rename", keys: ["F2"], run: () => paneActions.rename() },
     { id: "view.refresh", category: "View", title: "Refresh", keys: ["F5", "Ctrl+R"], run: () => paneActions.refresh() },
+    // Space itself is handled by the list (it's also part of typed names).
+    { id: "view.quickLook", category: "View", title: "Quick Look (Space)", run: () => uiActions.toggleQuickLook() },
     {
       id: "view.folderSizes",
       category: "View",

@@ -11,4 +11,6 @@ export const uiActions = {
   focusAddress: () => {},
   /** Put the keyboard back in the folder view. */
   focusList: () => {},
+  /** Quick Look (Space): the selected file large, over the window. */
+  toggleQuickLook: () => {},
 };

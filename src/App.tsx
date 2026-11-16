@@ -22,6 +22,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 // Loaded when the pane first opens: its viewers stay out of the start-up bundle.
 const PreviewPane = lazy(() => import("./preview/PreviewPane").then((m) => ({ default: m.PreviewPane })));
+const QuickLook = lazy(() => import("./preview/PreviewPane").then((m) => ({ default: m.QuickLook })));
 
 const SIDEBAR_DEFAULT = 240;
 const PREVIEW_DEFAULT = 360;
@@ -37,6 +38,8 @@ export function App() {
   uiActions.openSettings = () => setSettingsOpen(true);
   const [aboutOpen, setAboutOpen] = useState(false);
   uiActions.openAbout = () => setAboutOpen(true);
+  const [quickLook, setQuickLook] = useState(false);
+  uiActions.toggleQuickLook = () => setQuickLook((q) => !q);
 
   const { tabs } = useTabs();
   const tab = activeTab();
@@ -114,6 +117,11 @@ export function App() {
       {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
       {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      {quickLook && (
+        <Suspense fallback={null}>
+          <QuickLook onClose={() => setQuickLook(false)} />
+        </Suspense>
+      )}
       <UpdateNotice />
       <ConfirmHost />
       <Toasts />

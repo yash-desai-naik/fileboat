@@ -111,8 +111,8 @@ function InfoStrip({ info }: { info: Info }) {
   );
 }
 
-/** The preview pane on the right: follows the selection in the active tab. */
-export function PreviewPane({ onClose }: { onClose: () => void }) {
+/** What the active tab is on and its info: shared by the pane and Quick Look. */
+function usePreview() {
   const target = useTarget();
   const path = target && "path" in target ? target.path : null;
   const reload = target && "path" in target ? target.reload : "";
@@ -144,18 +144,76 @@ export function PreviewPane({ onClose }: { onClose: () => void }) {
   }, [path, reload]);
 
   const shown = info && path && info.path.toLowerCase() === path.toLowerCase() ? info : null;
+  return { target, shown, error, reload };
+}
 
+/** Open, Editor and Copy for the file shown. */
+function Actions({ info }: { info: Info }) {
   const copyContents = async () => {
-    if (!shown) return;
     try {
-      const t = await invoke<Text>("preview_text", { path: shown.path, limit: 64 << 20 });
+      const t = await invoke<Text>("preview_text", { path: info.path, limit: 64 << 20 });
       await navigator.clipboard.writeText(t.text);
       showToast(t.truncated ? "Copied the first 64 MB" : "Copied the contents");
     } catch (err) {
       showToast(String(err), "error");
     }
   };
+  return (
+    <div className="pv-actions">
+      <button className="link-btn" onClick={() => void invoke("open_path", { path: info.path }).catch((e) => showToast(String(e), "error"))}>
+        Open
+      </button>
+      {TEXTUAL.has(info.viewer) && (
+        <>
+          <button className="link-btn" onClick={() => openInEditor([info.path])}>
+            Editor
+          </button>
+          <button className="link-btn" onClick={() => void copyContents()}>
+            Copy
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 
+/** What's shown for the target: the file, "N items selected", or an error. */
+function Content({ preview, info: withInfo }: { preview: ReturnType<typeof usePreview>; info: boolean }) {
+  const { target, shown, error, reload } = preview;
+  if (target && "count" in target)
+    return (
+      <div className="pane-empty">
+        <FileIcon size={20} />
+        <p>{target.count.toLocaleString()} items selected</p>
+      </div>
+    );
+  if (error) return <Note>{error}</Note>;
+  if (!shown)
+    return (
+      <div className="pane-empty">
+        <FileIcon size={20} />
+        <p>Select a file to preview it</p>
+      </div>
+    );
+  return (
+    <>
+      <div className="pv-head">
+        <span className="pv-name" title={shown.name}>
+          {shown.name}
+        </span>
+        <Actions info={shown} />
+      </div>
+      <div className="pv-body" key={shown.path}>
+        <Body info={shown} reload={reload} />
+      </div>
+      {withInfo && <InfoStrip info={shown} />}
+    </>
+  );
+}
+
+/** The preview pane on the right: follows the selection in the active tab. */
+export function PreviewPane({ onClose }: { onClose: () => void }) {
+  const preview = usePreview();
   return (
     <aside className="rightpane preview">
       <div className="pane-header">
@@ -164,46 +222,38 @@ export function PreviewPane({ onClose }: { onClose: () => void }) {
           <CloseSmallIcon size={14} />
         </button>
       </div>
-      {target && "count" in target ? (
-        <div className="pane-empty">
-          <FileIcon size={20} />
-          <p>{target.count.toLocaleString()} items selected</p>
-        </div>
-      ) : error ? (
-        <Note>{error}</Note>
-      ) : !shown ? (
-        <div className="pane-empty">
-          <FileIcon size={20} />
-          <p>Select a file to preview it</p>
-        </div>
-      ) : (
-        <>
-          <div className="pv-head">
-            <span className="pv-name" title={shown.name}>
-              {shown.name}
-            </span>
-            <div className="pv-actions">
-              <button className="link-btn" onClick={() => void invoke("open_path", { path: shown.path }).catch((e) => showToast(String(e), "error"))}>
-                Open
-              </button>
-              {TEXTUAL.has(shown.viewer) && (
-                <>
-                  <button className="link-btn" onClick={() => openInEditor([shown.path])}>
-                    Editor
-                  </button>
-                  <button className="link-btn" onClick={() => void copyContents()}>
-                    Copy
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="pv-body" key={shown.path}>
-            <Body info={shown} reload={reload} />
-          </div>
-          <InfoStrip info={shown} />
-        </>
-      )}
+      <Content preview={preview} info />
     </aside>
   );
 }
+
+/**
+ * Quick Look (Space): the selected item large, over the window. The keyboard stays in the list,
+ * so the arrow keys move on to the next file; Space or Esc closes it.
+ */
+export function QuickLook({ onClose }: { onClose: () => void }) {
+  const preview = usePreview();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || (e.key === " " && !(e.target as HTMLElement)?.closest?.("input, textarea, [contenteditable='true']"))) {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
+  }, [onClose]);
+  return (
+    <div className="quicklook-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="quicklook" role="dialog" aria-label="Quick Look">
+        <button className="icon-btn small quicklook-close" title="Close (Space)" onClick={onClose}>
+          <CloseSmallIcon size={14} />
+        </button>
+        <Content preview={preview} info={false} />
+      </div>
+    </div>
+  );
+}
+
+export default PreviewPane;

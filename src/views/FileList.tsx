@@ -280,6 +280,12 @@ export function FileList(props: Props) {
           void entryAt(at).then((entry) => entry && selection.toggle(entry.name, at));
           return;
         }
+        // Space is Quick Look, unless it's part of a name being typed ("my file").
+        if (!e.altKey && !(typed.current.text && Date.now() - typed.current.at < 900)) {
+          e.preventDefault();
+          uiActions.toggleQuickLook();
+          return;
+        }
         break;
     }
     if (mod && e.key.toLowerCase() === "a") {
