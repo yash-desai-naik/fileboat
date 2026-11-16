@@ -8,10 +8,11 @@ import { CommandBar } from "./palette/CommandBar";
 import { SettingsPage } from "./settings/SettingsPage";
 import { AboutDialog } from "./shell/AboutDialog";
 import { UpdateNotice } from "./shell/UpdateNotice";
-import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
+import { FileIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
 import { FolderPane } from "./views/FolderPane";
+import { Sidebar } from "./sidebar/Sidebar";
 import { Toolbar } from "./shell/Toolbar";
 import { activeTab, goBack, goForward, tabTitle, useTabs } from "./lib/tabs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -61,14 +62,7 @@ export function App() {
         {settings.showSidebar && (
           <>
             <aside className="sidebar" style={{ width: settings.sidebarWidth }}>
-              <div className="pane-header">
-                <span className="pane-title">Places</span>
-              </div>
-              <div className="pane-empty">
-                <FolderIcon size={20} />
-                <p>Favourites, projects and drives</p>
-                <p className="muted small">They appear here once folders can be opened.</p>
-              </div>
+              <Sidebar />
             </aside>
             <Splitter
               pane="left"

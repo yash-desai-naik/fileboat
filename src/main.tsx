@@ -12,6 +12,7 @@ import "./controls.css";
 import "./shell.css";
 import "./palette.css";
 import "./views.css";
+import "./sidebar.css";
 import "./update.css";
 import "./type.css";
 

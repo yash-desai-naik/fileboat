@@ -4,8 +4,10 @@ import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
+import { addFavourite, removeFavourite } from "./favourites";
 import {
   activateTabAt,
+  activeTab,
   closeOtherTabs,
   closeTab,
   cycleTab,
@@ -137,6 +139,8 @@ export function buildCommands(): Command[] {
     { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
     { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: goUp },
     { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
+    { id: "favourites.add", category: "Favourites", title: "Add This Folder", keys: ["Ctrl+D"], run: () => addFavourite() },
+    { id: "favourites.remove", category: "Favourites", title: "Remove This Folder", run: () => removeFavourite(activeTab().path) },
     { id: "tab.new", category: "Tabs", title: "New Tab", keys: ["Ctrl+T"], run: () => newTab() },
     { id: "tab.close", category: "Tabs", title: "Close Tab", keys: ["Ctrl+W", "Ctrl+F4"], run: () => closeTab() },
     { id: "tab.closeOthers", category: "Tabs", title: "Close Other Tabs", run: () => closeOtherTabs() },

@@ -27,6 +27,8 @@ export interface Settings {
   showHidden: boolean;
   /** Details view column widths by column id; missing ones use the defaults. */
   columnWidths: Record<string, number>;
+  /** Folders pinned in the sidebar, in order. */
+  favourites: string[];
   checkUpdates: boolean;
   skippedUpdate: string;
 }

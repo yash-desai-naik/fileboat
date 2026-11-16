@@ -67,6 +67,8 @@ pub struct Settings {
     pub show_hidden: bool,
     /// Details view column widths in pixels, by column ("name", "modified", "type", "size").
     pub column_widths: BTreeMap<String, u32>,
+    /// Folders pinned in the sidebar, in order.
+    pub favourites: Vec<String>,
     /// Look for a new version on GitHub at start-up and once a day.
     pub check_updates: bool,
     /// A version the user chose to skip (no notice for it; a manual check still shows it).
@@ -91,6 +93,7 @@ impl Default for Settings {
             folders_first: true,
             show_hidden: false,
             column_widths: BTreeMap::new(),
+            favourites: Vec::new(),
             check_updates: true,
             skipped_update: String::new(),
         }
@@ -129,6 +132,9 @@ impl Settings {
         for w in self.column_widths.values_mut() {
             *w = (*w).clamp(40, 2000);
         }
+        let mut seen = std::collections::HashSet::new();
+        self.favourites.retain(|p| !p.trim().is_empty() && seen.insert(p.to_lowercase()));
+        self.favourites.truncate(200);
         self
     }
 
@@ -160,6 +166,7 @@ showSidebar, showPreview (the preview pane): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 viewMode: \"details\" | \"list\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false
+favourites: [\"C:\\projects\", \"~/work\"] (folders pinned in the sidebar)
 columnWidths: {\"name\": 320, \"modified\": 150, \"type\": 140, \"size\": 90} (Details view, 40 to 2000 pixels each)
 checkUpdates: look for a new Fileboat version at start-up and once a day
 skippedUpdate: a version not to be told about again (\"\" = none)";

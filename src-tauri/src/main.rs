@@ -4,6 +4,7 @@
 mod desktop;
 mod folders;
 mod navigate;
+mod places_cmd;
 mod settings;
 mod state;
 mod update;
@@ -60,6 +61,7 @@ fn main() {
             folders::folders_reset,
             navigate::path_resolve,
             navigate::path_complete,
+            places_cmd::places_list,
             state::state_read,
             state::state_write,
             update::update_check,

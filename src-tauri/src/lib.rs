@@ -3,5 +3,6 @@
 
 pub mod fs;
 pub mod paths;
+pub mod places;
 pub mod prefs;
 pub mod themes;

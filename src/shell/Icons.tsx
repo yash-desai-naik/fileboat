@@ -112,6 +112,49 @@ export function ChevronIcon({ open, size = 12 }: { open: boolean; size?: number 
   );
 }
 
+export function HomeIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M2.5 7.5 8 3l5.5 4.5M4 6.5v6.5h3v-3.5h2V13h3V6.5" />
+    </Svg>
+  );
+}
+
+export function DownloadIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" />
+    </Svg>
+  );
+}
+
+export function DriveIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="2" y="5" width="12" height="6.5" rx="1.5" />
+      <path d="M11 8.25h.01M4.5 8.25h3.5" />
+    </Svg>
+  );
+}
+
+/** A drive with a cable under it: a network share. */
+export function NetworkDriveIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="2" y="3" width="12" height="6" rx="1.5" />
+      <path d="M11 6h.01M8 9v3M3.5 13.5h9M8 12v1.5" />
+    </Svg>
+  );
+}
+
+export function StarIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M8 2.2l1.75 3.6 3.95.55-2.86 2.77.68 3.93L8 11.2l-3.52 1.85.68-3.93L2.3 6.35l3.95-.55z" />
+    </Svg>
+  );
+}
+
 export function PlusIcon(p: IconProps) {
   return (
     <Svg {...p}>

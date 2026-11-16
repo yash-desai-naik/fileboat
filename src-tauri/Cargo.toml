@@ -38,9 +38,13 @@ url = "2"
 notify = "8"
 
 [target.'cfg(windows)'.dependencies]
-# Already built for Tauri's windowing; used for the window's "Restore Down" rectangle and to open
-# files with their default app (ShellExecute).
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell"] }
+# Already built for Tauri's windowing; used for the window's "Restore Down" rectangle, to open
+# files with their default app (ShellExecute) and to list drives with their free space.
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Storage_FileSystem", "Win32_NetworkManagement_WNet"] }
+
+[target.'cfg(unix)'.dependencies]
+# Already built for Tauri; free space on volumes (statvfs).
+libc = "0.2"
 
 [profile.release]
 # "thin" LTO in parallel units: builds several times faster and needs far less RAM than full
