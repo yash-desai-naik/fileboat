@@ -1,14 +1,87 @@
 import { useAppearance } from "./lib/appearance";
-import { useSettings } from "./lib/settings";
+import { updateSettings, useSettings } from "./lib/settings";
+import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
+import { Splitter } from "./shell/Splitter";
+import { TitleBar } from "./shell/TitleBar";
+
+const SIDEBAR_DEFAULT = 240;
+const PREVIEW_DEFAULT = 360;
 
 export function App() {
   const settings = useSettings();
   useAppearance(settings);
 
+  const toggleSidebar = () => updateSettings({ showSidebar: !settings.showSidebar });
+  const togglePreview = () => updateSettings({ showPreview: !settings.showPreview });
+
   return (
-    <main style={{ padding: 24, height: "100%", background: "var(--bg)" }}>
-      <h1 style={{ fontSize: "var(--fs-xl)", margin: "0 0 4px" }}>Fileboat</h1>
-      <p className="muted">A small, fast file explorer for developers.</p>
-    </main>
+    <div className="app">
+      <TitleBar
+        sidebarOn={settings.showSidebar}
+        previewOn={settings.showPreview}
+        onToggleSidebar={toggleSidebar}
+        onTogglePreview={togglePreview}
+        onOpenCommands={() => {}}
+      />
+
+      <div className="workspace">
+        {settings.showSidebar && (
+          <>
+            <aside className="sidebar" style={{ width: settings.sidebarWidth }}>
+              <div className="pane-header">
+                <span className="pane-title">Places</span>
+              </div>
+              <div className="pane-empty">
+                <FolderIcon size={20} />
+                <p>Favourites, projects and drives</p>
+                <p className="muted small">They appear here once folders can be opened.</p>
+              </div>
+            </aside>
+            <Splitter
+              pane="left"
+              label="Resize sidebar"
+              width={settings.sidebarWidth}
+              min={160}
+              max={900}
+              onResize={(w) => updateSettings({ sidebarWidth: w }, { debounceMs: 400 })}
+              onReset={() => updateSettings({ sidebarWidth: SIDEBAR_DEFAULT })}
+            />
+          </>
+        )}
+
+        <main className="center">
+          <div className="pane-empty">
+            <FolderIcon size={24} />
+            <p>Folders open here</p>
+          </div>
+        </main>
+
+        {settings.showPreview && (
+          <>
+            <Splitter
+              pane="right"
+              label="Resize preview pane"
+              width={settings.previewWidth}
+              min={240}
+              max={1600}
+              onResize={(w) => updateSettings({ previewWidth: w }, { debounceMs: 400 })}
+              onReset={() => updateSettings({ previewWidth: PREVIEW_DEFAULT })}
+            />
+            <aside className="rightpane" style={{ width: settings.previewWidth }}>
+              <div className="pane-header">
+                <span className="pane-title">Preview</span>
+                <button className="icon-btn small" title="Close preview pane" onClick={togglePreview}>
+                  <CloseSmallIcon size={14} />
+                </button>
+              </div>
+              <div className="pane-empty">
+                <FileIcon size={20} />
+                <p>Select a file to preview it</p>
+              </div>
+            </aside>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

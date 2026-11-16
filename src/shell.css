@@ -1,0 +1,184 @@
+/* The window: title bar, side panes, splitters. */
+
+/* minmax(0, 1fr): the layout is as wide as the window, never as wide as its content
+   (otherwise a narrow window pushes the right side, caption buttons included, off-screen). */
+.app {
+  display: grid;
+  grid-template-rows: var(--titlebar-h) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  height: 100vh;
+}
+
+.titlebar,
+.workspace {
+  min-width: 0;
+}
+
+.workspace {
+  display: flex;
+  min-height: 0;
+}
+
+/* Side panes give way in a narrow window so the folder view keeps at least ~240 px. */
+.sidebar {
+  max-width: 34vw;
+}
+.rightpane {
+  max-width: 45vw;
+}
+
+.sidebar,
+.rightpane {
+  flex: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sidebar);
+}
+
+.center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.splitter {
+  flex: none;
+  width: 1px;
+  background: var(--border);
+  position: relative;
+  cursor: col-resize;
+  z-index: 2;
+}
+.splitter::after {
+  content: "";
+  position: absolute;
+  inset: 0 -3px;
+}
+.splitter:hover,
+.splitter.dragging {
+  background: var(--accent);
+}
+
+/* ---------- title bar ---------- */
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-chrome);
+  border-bottom: 1px solid var(--border);
+  padding-left: 8px;
+}
+
+/* macOS: room for the traffic lights, which sit over the top-left of the window. */
+.titlebar.mac {
+  padding-left: 84px;
+}
+
+.tb-group {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.tb-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.tb-center {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+}
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.icon-btn[aria-pressed="true"] {
+  color: var(--text);
+}
+.icon-btn.small {
+  width: 22px;
+  height: 22px;
+}
+
+.caption-buttons {
+  flex: none;
+  display: flex;
+  height: 100%;
+  margin-left: 4px;
+}
+
+.caption-btn {
+  width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+}
+.caption-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.caption-btn.close:hover {
+  background: var(--danger-fill);
+  color: var(--on-danger);
+}
+
+/* ---------- panes ---------- */
+
+.pane-header {
+  height: var(--panehead-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pane-title {
+  color: var(--text-3);
+}
+
+.pane-empty {
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+.pane-empty p {
+  margin: 0;
+}
+.pane-empty svg {
+  margin-bottom: 6px;
+  color: var(--text-3);
+}
