@@ -30,6 +30,8 @@ pub struct RepoInfo {
     pub ready: bool,
     /// Why status couldn't be read (git missing…).
     pub error: Option<String>,
+    /// Seconds the last status took, when so slow that it only runs when asked.
+    pub paused: Option<u32>,
 }
 
 /// The repository `path` is in, with what its last status said; None outside one.
@@ -39,6 +41,7 @@ pub fn git_info(folders: State<'_, Folders>, path: String) -> Option<RepoInfo> {
     let state = folders.repos().get(&repo.root);
     let snap = state.as_ref().and_then(|s| s.snapshot.lock().unwrap().clone());
     let error = state.as_ref().and_then(|s| s.error.lock().unwrap().clone());
+    let paused = state.as_ref().and_then(|s| *s.paused.lock().unwrap());
     let head = snap.as_ref().map(|s| s.head.clone()).unwrap_or_else(|| git::head(&repo));
     let mut info = RepoInfo {
         root: repo.root.display().to_string(),
@@ -55,6 +58,7 @@ pub fn git_info(folders: State<'_, Folders>, path: String) -> Option<RepoInfo> {
         conflicted: 0,
         ready: snap.is_some(),
         error,
+        paused,
     };
     if let Some(snap) = snap {
         info.upstream = snap.status.branch.upstream.clone();
@@ -94,6 +98,14 @@ fn rels(repo: &git::Repo, paths: &[String]) -> Result<Vec<String>, String> {
 
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?
+}
+
+/// Run status now (a paused repository's status bar asks for it).
+#[tauri::command]
+pub fn git_status_run(folders: State<'_, Folders>, path: String) {
+    if let Some(repo) = git::discover(&PathBuf::from(&path)) {
+        refresh(&folders, &repo);
+    }
 }
 
 /// After a write: status again now (the watcher would notice too, a moment later).

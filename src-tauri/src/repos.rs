@@ -2,7 +2,8 @@
 //! worker and one recursive watch on its working tree: a change anywhere in it (or to `.git/HEAD`,
 //! the index or refs) runs `git status` again. Bursts are coalesced, a newer request waits for
 //! the running one, a busy repository rests between runs, and changes inside folders git ignores
-//! (a build writing to `target/`) don't count. Results go into the open folders' models, and the
+//! (a build writing to `target/`) don't count. Where status is very slow (a huge monorepo), it
+//! pauses: it runs only when asked, and a run that takes minutes is stopped. Results go into the open folders' models, and the
 //! UI hears `git-changed` for the branch and the git panel.
 
 use crate::folders::Folders;
@@ -40,10 +41,16 @@ pub struct RepoState {
     pub snapshot: Mutex<Option<Arc<Snapshot>>>,
     /// Why status couldn't be read (git missing…), if so.
     pub error: Mutex<Option<String>>,
+    /// Seconds the last run took, when that was so long that changes no longer run it.
+    pub paused: Mutex<Option<u32>>,
 }
 
 /// Changes coming close together run status once.
 const SETTLE: Duration = Duration::from_millis(150);
+
+/// A run this slow pauses automatic runs; one this long is stopped.
+const PAUSE_AFTER: Duration = Duration::from_secs(10);
+const GIVE_UP_AFTER: Duration = Duration::from_secs(120);
 
 /// The rest after a run: twice its length, 300 ms to 10 s.
 fn rest_after(took: Duration) -> Duration {
@@ -103,6 +110,7 @@ impl Repos {
                     run: Mutex::default(),
                     snapshot: Mutex::new(None),
                     error: Mutex::new(None),
+                    paused: Mutex::new(None),
                 });
                 self.trigger(&s);
                 s
@@ -153,7 +161,20 @@ impl Repos {
                 break;
             }
             let started = Instant::now();
-            match git::status(&state.repo, true, || !state.alive.load(Ordering::Relaxed)) {
+            let gave_up = AtomicBool::new(false);
+            let result = git::status(&state.repo, true, || {
+                if started.elapsed() > GIVE_UP_AFTER {
+                    gave_up.store(true, Ordering::Relaxed);
+                }
+                gave_up.load(Ordering::Relaxed) || !state.alive.load(Ordering::Relaxed)
+            });
+            let took = started.elapsed();
+            *state.paused.lock().unwrap() = (took > PAUSE_AFTER).then(|| took.as_secs().max(1) as u32);
+            let result = match result {
+                Err(_) if gave_up.load(Ordering::Relaxed) => Err(format!("git status took over {} minutes here, so it was stopped.", GIVE_UP_AFTER.as_secs() / 60)),
+                other => other,
+            };
+            match result {
                 Ok(status) => {
                     let snap = Snapshot {
                         index: StatusIndex::new(&status),
@@ -187,6 +208,9 @@ impl Repos {
     fn on_changes(self: &Arc<Self>, changes: Changes) {
         let open: Vec<Arc<RepoState>> = self.open.lock().unwrap().values().cloned().collect();
         for state in open {
+            if state.paused.lock().unwrap().is_some() {
+                continue;
+            }
             if changes.rescan || changes.paths.iter().any(|p| matters(&state, p)) {
                 self.trigger(&state);
             }

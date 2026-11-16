@@ -18,6 +18,8 @@ export interface RepoInfo {
   conflicted: number;
   ready: boolean;
   error: string | null;
+  /** Seconds the last status took, when so slow that it only runs when asked. */
+  paused: number | null;
 }
 
 const listeners = new Set<(root: string) => void>();

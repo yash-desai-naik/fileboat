@@ -98,6 +98,7 @@ fn main() {
             native_menu::native_menu,
             preview_cmd::preview_info,
             git_cmd::git_info,
+            git_cmd::git_status_run,
             indexer::index_search,
             grep_cmd::grep_start,
             grep_cmd::grep_cancel,

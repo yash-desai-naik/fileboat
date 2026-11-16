@@ -93,6 +93,7 @@ function GitStatus({ info }: { info: RepoInfo }) {
     info.upstream ? `Tracking ${info.upstream}` : "No upstream branch",
     info.ready ? `${info.staged} staged, ${info.changed} changed, ${info.untracked} untracked, ${info.conflicted} conflicted` : "Reading status…",
     info.error ?? "",
+    info.paused ? `git status took ${info.paused} s here, so it runs only when you ask` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -105,6 +106,11 @@ function GitStatus({ info }: { info: RepoInfo }) {
       {info.conflicted > 0 && <span className="git-conflicted-count">{info.conflicted} conflicted</span>}
       {info.ready && changes > 0 && <span className="muted">{changes} changed</span>}
       {info.error && <span className="muted">git unavailable</span>}
+      {info.paused != null && (
+        <button className="link-btn" title="Run git status now" onClick={() => void invoke("git_status_run", { path: info.root })}>
+          status paused
+        </button>
+      )}
     </span>
   );
 }
