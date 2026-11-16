@@ -1,0 +1,41 @@
+---
+
+## Download
+
+| File | For |
+|---|---|
+| **Fileboat_{version}_x64-setup.exe** | Windows 10 and 11, 64-bit |
+| **Fileboat_{version}_aarch64.dmg** | macOS 11 or later, Apple Silicon |
+
+**Windows:** run the installer. It installs for your Windows user only (no administrator rights) into
+`%LOCALAPPDATA%\Fileboat`. A newer installer upgrades in place; your settings are kept.
+
+**macOS:** open the DMG and drag Fileboat to Applications. Updates install in place and keep your
+settings.
+
+> [!NOTE]
+> Neither build is code-signed or notarized yet. On Windows, SmartScreen may show "Windows protected
+> your PC": click **More info**, then **Run anyway**. On macOS, the first launch is blocked with
+> *"Apple could not verify Fileboat.app is free of malware"*. Drag the app to Applications, then
+> either try to open it once and click **Open Anyway** in **System Settings → Privacy & Security**,
+> or run `xattr -dr com.apple.quarantine /Applications/Fileboat.app` in Terminal. You only need to
+> do this once. You can check that a file is the one built here with its SHA-256 checksum below.
+
+**SHA-256** (also in `SHA256SUMS.txt`):
+
+```
+{sha256}  Fileboat_{version}_x64-setup.exe
+{sha256-mac}  Fileboat_{version}_aarch64.dmg
+```
+
+Check them in PowerShell: `(Get-FileHash .\Fileboat_{version}_x64-setup.exe).Hash`, or on macOS:
+`shasum -a 256 Fileboat_{version}_aarch64.dmg`.
+
+**Requirements:** Windows 10 or 11, 64-bit, with Microsoft Edge WebView2 (built into Windows 11; on
+Windows 10 the installer downloads it if it's missing); or macOS 11 or later on Apple Silicon.
+
+**Uninstall:** on Windows, Settings > Apps > Fileboat; on macOS, move Fileboat to the Bin. Your
+settings stay in the app's data folder in case you reinstall.
+
+This build was made by GitHub Actions from the source code at tag `v{version}`.
+Full history: [CHANGELOG.md](https://github.com/{repo}/blob/v{version}/CHANGELOG.md).

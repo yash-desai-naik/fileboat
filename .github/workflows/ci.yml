@@ -1,0 +1,45 @@
+# Type-checks, builds and tests every push to master and every pull request, on Windows and macOS.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Type-check and build the UI
+        run: npm run build
+
+      - name: Rust tests (settings, themes and their contrast rules)
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      - name: Build the app
+        working-directory: src-tauri
+        run: cargo build --bins
