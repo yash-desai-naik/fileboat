@@ -8,6 +8,7 @@ import type { ArchiveList, FolderPreview, Info, Text } from "./types";
 // Loaded with the first text file shown (images and PDFs don't need it).
 const CodeView = lazy(() => import("./CodeView"));
 const Markdown = lazy(() => import("./Markdown"));
+const DiffView = lazy(() => import("./DiffView"));
 
 /** The first read of a text file; "Load more" doubles it. */
 export const TEXT_START = 512 * 1024;
@@ -427,6 +428,50 @@ export function SvgViewer({ info, reload }: { info: Info; reload: string }) {
         <Modes value={mode} onChange={setMode} options={[["image", "Image"], ["source", "Source"]]} />
       </div>
       {mode === "image" ? <ImageViewer info={info} reload={reload} /> : <TextViewer info={info} reload={reload} />}
+    </>
+  );
+}
+
+/** A changed file's diff: its unstaged changes, or (when some are staged) the staged ones. */
+export function DiffViewer({ info, reload, staged }: { info: Info; reload: string; staged: boolean }) {
+  const [which, setWhich] = useMode("diff-which", "worktree");
+  const [layout, setLayout] = useMode("diff-layout", "inline");
+  const mode = staged ? which : "worktree";
+  const { data, error } = useLoad(() => invoke<{ before: string | null; after: string | null }>("git_diff", { path: info.path, mode }), [info.path, reload, mode]);
+  return (
+    <>
+      <div className="pv-bar">
+        <span>{mode === "staged" ? "Staged: the last commit → staged" : staged ? "Unstaged: staged → working file" : "Changes since the last commit"}</span>
+        <span className="pv-bar-actions">
+          {staged && (
+            <Modes
+              value={which}
+              onChange={setWhich}
+              options={[
+                ["worktree", "Unstaged"],
+                ["staged", "Staged"],
+              ]}
+            />
+          )}
+          <Modes
+            value={layout}
+            onChange={setLayout}
+            options={[
+              ["inline", "Inline"],
+              ["split", "Side by side"],
+            ]}
+          />
+        </span>
+      </div>
+      {error ? (
+        <Note>{error}</Note>
+      ) : !data ? (
+        <Loading />
+      ) : (
+        <Suspense fallback={<Loading />}>
+          <DiffView before={data.before ?? ""} after={data.after ?? ""} name={info.name} split={layout === "split"} />
+        </Suspense>
+      )}
     </>
   );
 }

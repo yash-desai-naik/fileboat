@@ -6,7 +6,7 @@ import { tags as t } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 
 /** Token colours come from the theme (`--syn-*`), so one style serves every theme (as in Tableboat). */
-const syntax = HighlightStyle.define([
+export const syntax = HighlightStyle.define([
   { tag: [t.keyword, t.operatorKeyword, t.modifier, t.controlKeyword], color: "var(--syn-keyword)" },
   { tag: [t.typeName, t.className, t.namespace], color: "var(--syn-type)" },
   { tag: [t.standard(t.name), t.function(t.variableName), t.function(t.propertyName), t.macroName], color: "var(--syn-function)" },
@@ -25,7 +25,7 @@ const syntax = HighlightStyle.define([
   { tag: t.invalid, color: "var(--syn-invalid)" },
 ]);
 
-const chrome = EditorView.theme({
+export const chrome = EditorView.theme({
   "&": { height: "100%", backgroundColor: "transparent", color: "var(--syn-operator)", fontSize: "var(--fs-sm)" },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.55" },
@@ -40,7 +40,7 @@ const chrome = EditorView.theme({
 });
 
 /** The language for a file name ("main.rs", "Dockerfile", "package.json"), if CodeMirror has one. */
-function describe(name: string): LanguageDescription | null {
+export function describe(name: string): LanguageDescription | null {
   return LanguageDescription.matchFilename(languages, name);
 }
 

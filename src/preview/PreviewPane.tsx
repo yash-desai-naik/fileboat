@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useCurrent } from "../lib/current";
-import { childPath } from "../lib/folder";
+import { childPath, type Entry } from "../lib/folder";
 import { formatDate, formatSize } from "../lib/format";
 import { openInEditor } from "../lib/tools";
 import { CloseSmallIcon, FileIcon } from "../shell/Icons";
@@ -10,6 +10,8 @@ import type { Info, Text } from "./types";
 import {
   ArchiveViewer,
   CsvViewer,
+  DiffViewer,
+  Modes,
   MarkdownViewer,
   StructuredViewer,
   SvgViewer,
@@ -24,19 +26,24 @@ import {
 } from "./viewers";
 import "./preview.css";
 
+/** Changes a diff can show, and viewers whose files are text. */
+const DIFFABLE_MARKS = new Set(["modified", "added", "renamed", "conflicted"]);
+const DIFFABLE_VIEWERS = new Set(["text", "markdown", "json", "yaml", "toml", "csv", "svg"]);
+
 /** Viewers that show text (and can be copied or opened in the editor). */
 const TEXTUAL = new Set(["text", "markdown", "json", "yaml", "toml", "csv", "svg"]);
 
 /** What to preview: the single selected item, or the folder when nothing is selected. */
-function useTarget(): { path: string; reload: string } | { count: number } | null {
+function useTarget(): { path: string; reload: string; entry: Entry | null } | { count: number } | null {
   const current = useCurrent();
   if (!current) return null;
   if (current.count > 1) return { count: current.count };
   if (current.entry) {
     const e = current.entry;
-    return { path: childPath(current.folder, e.name), reload: `${e.modified}:${e.size}` };
+    // The git mark is part of the key: staging a file shows its diff afresh.
+    return { path: childPath(current.folder, e.name), reload: `${e.modified}:${e.size}:${e.git}:${e.staged}`, entry: e };
   }
-  return { path: current.folder, reload: "" };
+  return { path: current.folder, reload: "", entry: null };
 }
 
 /** The body for a file's viewer. */
@@ -144,7 +151,8 @@ function usePreview() {
   }, [path, reload]);
 
   const shown = info && path && info.path.toLowerCase() === path.toLowerCase() ? info : null;
-  return { target, shown, error, reload };
+  const entry = target && "entry" in target ? target.entry : null;
+  return { target, shown, error, reload, entry };
 }
 
 /** Open, Editor and Copy for the file shown. */
@@ -179,7 +187,11 @@ function Actions({ info }: { info: Info }) {
 
 /** What's shown for the target: the file, "N items selected", or an error. */
 function Content({ preview, info: withInfo }: { preview: ReturnType<typeof usePreview>; info: boolean }) {
-  const { target, shown, error, reload } = preview;
+  const { target, shown, error, reload, entry } = preview;
+  const [tab, setTab] = useState<"content" | "diff">("content");
+  // A changed text file under git can show its diff.
+  const diffable = !!shown && !!entry?.git && DIFFABLE_MARKS.has(entry.git) && DIFFABLE_VIEWERS.has(shown.viewer);
+  const showDiff = diffable && tab === "diff";
   if (target && "count" in target)
     return (
       <div className="pane-empty">
@@ -201,10 +213,11 @@ function Content({ preview, info: withInfo }: { preview: ReturnType<typeof usePr
         <span className="pv-name" title={shown.name}>
           {shown.name}
         </span>
+        {diffable && <Modes value={tab} onChange={(v) => setTab(v as "content" | "diff")} options={[["content", "Content"], ["diff", "Diff"]]} />}
         <Actions info={shown} />
       </div>
-      <div className="pv-body" key={shown.path}>
-        <Body info={shown} reload={reload} />
+      <div className="pv-body" key={shown.path + (showDiff ? ":diff" : "")}>
+        {showDiff ? <DiffViewer info={shown} reload={reload} staged={!!entry?.staged} /> : <Body info={shown} reload={reload} />}
       </div>
       {withInfo && <InfoStrip info={shown} />}
     </>

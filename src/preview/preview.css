@@ -494,3 +494,22 @@
   right: 8px;
   z-index: 1;
 }
+
+/* Diff */
+.pv-diff {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.pv-diff .cm-editor {
+  min-height: 100%;
+}
+.pv-diff.split .cm-mergeView {
+  min-height: 100%;
+}
+.pv-diff .cm-mergeViewEditors {
+  min-height: 100%;
+}
+.pv-head .pv-modes {
+  flex: none;
+}
