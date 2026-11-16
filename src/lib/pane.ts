@@ -12,6 +12,8 @@ export const paneActions = {
   refresh: () => {},
   /** Delete the selection: to the Recycle Bin / Trash, or permanently (asks first). */
   delete: (_permanently: boolean) => {},
+  /** Copy the selection beside itself ("a - Copy.txt"). */
+  duplicate: () => {},
 };
 
 export type PaneActions = typeof paneActions;

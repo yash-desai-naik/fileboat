@@ -157,6 +157,7 @@ export function buildCommands(): Command[] {
       keys: ["Shift+Delete", "Ctrl+Alt+Backspace"],
       run: () => paneActions.delete(true),
     },
+    { id: "file.duplicate", category: "File", title: "Duplicate", run: () => paneActions.duplicate() },
     { id: "file.rename", category: "File", title: "Rename", keys: ["F2"], run: () => paneActions.rename() },
     { id: "view.refresh", category: "View", title: "Refresh", keys: ["F5", "Ctrl+R"], run: () => paneActions.refresh() },
     { id: "favourites.add", category: "Favourites", title: "Add This Folder", keys: ["Ctrl+D"], run: () => addFavourite() },

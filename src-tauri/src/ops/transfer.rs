@@ -44,6 +44,8 @@ pub struct Progress {
     pub total_items: u64,
     /// The item being worked on, by name.
     pub current: String,
+    /// Still counting what there is to do (the totals grow until this is false).
+    pub counting: bool,
 }
 
 /// How a running transfer talks to whoever started it.
@@ -114,23 +116,53 @@ fn inside(inner: &Path, outer: &Path) -> bool {
     }
 }
 
-/// Count what a copy will go through: (bytes, files and folders). Links aren't followed.
-fn measure(p: &Path, ctl: &dyn Control) -> (u64, u64) {
-    let Ok(meta) = fs::symlink_metadata(p) else { return (0, 0) };
+/// Count what a copy will go through into `p.total_bytes` / `p.total_items` (links aren't
+/// followed), telling `ctl` as the count grows: a big tree takes a moment to count.
+fn measure(path: &Path, p: &mut Progress, ctl: &dyn Control) {
+    let Ok(meta) = fs::symlink_metadata(path) else { return };
+    p.total_items += 1;
     if meta.is_dir() {
-        let mut total = (0, 1);
-        for e in fs::read_dir(p).into_iter().flatten().flatten() {
-            if ctl.cancelled() {
-                break;
-            }
-            let (b, n) = measure(&e.path(), ctl);
-            total.0 += b;
-            total.1 += n;
-        }
-        total
+        measure_dir(path, p, ctl);
     } else {
-        (meta.len(), 1)
+        p.total_bytes += meta.len();
     }
+}
+
+fn measure_dir(dir: &Path, p: &mut Progress, ctl: &dyn Control) {
+    for (i, e) in fs::read_dir(dir).into_iter().flatten().flatten().enumerate() {
+        if ctl.cancelled() {
+            return;
+        }
+        // A listing's own metadata: no extra system call per file on Windows, links not followed.
+        let Ok(m) = e.metadata() else { continue };
+        p.total_items += 1;
+        if m.is_dir() {
+            measure_dir(&e.path(), p, ctl);
+        } else {
+            p.total_bytes += m.len();
+        }
+        if i % 1000 == 999 {
+            ctl.progress(p);
+        }
+    }
+    ctl.progress(p);
+}
+
+/// (bytes, items) of one path, without reporting (after a move, for the progress totals).
+fn size_of(path: &Path, ctl: &dyn Control) -> (u64, u64) {
+    struct Quiet<'a>(&'a dyn Control);
+    impl Control for Quiet<'_> {
+        fn progress(&self, _: &Progress) {}
+        fn conflict(&self, c: &Conflict) -> Option<Choice> {
+            self.0.conflict(c)
+        }
+        fn cancelled(&self) -> bool {
+            self.0.cancelled()
+        }
+    }
+    let mut p = Progress::default();
+    measure(path, &mut p, &Quiet(ctl));
+    (p.total_bytes, p.total_items)
 }
 
 fn is_cross_device(e: &std::io::Error) -> bool {
@@ -286,12 +318,12 @@ pub fn transfer(sources: &[PathBuf], dest: &Path, mode: Mode, ctl: &dyn Control)
             return Err(format!("Can't {verb} \"{}\" into itself.", name_of(s)));
         }
     }
-    let mut run = Run { ctl, mode, progress: Progress::default(), skipped: 0 };
+    let mut run = Run { ctl, mode, progress: Progress { counting: true, ..Progress::default() }, skipped: 0 };
     for s in sources {
-        let (b, n) = measure(s, ctl);
-        run.progress.total_bytes += b;
-        run.progress.total_items += n;
+        measure(s, &mut run.progress, ctl);
     }
+    run.check()?;
+    run.progress.counting = false;
     ctl.progress(&run.progress);
     let mut out = Outcome::default();
 
@@ -313,7 +345,7 @@ pub fn transfer(sources: &[PathBuf], dest: &Path, mode: Mode, ctl: &dyn Control)
             }
             match fs::rename(s, &target) {
                 Ok(()) => {
-                    let (b, n) = measure(&target, ctl);
+                    let (b, n) = size_of(&target, ctl);
                     run.tick(&target, b, n);
                     out.moved.push((s.clone(), target));
                 }

@@ -402,3 +402,77 @@ table.kv td {
   border-color: var(--danger);
   background: var(--danger-bg);
 }
+
+/* ---------- copy and move jobs ---------- */
+
+.jobs {
+  position: fixed;
+  right: 16px;
+  bottom: 36px;
+  z-index: 700;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.job {
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-popup);
+  box-shadow: var(--shadow-popup);
+}
+.job.failed {
+  border-color: var(--danger);
+}
+.job-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.job-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.job-bar {
+  height: 6px;
+  margin: 8px 0 6px;
+  border-radius: 3px;
+  background: var(--control-fill);
+  overflow: hidden;
+}
+.job-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s;
+}
+.job-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.job-current {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.job-error {
+  margin-top: 4px;
+  color: var(--danger);
+  white-space: pre-wrap;
+}
+.conflict-table th {
+  width: 90px;
+}
+.job-bar.counting > span {
+  width: 100% !important;
+  opacity: 0.25;
+}

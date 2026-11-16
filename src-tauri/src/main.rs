@@ -3,6 +3,7 @@
 
 mod desktop;
 mod folders;
+mod jobs;
 mod launch;
 mod navigate;
 mod ops_cmd;
@@ -27,6 +28,7 @@ fn main() {
         .manage(update::UpdateState::default())
         .manage(folders::Folders::default())
         .manage(fileboat_core::ops::undo::UndoLog::default())
+        .manage(jobs::Jobs::default())
         .setup(|app| {
             // Fit the screen, centered; the UI then maximizes and shows the window once it has
             // painted (no white flash), so "Restore Down" returns to this size and place.
@@ -69,6 +71,9 @@ fn main() {
             ops_cmd::op_trash,
             ops_cmd::op_delete,
             ops_cmd::op_undo,
+            jobs::job_transfer,
+            jobs::job_cancel,
+            jobs::job_resolve,
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,

@@ -5,6 +5,7 @@ import { getSettings, useSettings } from "../lib/settings";
 import { paneActions } from "../lib/pane";
 import { IS_MAC } from "../lib/platform";
 import { askConfirm } from "../shell/Confirm";
+import { startTransfer } from "../lib/jobs";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { StatusBar } from "./StatusBar";
@@ -77,6 +78,10 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
       if (name) setRenameRequest(name);
     };
     paneActions.refresh = () => void model.refresh();
+    paneActions.duplicate = async () => {
+      const names = await selectedNames(model, selection);
+      if (names.length) await startTransfer(names.map((n) => childPath(model.path, n)), model.path, "copy");
+    };
     paneActions.delete = async (permanently: boolean) => {
       const names = await selectedNames(model, selection);
       if (!names.length) return;
