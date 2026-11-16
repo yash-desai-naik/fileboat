@@ -178,7 +178,7 @@ Tableboat's look, arranged like a modern explorer.
 | `Ctrl+L` | Type a path |
 | `Ctrl+F` / `Ctrl+Shift+F` | Search here / everywhere |
 | `Ctrl+Shift+1/2/3` | Columns / List / Details |
-| `Alt+P` (`⇧⌘P`) · `Space` | Preview pane · Quick Look |
+| `Alt+P` (`⌥P`) · `Space` | Preview pane · Quick Look |
 | `Ctrl+Alt+B` · `Ctrl+B` · `Ctrl+Shift+G` | Claude pane · sidebar · git panel |
 | `` Ctrl+` `` · `Ctrl+Shift+E` | Terminal here · open in editor |
 | `F2` · `Ctrl+Shift+N` · `Ctrl+Alt+N` | Rename · new folder · new file |

@@ -1,5 +1,10 @@
+import { useMemo, useState } from "react";
 import { useAppearance } from "./lib/appearance";
+import { buildCommands } from "./lib/commands";
 import { updateSettings, useSettings } from "./lib/settings";
+import { useNoBrowserContextMenu, useShortcuts } from "./lib/shortcuts";
+import { uiActions } from "./lib/ui";
+import { CommandBar } from "./palette/CommandBar";
 import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
@@ -11,6 +16,15 @@ export function App() {
   const settings = useSettings();
   useAppearance(settings);
 
+  // The command bar's opening text, or null when it's closed.
+  const [commandBar, setCommandBar] = useState<string | null>(null);
+  uiActions.openCommandBar = (text = ">") => setCommandBar(text);
+
+  // Rebuilt when settings change so check marks stay current.
+  const commands = useMemo(() => buildCommands(), [settings]);
+  useShortcuts(commands);
+  useNoBrowserContextMenu();
+
   const toggleSidebar = () => updateSettings({ showSidebar: !settings.showSidebar });
   const togglePreview = () => updateSettings({ showPreview: !settings.showPreview });
 
@@ -21,7 +35,7 @@ export function App() {
         previewOn={settings.showPreview}
         onToggleSidebar={toggleSidebar}
         onTogglePreview={togglePreview}
-        onOpenCommands={() => {}}
+        onOpenCommands={() => setCommandBar(">")}
       />
 
       <div className="workspace">
@@ -82,6 +96,8 @@ export function App() {
           </>
         )}
       </div>
+
+      {commandBar !== null && <CommandBar commands={commands} initialText={commandBar} onClose={() => setCommandBar(null)} />}
     </div>
   );
 }

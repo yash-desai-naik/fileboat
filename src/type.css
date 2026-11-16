@@ -7,7 +7,8 @@
    Components add their classes here as they arrive. */
 
 /* Uppercase section labels: small, bold, tracked, muted. */
-.pane-title {
+.pane-title,
+[cmdk-group-heading] {
   font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0.06em;

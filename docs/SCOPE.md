@@ -128,7 +128,7 @@ Every tab has a view mode, remembered per folder (with a default for new folders
 
 ## 5. Preview pane
 
-- [ ] Toggle on the right (`Alt+P`; `⇧⌘P` on macOS), resizable; also Quick Look as an overlay with `Space`
+- [ ] Toggle on the right (`Alt+P`; `⌥P` on macOS, since `⇧⌘P` opens the command bar), resizable; also Quick Look as an overlay with `Space`
 - [ ] Live: follows the selection, and refreshes when the previewed file changes on disk
 - [ ] Code and text: syntax highlighting for common languages, line numbers, word wrap toggle, big files
       shown partially (first part, with "load more"), encoding and line ending detection

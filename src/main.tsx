@@ -9,6 +9,7 @@ import "@fontsource-variable/jetbrains-mono/wght.css";
 import "./styles.css";
 import "./controls.css";
 import "./shell.css";
+import "./palette.css";
 import "./type.css";
 
 const appWindow = getCurrentWindow();
