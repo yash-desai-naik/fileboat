@@ -4,6 +4,7 @@ import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { checkForUpdates } from "./update";
+import { goBack, goForward, goUp } from "./tabs";
 
 /**
  * Every action in the app, with its shortcuts. The command bar (`>`) lists them, the shortcut
@@ -121,6 +122,10 @@ export function buildCommands(): Command[] {
       checked: s.showPreview,
       run: toggle("showPreview"),
     },
+    { id: "go.back", category: "Go", title: "Back", keys: ["Alt+Left", "Backspace", "Ctrl+["], run: goBack },
+    { id: "go.forward", category: "Go", title: "Forward", keys: ["Alt+Right", "Ctrl+]"], run: goForward },
+    { id: "go.up", category: "Go", title: "Up to the Parent Folder", keys: ["Alt+Up", "Ctrl+Up"], run: goUp },
+    { id: "go.address", category: "Go", title: "Type a Path…", keys: ["Ctrl+L", "Alt+D"], run: () => uiActions.focusAddress() },
     viewMode("list", "List", "Ctrl+Shift+2"),
     viewMode("details", "Details", "Ctrl+Shift+3"),
     {

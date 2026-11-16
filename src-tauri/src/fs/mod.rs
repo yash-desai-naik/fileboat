@@ -40,6 +40,29 @@ pub fn describe(path: &Path, e: &std::io::Error) -> String {
     }
 }
 
+/// Folders matching a partly typed path, for the address bar: the folders in its parent whose
+/// names start with the last part (any case), or every folder in it when it ends with a
+/// separator. Hidden folders only when the typed part starts with a dot. Natural order.
+pub fn complete(input: &str, base: Option<&Path>, limit: usize) -> Vec<PathBuf> {
+    let ends_with_sep = input.ends_with(['/', '\\']);
+    let resolved = resolve(input, base);
+    let (dir, prefix) = if ends_with_sep || input.trim().is_empty() {
+        (resolved, String::new())
+    } else {
+        match (resolved.parent(), resolved.file_name()) {
+            (Some(parent), Some(name)) => (parent.to_path_buf(), name.to_string_lossy().to_lowercase()),
+            _ => (resolved, String::new()),
+        }
+    };
+    let Ok(read) = std::fs::read_dir(&dir) else { return Vec::new() };
+    let mut found: Vec<Entry> = read
+        .filter_map(|e| Entry::from_dir_entry(&e.ok()?))
+        .filter(|e| e.kind == Kind::Folder && e.key.starts_with(&prefix) && (!e.hidden || prefix.starts_with('.')))
+        .collect();
+    found.sort_by(|a, b| natural::compare(&a.key, &b.key));
+    found.into_iter().take(limit).map(|e| dir.join(&e.name)).collect()
+}
+
 /// A path typed or pasted by the user, made absolute: `~` is the home folder, `%VAR%` / `$VAR`
 /// are expanded, `/` works on Windows, and `.`/`..` are resolved without following links.
 pub fn resolve(input: &str, base: Option<&Path>) -> PathBuf {
@@ -139,6 +162,24 @@ mod tests {
         assert_eq!(resolve("C:", None), PathBuf::from("C:\\"));
         assert_eq!(resolve("C:/Users/../Windows", None), PathBuf::from("C:\\Windows"));
         assert_eq!(resolve("C:\\..", None), PathBuf::from("C:\\"));
+    }
+
+    #[test]
+    fn completes_folders() {
+        let dir = std::env::temp_dir().join(format!("fileboat-complete-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        for d in ["src", "Scripts", "docs", "src-tauri", "s10", "s9"] {
+            std::fs::create_dir_all(dir.join(d)).unwrap();
+        }
+        std::fs::write(dir.join("setup.py"), "").unwrap();
+        let names = |v: Vec<PathBuf>| v.iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect::<Vec<_>>();
+        let base = dir.display().to_string();
+        assert_eq!(names(complete(&format!("{base}/s"), None, 10)), vec!["s9", "s10", "Scripts", "src", "src-tauri"]);
+        assert_eq!(names(complete(&format!("{base}/SR"), None, 10)), vec!["src", "src-tauri"]);
+        assert_eq!(names(complete(&format!("{base}/"), None, 2)), vec!["docs", "s9"]);
+        assert_eq!(names(complete("sc", Some(&dir), 10)), vec!["Scripts"]);
+        assert!(complete(&format!("{base}/nope/x"), None, 10).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

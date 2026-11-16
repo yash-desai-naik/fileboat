@@ -7,4 +7,8 @@ export const uiActions = {
   openCommandBar: (_text: string = ">") => {},
   openSettings: () => {},
   openAbout: () => {},
+  /** Type a path in the address bar (Ctrl+L). */
+  focusAddress: () => {},
+  /** Put the keyboard back in the folder view. */
+  focusList: () => {},
 };

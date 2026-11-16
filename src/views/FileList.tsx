@@ -5,6 +5,7 @@ import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
 import { FileIcon, FolderIcon } from "../shell/Icons";
+import { uiActions } from "../lib/ui";
 import type { Selection } from "./selection";
 
 interface Column {
@@ -42,13 +43,16 @@ interface Props {
   mode: ViewMode;
   /** Double-click or Enter. */
   onOpen: (entry: Entry, row: number) => void;
+  /** A name to select once it's listed (the folder you came up from); `onSelected` clears it. */
+  select?: string | null;
+  onSelected?: () => void;
 }
 
 /**
  * A folder's rows, drawn only where they're on screen. Details shows columns you can sort and
  * resize; List shows names only. Selection, keyboard and type-ahead work the same in both.
  */
-export function FileList({ model, selection, mode, onOpen }: Props) {
+export function FileList({ model, selection, mode, onOpen, select, onSelected }: Props) {
   useSyncExternalStore(model.subscribe, () => model.version);
   useSyncExternalStore(selection.subscribe, () => selection.version);
   const settings = useSettings();
@@ -76,6 +80,35 @@ export function FileList({ model, selection, mode, onOpen }: Props) {
       if (row !== null && row !== selection.focus) selection.moveFocus(row);
     });
   }, [model, model.generation, selection]);
+
+  // The keyboard stays in the view when you open a folder (unless you were typing elsewhere).
+  useEffect(() => {
+    uiActions.focusList = () => scrollRef.current?.focus();
+    const active = document.activeElement;
+    if (!active || active === document.body || active.closest(".filelist")) scrollRef.current?.focus();
+  }, []);
+
+  // Select the requested name once it's listed; give up when the listing ends without it.
+  // (The first rows can arrive before the folder's id does: wait for both.)
+  useEffect(() => {
+    if (!select) return;
+    if (!model.id || model.count === 0) {
+      if (model.id && !model.loading) onSelected?.();
+      return;
+    }
+    let cancelled = false;
+    void model.rowOf(select).then((row) => {
+      if (cancelled) return;
+      if (row !== null) {
+        selection.set([select], row, select);
+        virtualizer.scrollToIndex(row, { align: "center" });
+        onSelected?.();
+      } else if (!model.loading) onSelected?.();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [select, model, model.id, model.count, model.loading, selection, virtualizer, onSelected]);
 
   const widths = COLUMNS.map((c) => settings.columnWidths[c.id] ?? c.width);
   const template = mode === "details" ? widths.map((w) => `${w}px`).join(" ") : "minmax(0, 1fr)";

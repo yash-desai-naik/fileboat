@@ -11,6 +11,10 @@ export function useShortcuts(commands: Command[]) {
     const onKeyDown = (e: KeyboardEvent) => {
       const combo = comboFromEvent(e);
       if (!combo) return;
+      // While typing in a field, plain keys (Backspace, Delete, letters) are text, not shortcuts.
+      const target = e.target as HTMLElement | null;
+      const typing = target?.closest?.("input, textarea, select, [contenteditable='true']");
+      if (typing && !/^(Ctrl|Alt)\+|^F\d/.test(combo)) return;
       const command = latest.current.find((c) => c.keys?.includes(combo));
       if (command) {
         e.preventDefault();

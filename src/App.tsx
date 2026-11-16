@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppearance } from "./lib/appearance";
 import { buildCommands } from "./lib/commands";
 import { updateSettings, useSettings } from "./lib/settings";
@@ -12,6 +12,8 @@ import { FileIcon, FolderIcon, CloseSmallIcon } from "./shell/Icons";
 import { Splitter } from "./shell/Splitter";
 import { TitleBar } from "./shell/TitleBar";
 import { FolderPane } from "./views/FolderPane";
+import { Toolbar } from "./shell/Toolbar";
+import { activeTab, goBack, goForward, useTabs } from "./lib/tabs";
 
 const SIDEBAR_DEFAULT = 240;
 const PREVIEW_DEFAULT = 360;
@@ -33,8 +35,9 @@ export function App() {
   useShortcuts(commands);
   useNoBrowserContextMenu();
 
-  // The folder shown (tabs and history come next).
-  const [path, setPath] = useState("~");
+  useTabs();
+  const tab = activeTab();
+  useMouseNavigation();
 
   const toggleSidebar = () => updateSettings({ showSidebar: !settings.showSidebar });
   const togglePreview = () => updateSettings({ showPreview: !settings.showPreview });
@@ -75,7 +78,8 @@ export function App() {
         )}
 
         <main className="center">
-          <FolderPane path={path} onNavigate={setPath} />
+          <Toolbar />
+          <FolderPane tab={tab} />
         </main>
 
         {settings.showPreview && (
@@ -111,4 +115,18 @@ export function App() {
       <UpdateNotice />
     </div>
   );
+}
+
+/** The mouse's back and forward side buttons. */
+function useMouseNavigation() {
+  useEffect(() => {
+    const onUp = (e: MouseEvent) => {
+      if (e.button === 3) goBack();
+      else if (e.button === 4) goForward();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("mouseup", onUp);
+    return () => window.removeEventListener("mouseup", onUp);
+  }, []);
 }

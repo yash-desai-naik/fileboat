@@ -182,3 +182,133 @@
   margin-bottom: 6px;
   color: var(--text-3);
 }
+
+/* ---------- toolbar and address bar ---------- */
+
+.toolbar {
+  flex: none;
+  height: var(--panehead-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-chrome);
+}
+.icon-btn:disabled {
+  color: var(--text-3);
+  opacity: 0.5;
+  background: transparent;
+}
+
+.address {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-control);
+  background: var(--control-fill);
+  cursor: text;
+}
+.address:hover {
+  background: var(--control-fill-hover);
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 4px;
+}
+.crumb-part {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+.crumb,
+.crumb-sep {
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.crumb {
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.crumb.current {
+  color: var(--text);
+  font-weight: 600;
+}
+.crumb-sep {
+  width: 16px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-3);
+}
+.crumb:hover,
+.crumb-sep:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.crumb-part:last-child .crumb-sep {
+  margin-right: 4px;
+}
+
+.address.editing {
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+.address-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 10px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+}
+.address-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-popup);
+  box-shadow: var(--shadow-popup);
+}
+.address-option {
+  padding: 4px 8px;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.address-option:hover,
+.address-option.active {
+  background: var(--bg-active);
+}
+.address-error {
+  padding: 4px 8px;
+  color: var(--danger);
+}
+
+.view-switch {
+  flex: none;
+}
+.view-switch .seg {
+  width: 30px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}

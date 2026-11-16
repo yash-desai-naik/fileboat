@@ -112,6 +112,48 @@ export function ChevronIcon({ open, size = 12 }: { open: boolean; size?: number 
   );
 }
 
+export function ArrowLeftIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M13 8H3M7 4 3 8l4 4" />
+    </Svg>
+  );
+}
+
+export function ArrowRightIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </Svg>
+  );
+}
+
+export function ArrowUpIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M8 13V3M4 7l4-4 4 4" />
+    </Svg>
+  );
+}
+
+/** Details view: rows with columns. */
+export function DetailsIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M2.5 4h11M2.5 8h11M2.5 12h11M9 2.5v11" />
+    </Svg>
+  );
+}
+
+/** List view: names only. */
+export function ListIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" />
+    </Svg>
+  );
+}
+
 function Caption({ children }: { children: ReactNode }) {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1} aria-hidden="true">
