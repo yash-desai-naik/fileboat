@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatSize } from "../lib/format";
 import { updateSettings, useSettings } from "../lib/settings";
+import { branchLabel, useGitInfo } from "../lib/git";
 import { CsvTable, Tree } from "./structured";
 import type { ArchiveList, FolderPreview, Info, Text } from "./types";
 
@@ -287,18 +288,30 @@ export function HexViewer({ info, reload }: { info: Info; reload: string }) {
 
 export function FolderViewer({ info, reload }: { info: Info; reload: string }) {
   const { data, error } = useLoad(() => invoke<FolderPreview>("preview_folder", { path: info.path }), [info.path, reload]);
+  const git = useGitInfo(info.path);
   if (error) return <Note>{error}</Note>;
   if (!data) return <Loading />;
   const size = data.size;
+  const changes = git ? git.staged + git.changed + git.untracked + git.conflicted : 0;
   return (
     <>
       <div className="pv-facts">
         <div>
-          <b>{data.folders.toLocaleString()}</b> folders · <b>{data.files.toLocaleString()}</b> files
+          <b>{data.folders.toLocaleString()}</b> {data.folders === 1 ? "folder" : "folders"} · <b>{data.files.toLocaleString()}</b>{" "}
+          {data.files === 1 ? "file" : "files"}
         </div>
         {size && (
           <div>
-            <b>{formatSize(size.bytes)}</b> in {size.files.toLocaleString()} files{size.partial ? " (some parts couldn't be read)" : ""}
+            <b>{formatSize(size.bytes)}</b> in {size.files.toLocaleString()} {size.files === 1 ? "file" : "files"}{size.partial ? " (some parts couldn't be read)" : ""}
+          </div>
+        )}
+        {git && (
+          <div title={git.root}>
+            ⎇ <b>{branchLabel(git)}</b>
+            {git.ahead > 0 && ` ↑${git.ahead}`}
+            {git.behind > 0 && ` ↓${git.behind}`}
+            {git.ready && (changes ? ` · ${changes} changed` : " · no changes")}
+            {git.state && ` · ${git.state} in progress`}
           </div>
         )}
       </div>
