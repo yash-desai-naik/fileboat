@@ -301,13 +301,15 @@ pub fn search(idx: &Index, q: &Query, scope: Option<u32>, limit: usize, now_ms: 
         }
     };
     let rank = |ids: &mut Vec<(u32, u16)>| {
-        // Named as typed first; then better score; then shallower; then shorter names.
+        // Named as typed first; then better score; then shallower; then shorter names; then newer.
         ids.sort_by(|a, b| {
             boost(b.0)
                 .cmp(&boost(a.0))
                 .then_with(|| b.1.cmp(&a.1))
                 .then_with(|| idx.depth(a.0).cmp(&idx.depth(b.0)))
                 .then_with(|| idx.name(a.0).len().cmp(&idx.name(b.0).len()))
+                // Then what you worked on lately.
+                .then_with(|| idx.mtime(b.0).cmp(&idx.mtime(a.0)))
         });
     };
 
