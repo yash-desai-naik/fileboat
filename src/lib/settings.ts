@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useSyncExternalStore } from "react";
+import type { IconRule } from "../icons/icons";
 
 export type Theme = "system" | "light" | "dark";
 export type Density = "compact" | "default" | "comfortable";
@@ -42,6 +43,10 @@ export interface Settings {
   folderSizes: boolean;
   /** Files git ignores: dimmed, hidden, or shown like the rest. */
   gitIgnored: GitIgnored;
+  /** "fileboat" | "minimal" | "system" | "vscode:<folder>::<id>". */
+  iconTheme: string;
+  /** Change icon… rules. */
+  iconAssociations: IconRule[];
   /** Details view column widths by column id; missing ones use the defaults. */
   columnWidths: Record<string, number>;
   /** Folders pinned in the sidebar, in order. */

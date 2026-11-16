@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import { fmtShortcut } from "../lib/platform";
 import { activateTab, closeTab, moveTab, newTab, tabTitle, useTabs } from "../lib/tabs";
-import { CloseSmallIcon, FolderIcon, PlusIcon } from "./Icons";
+import { CloseSmallIcon, PlusIcon } from "./Icons";
+import { EntryIcon } from "../icons/EntryIcon";
 
 /**
  * The tabs, in the title bar. Click to switch, middle-click or × to close, drag to reorder;
@@ -61,7 +62,7 @@ export function TabStrip() {
             }}
           >
             <span className="tab-icon">
-              <FolderIcon size={14} />
+              <EntryIcon name={tabTitle(t.path)} ext="" folder path={t.path} open size={14} />
             </span>
             <span className="tab-title">{tabTitle(t.path)}</span>
             <button

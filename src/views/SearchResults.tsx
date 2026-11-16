@@ -6,8 +6,7 @@ import type { Entry } from "../lib/folder";
 import { formatDate, formatSize } from "../lib/format";
 import { closeSearch, type Hit, type SearchState } from "../lib/search";
 import { navigate, newTab, parentOf } from "../lib/tabs";
-import { FileTypeIcon } from "../shell/FileTypeIcon";
-import { FolderIcon } from "../shell/Icons";
+import { EntryIcon } from "../icons/EntryIcon";
 import { showToast } from "../shell/Toast";
 
 /** The cursor in each tab's results (the keyboard stays in the search box). */
@@ -151,7 +150,9 @@ export function SearchResults({ tabId, search, active }: { tabId: string; search
                 onDoubleClick={() => openHit(tabId, h, "open")}
               >
                 <span className="sr-name">
-                  <span className={`fl-icon${h.folder ? " folder" : ""}`}>{h.folder ? <FolderIcon size={15} /> : <FileTypeIcon entry={hitEntry(h)} />}</span>
+                  <span className={`fl-icon${h.folder ? " folder" : ""}`}>
+                    <EntryIcon name={h.name} ext={hitEntry(h).ext} folder={h.folder} path={h.path} />
+                  </span>
                   <span className="fl-text">
                     <Highlighted name={h.name} indices={h.indices} />
                   </span>

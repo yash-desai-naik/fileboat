@@ -8,8 +8,7 @@ import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
 import { setFolderView, useFolderView } from "../lib/folderViews";
-import { FileTypeIcon } from "../shell/FileTypeIcon";
-import { FolderIcon } from "../shell/Icons";
+import { EntryIcon } from "../icons/EntryIcon";
 import { uiActions } from "../lib/ui";
 import type { Selection } from "./selection";
 import { makeLayout } from "./layout";
@@ -434,6 +433,7 @@ export function FileList(props: Props) {
                 {entry ? (
                   <Cells
                     entry={entry}
+                    path={childPath(model.path, entry.name)}
                     mode={mode}
                     rename={
                       renaming === entry.name
@@ -493,11 +493,13 @@ function GitBadge({ mark, staged }: { mark: GitMark; staged: boolean }) {
   );
 }
 
-function Cells({ entry, mode, rename }: { entry: Entry; mode: ViewMode; rename: RenameHandlers | null }) {
+function Cells({ entry, path, mode, rename }: { entry: Entry; path: string; mode: ViewMode; rename: RenameHandlers | null }) {
   const folder = entry.kind === "folder";
   const name = (
     <span className="fl-cell fl-name" title={rename ? undefined : entry.name}>
-      <span className={`fl-icon${folder ? " folder" : ""}`}>{folder ? <FolderIcon size={15} /> : <FileTypeIcon entry={entry} />}</span>
+      <span className={`fl-icon${folder ? " folder" : ""}`}>
+        <EntryIcon name={entry.name} ext={entry.ext} folder={folder} path={path} />
+      </span>
       {rename ? <RenameInput name={entry.name} folder={folder} {...rename} /> : <span className="fl-text">{entry.name}</span>}
       {entry.link && !rename && <span className="fl-link" title="Link">↗</span>}
       {entry.git && !rename && <GitBadge mark={entry.git} staged={entry.staged} />}
