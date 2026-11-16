@@ -1,7 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
-import { childPath, type Entry, type FolderModel } from "../lib/folder";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
+import { childPath, type Entry, type FolderModel, type Group } from "../lib/folder";
 import { isCut, useCutPaths } from "../lib/clipboard";
 import { dragOut } from "../lib/dnd";
 import { describeType, formatDate, formatSize } from "../lib/format";
@@ -11,6 +11,8 @@ import { FileTypeIcon } from "../shell/FileTypeIcon";
 import { FolderIcon } from "../shell/Icons";
 import { uiActions } from "../lib/ui";
 import type { Selection } from "./selection";
+import { makeLayout } from "./layout";
+import { ChevronIcon } from "../shell/Icons";
 
 interface Column {
   id: "name" | "modified" | "type" | "size";
@@ -82,16 +84,21 @@ export function FileList(props: Props) {
   // The Details header scrolls sideways with the rows but sticks to the top: rows start below it,
   // and a row scrolled into view must not end up under it.
   const headerH = mode === "details" ? rowH + 4 : 0;
+  // Group headers are lines of their own between the rows.
+  const layout = useMemo(() => makeLayout(model.count, model.groups), [model.count, model.groups]);
+  const groupH = rowH + 10;
   const virtualizer = useVirtualizer({
-    count: model.count,
+    count: layout.lines,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => rowH,
+    estimateSize: (line) => ("group" in layout.at(line) ? groupH : rowH),
     overscan: 12,
     scrollMargin: headerH,
     scrollPaddingStart: headerH,
   });
 
-  useEffect(() => virtualizer.measure(), [rowH, headerH, virtualizer]);
+  useEffect(() => virtualizer.measure(), [rowH, headerH, layout, virtualizer]);
+  /** Scroll so a folder row shows. */
+  const scrollToRow = (row: number, align: "auto" | "center" = "auto") => virtualizer.scrollToIndex(layout.lineOf(row), { align });
 
   // Rows moved (files changed, sort changed): find the cursor's name again.
   useEffect(() => {
@@ -123,7 +130,7 @@ export function FileList(props: Props) {
       if (cancelled) return;
       if (row !== null) {
         selection.set([select], row, select);
-        virtualizer.scrollToIndex(row, { align: "center" });
+        scrollToRow(row, "center");
         onSelected?.();
       } else if (!model.loading) onSelected?.();
     });
@@ -142,7 +149,7 @@ export function FileList(props: Props) {
     void model.rowOf(request.name).then((row) => {
       if (cancelled || row === null) return;
       selection.set([request.name], row, request.name);
-      virtualizer.scrollToIndex(row, { align: "auto" });
+      scrollToRow(row);
       if (request.rename) setRenaming(request.name);
       onRequestDone?.();
     });
@@ -180,7 +187,7 @@ export function FileList(props: Props) {
     to = Math.max(0, Math.min(model.count - 1, to));
     if (selection.anchor < 0) selection.anchor = to;
     selection.moveFocus(to);
-    virtualizer.scrollToIndex(to, { align: "auto" });
+    scrollToRow(to);
     const entry = await entryAt(to);
     if (!entry || selection.focus !== to) return;
     if (extend) await selectRange(to, entry.name);
@@ -222,7 +229,7 @@ export function FileList(props: Props) {
         // Ctrl+arrows move the cursor without changing the selection (Ctrl+Space toggles).
         const row = Math.max(0, Math.min(model.count - 1, to));
         void entryAt(row).then((entry) => entry && selection.set(selection.names, row, entry.name, selection.anchor));
-        virtualizer.scrollToIndex(row, { align: "auto" });
+        scrollToRow(row);
         return;
       }
       void go(to, e.shiftKey);
@@ -366,9 +373,22 @@ export function FileList(props: Props) {
         )}
         <div className="fl-rows" style={{ height: virtualizer.getTotalSize(), width: innerWidth }}>
           {virtualizer.getVirtualItems().map((v) => {
-            const entry = model.row(v.index);
+            const at = layout.at(v.index);
+            if ("group" in at) {
+              return (
+                <GroupHeader
+                  key={`g:${at.group.key}`}
+                  group={at.group}
+                  top={v.start - headerH}
+                  height={groupH}
+                  onToggle={() => void model.collapse(at.group.key, !at.group.collapsed)}
+                />
+              );
+            }
+            const row = at.row;
+            const entry = model.row(row);
             const selected = entry ? selection.has(entry.name) : false;
-            const focused = v.index === selection.focus;
+            const focused = row === selection.focus;
             return (
               <div
                 key={v.key}
@@ -376,7 +396,7 @@ export function FileList(props: Props) {
                 onClick={(e) => {
                   // A plain click on one of several selected rows selects just it (once no drag began).
                   if (entry && e.button === 0 && !modPressed(e) && !e.shiftKey && selection.size > 1 && selection.has(entry.name)) {
-                    selection.set([entry.name], v.index, entry.name);
+                    selection.set([entry.name], row, entry.name);
                   }
                 }}
                 className={`fl-row${selected ? " selected" : ""}${focused ? " focused" : ""}${entry?.hidden ? " hidden" : ""}${
@@ -384,10 +404,10 @@ export function FileList(props: Props) {
                 }`}
                 role="row"
                 aria-selected={selected}
-                aria-rowindex={v.index + 1}
+                aria-rowindex={row + 1}
                 style={{ transform: `translateY(${v.start - headerH}px)`, height: rowH, gridTemplateColumns: template }}
-                onMouseDown={(e) => onRowMouseDown(e, v.index)}
-                onDoubleClick={() => entry && onOpen(entry, v.index)}
+                onMouseDown={(e) => onRowMouseDown(e, row)}
+                onDoubleClick={() => entry && onOpen(entry, row)}
               >
                 {entry ? (
                   <Cells
@@ -400,7 +420,7 @@ export function FileList(props: Props) {
                               const error = await onRename(entry, newName);
                               if (!error) {
                                 // Keep the renamed item selected; its row is found again once it moves.
-                                selection.set([newName], v.index, newName);
+                                selection.set([newName], row, newName);
                                 finishRename();
                               }
                               return error;
@@ -515,6 +535,23 @@ function RenameInput({ name, folder, submit, cancel }: { name: string; folder: b
       />
       {error && <span className="rename-error" role="alert">{error}</span>}
     </span>
+  );
+}
+
+/** A group's header line: click to collapse or expand it. Extensions are named ("Rust source"). */
+function GroupHeader({ group, top, height, onToggle }: { group: Group; top: number; height: number; onToggle: () => void }) {
+  const label = group.key.startsWith("ext:")
+    ? `${describeType({ kind: "file", ext: group.label, link: false, name: `x.${group.label}` })} (.${group.label})`
+    : group.label;
+  return (
+    <div className="fl-group" role="row" style={{ transform: `translateY(${top}px)`, height }} onClick={onToggle}>
+      <ChevronIcon open={!group.collapsed} size={10} />
+      <span className="fl-group-label">{label}</span>
+      <span className="fl-group-meta">
+        {group.count.toLocaleString()} {group.count === 1 ? "item" : "items"}
+        {group.bytes > 0 && ` · ${formatSize(group.bytes)}`}
+      </span>
+    </div>
   );
 }
 

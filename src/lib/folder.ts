@@ -1,5 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import type { Settings, SortBy } from "./settings";
+import type { GroupBy, Settings, SortBy } from "./settings";
 
 /** One row, as src-tauri/src/fs/entry.rs sends it. */
 export interface Entry {
@@ -28,10 +28,32 @@ export interface FolderViewSpec {
   descending: boolean;
   foldersFirst: boolean;
   showHidden: boolean;
+  group: GroupBy;
+  /** The viewer's clock, for date groups. */
+  now: number;
+  tzOffsetMin: number;
 }
 
 export function viewFromSettings(s: Settings): FolderViewSpec {
-  return { sort: s.sortBy, descending: s.sortDescending, foldersFirst: s.foldersFirst, showHidden: s.showHidden };
+  return {
+    sort: s.sortBy,
+    descending: s.sortDescending,
+    foldersFirst: s.foldersFirst,
+    showHidden: s.showHidden,
+    group: s.groupBy,
+    now: Date.now(),
+    tzOffsetMin: -new Date().getTimezoneOffset(),
+  };
+}
+
+/** A group of rows under a header (src-tauri/src/fs/group.rs). */
+export interface Group {
+  key: string;
+  label: string;
+  start: number;
+  count: number;
+  bytes: number;
+  collapsed: boolean;
 }
 
 type FolderEvent =
@@ -74,6 +96,8 @@ export class FolderModel {
   error: string | null = null;
   /** Bumped on every change, so React re-renders. */
   version = 0;
+  /** Groups of rows, in order (empty when not grouping). */
+  groups: Group[] = [];
 
   private blocks = new Map<number, Block>();
   /** Block → the generation it is being fetched for. */
@@ -111,8 +135,25 @@ export class FolderModel {
       // Rows may have moved: the rows we have are stale. They stay on screen (no blank flash
       // while a big folder loads) until the view's next look fetches fresh ones.
       this.generation++;
+      this.fetchGroups();
     }
     this.bump();
+  }
+
+  private fetchGroups() {
+    const generation = this.generation;
+    void this.ask<Group[]>("folder_groups", {}, []).then((groups) => {
+      if (generation !== this.generation) return;
+      // Same groups as before: keep the old array, so nothing redraws for nothing.
+      if (JSON.stringify(groups) === JSON.stringify(this.groups)) return;
+      this.groups = groups;
+      this.bump();
+    });
+  }
+
+  /** Collapse or expand a group of rows. */
+  async collapse(key: string, collapsed: boolean) {
+    await this.ask("folder_collapse", { key, collapsed }, null);
   }
 
   /** The folder couldn't be opened. */

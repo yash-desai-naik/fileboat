@@ -95,6 +95,20 @@ const ENTRIES: Entry[] = [
     ],
   },
   { section: "Folders", key: "sortDescending", type: "toggle", label: "Descending order" },
+  {
+    section: "Folders",
+    key: "groupBy",
+    type: "select",
+    label: "Group by",
+    help: "Rows under headers you can collapse.",
+    options: [
+      ["none", "None"],
+      ["type", "Type"],
+      ["modified", "Date modified"],
+      ["size", "Size"],
+      ["letter", "First letter"],
+    ],
+  },
   { section: "Folders", key: "foldersFirst", type: "toggle", label: "Folders before files" },
   {
     section: "Folders",

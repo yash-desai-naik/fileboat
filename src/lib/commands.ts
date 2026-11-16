@@ -1,4 +1,4 @@
-import { getSettings, updateSettings, type Density, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
+import { getSettings, updateSettings, type Density, type GroupBy, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
 import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
 import { shownMode } from "./themeMode";
@@ -108,7 +108,20 @@ export function buildCommands(): Command[] {
     run: () => updateSettings({ sortBy: value }),
   });
 
+  const groupBy = (value: GroupBy, title: string): Command => ({
+    id: `group.${value}`,
+    category: "Group",
+    title,
+    checked: s.groupBy === value,
+    run: () => updateSettings({ groupBy: value }),
+  });
+
   return [
+    groupBy("none", "None"),
+    groupBy("type", "By Type"),
+    groupBy("modified", "By Date Modified"),
+    groupBy("size", "By Size"),
+    groupBy("letter", "By First Letter"),
     {
       id: "commandBar.commands",
       category: "Help",

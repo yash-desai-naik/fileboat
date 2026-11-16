@@ -44,10 +44,10 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
 
   useEffect(() => () => modelRef.current?.close(), []);
 
-  const { sortBy, sortDescending, foldersFirst, showHidden } = settings;
+  const { sortBy, sortDescending, foldersFirst, showHidden, groupBy } = settings;
   useEffect(() => {
     void model?.setView(viewFromSettings(getSettings()));
-  }, [model, sortBy, sortDescending, foldersFirst, showHidden]);
+  }, [model, sortBy, sortDescending, foldersFirst, showHidden, groupBy]);
 
   const onSelected = useCallback(() => selected(tab.id), [tab.id]);
 

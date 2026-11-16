@@ -310,6 +310,24 @@ pub fn folder_view(folders: State<'_, Folders>, id: String, view: View) -> Resul
     Ok(f.folder.len())
 }
 
+/// The folder's groups, in order (empty when not grouping).
+#[tauri::command]
+pub fn folder_groups(folders: State<'_, Folders>, id: String) -> Result<Vec<fs::Group>, String> {
+    let f = folders.get(&id)?;
+    let f = f.lock().unwrap();
+    Ok(f.folder.groups().to_vec())
+}
+
+/// Collapse or expand a group; the view hears `Changed`.
+#[tauri::command]
+pub fn folder_collapse(folders: State<'_, Folders>, id: String, key: String, collapsed: bool) -> Result<(), String> {
+    let f = folders.get(&id)?;
+    let mut f = f.lock().unwrap();
+    f.folder.set_collapsed(&key, collapsed);
+    f.changed();
+    Ok(())
+}
+
 /// The row of a name (to keep the selection when rows move), if shown.
 #[tauri::command]
 pub fn folder_row_of(folders: State<'_, Folders>, id: String, name: String) -> Result<Option<usize>, String> {

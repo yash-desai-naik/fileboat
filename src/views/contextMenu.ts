@@ -4,7 +4,7 @@ import { addFavourite } from "../lib/favourites";
 import { childPath, type Entry } from "../lib/folder";
 import { paneActions } from "../lib/pane";
 import { FILE_MANAGER, IS_MAC, fmtShortcut } from "../lib/platform";
-import { getSettings, updateSettings, type SortBy } from "../lib/settings";
+import { getSettings, updateSettings, type GroupBy, type SortBy } from "../lib/settings";
 import { newTab } from "../lib/tabs";
 import { openInEditor, openTerminal, type Tools } from "../lib/tools";
 import type { MenuItem } from "../shell/Menu";
@@ -150,6 +150,11 @@ export function itemMenu(ctx: MenuContext): MenuItem[] {
 export function folderMenu(ctx: MenuContext): MenuItem[] {
   const s = getSettings();
   const { folder } = ctx;
+  const group = (value: GroupBy, label: string): MenuItem => ({
+    label,
+    checked: s.groupBy === value,
+    onSelect: () => updateSettings({ groupBy: value }),
+  });
   const sort = (value: SortBy, label: string): MenuItem => ({
     label,
     checked: s.sortBy === value,
@@ -189,6 +194,17 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
         "separator",
         { label: "Descending", checked: s.sortDescending, onSelect: () => updateSettings({ sortDescending: !s.sortDescending }) },
         { label: "Folders First", checked: s.foldersFirst, onSelect: () => updateSettings({ foldersFirst: !s.foldersFirst }) },
+      ],
+    },
+    {
+      label: "Group By",
+      submenu: [
+        group("none", "None"),
+        "separator",
+        group("type", "Type"),
+        group("modified", "Date Modified"),
+        group("size", "Size"),
+        group("letter", "First Letter"),
       ],
     },
     {

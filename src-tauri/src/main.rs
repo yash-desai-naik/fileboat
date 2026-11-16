@@ -67,6 +67,8 @@ fn main() {
             folders::folder_rows,
             folders::folder_names,
             folders::folder_entries,
+            folders::folder_groups,
+            folders::folder_collapse,
             folders::folder_selection_info,
             folders::folder_view,
             folders::folder_row_of,
