@@ -6,5 +6,6 @@ pub mod ops;
 pub mod paths;
 pub mod places;
 pub mod prefs;
+pub mod preview;
 pub mod themes;
 pub mod tools;

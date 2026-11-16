@@ -41,6 +41,16 @@ notify = "8"
 trash = "5"
 # Dragging files out of Fileboat into other apps (a system drag with the file list).
 drag = "2"
+# Preview: formats recognised by content, text in any encoding, archive lists, YAML and TOML trees.
+infer = "0.22"
+encoding_rs = "0.8"
+chardetng = "1"
+# Lists only (the central directory), so no compression codecs are needed.
+zip = { version = "9", default-features = false }
+tar = "0.4"
+flate2 = "1"
+toml = "1"
+serde_yaml_ng = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 # Already built for Tauri's windowing; used for the window's "Restore Down" rectangle, to open
