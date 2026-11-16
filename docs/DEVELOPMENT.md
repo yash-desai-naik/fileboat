@@ -56,6 +56,9 @@ Rust, `src-tauri/src/`:
   - `tools`: the editors and terminals installed, and opening them;
   - `places`: home folders and drives with their free space;
   - `prefs`: `settings.json`, with validation and the help text Claude will use;
+  - `icons`: VS Code icon themes in `<data>/icon-themes` (listed, loaded, and served over the
+    `fbicon:` scheme from inside the theme's folder only), custom pictures, and Windows' own icon
+    for a file type (`SHGetFileInfoW`, as PNG);
   - `themes`: the theme ids from `src/themes/themes.json`, and the contrast tests.
 - `main.rs` (the desktop app) with:
   - `folders`: open folders, one model per view, kept in Rust; the view reads only the rows on
@@ -114,6 +117,9 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
 - `ai/`: the Claude pane (`AiPane.tsx`), its input (`Composer.tsx`) and `@` mentions;
   `lib/claude.ts` is the chat (stream events to items); `lib/agentBridge.ts` does Claude's window
   actions.
+- `icons/`: `builtin.tsx` (Fileboat's icons, drawn: which shape, mark and colour a name gets),
+  `icons.ts` (VS Code themes, system icons, the user's rules), `EntryIcon.tsx` (the one icon
+  component lists, results and tabs use) and `ChangeIcon.tsx` (the Change Icon… dialog).
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.

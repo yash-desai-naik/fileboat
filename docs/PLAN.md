@@ -22,7 +22,7 @@ draws what's on screen, nothing polls). Much of Tableboat's shell is reused as-i
 | Preview | A custom read-only URI scheme served by Rust (`fbpreview://<token>`) with Range support; text read by a command | Images, video, audio, PDF and fonts load natively in the WebView without opening the whole disk to it |
 | Folder view settings | Stored in Fileboat's state folder, keyed by path, never written into the folder | No `.DS_Store` / `desktop.ini` noise in git repositories |
 | Claude pane | Tableboat's bridge to the user's installed Claude Code (stream-JSON, permission tool → pane), with **the working directory set to the repository root of the current folder** | Chats, `CLAUDE.md` and memory are the project's own, the same ones the terminal and IDE use |
-| Icons | **VS Code icon-theme format** for built-in and user themes; SVGs served by Rust and cached | Users can drop in Material Icon Theme or vscode-icons; one mapping format for everything |
+| Icons | **VS Code icon-theme format** for user themes; SVGs served by Rust and cached. (M8: the built-in icons are drawn in code, a shape, mark and colour per kind, rather than shipped as a VS Code theme: no SVG files to load per row, and colours and marks are easy to change per file) | Users can drop in Material Icon Theme or vscode-icons |
 | Context menu | Our own themed menu; on Windows "Show more options" opens the real Explorer menu (`IContextMenu`) | Fast and consistent, without losing 7-Zip, TortoiseGit and other shell extensions |
 
 ## 2. Stack

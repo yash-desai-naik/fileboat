@@ -15,7 +15,8 @@ WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 > move, rename, delete, undo, the clipboard and drag and drop (shared with Explorer), and context
 > menus. Search as you type here or everywhere (an index that knows what developers never search),
 > search inside files, jump anywhere from the command bar, and ask your own Claude Code about the
-> project you're browsing in a side pane. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
+> project you're browsing in a side pane. Icons are Fileboat's own, your system's or a VS Code icon
+> theme, and any file or folder can have its own. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
 > how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What it will do (v1)

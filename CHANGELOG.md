@@ -8,6 +8,14 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Icons:** Fileboat's own, drawn for developers: a shape per kind with its mark and colour,
+  language colours, and special files and folders (`package.json`, `Cargo.toml`, `.git`,
+  `node_modules`, `src`, `docs`…). Or Minimal, your system's own icons (Windows), or any **VS Code
+  icon theme** (Material Icon Theme, vscode-icons…): put its folder in the icon themes folder and
+  choose it in Settings ▸ Appearance.
+- **Change Icon…** on any file or folder: a colour and an icon (one of Fileboat's, any icon of the
+  current VS Code theme, or your own SVG, PNG or ICO) for that item, everything with its name, or
+  every file with its extension. "Back to the theme's icon" undoes it.
 - **Claude pane** (`Ctrl+Alt+B`): your own Claude Code (your login, no Node.js) in a side pane,
   working in the repository you're browsing, with that project's `CLAUDE.md`, chats and memory. It
   sees your folder, selection, preview and search; `@` adds files and folders, images can be
