@@ -40,9 +40,9 @@ jobs:
       - name: Type-check and build the UI
         run: npm run build
 
-      - name: Rust tests (settings, themes and their contrast rules)
+      - name: Rust tests (the core, the app and the edge cases)
         working-directory: src-tauri
-        run: cargo test --lib
+        run: cargo test --lib --bins --tests
 
       - name: Build the app
         working-directory: src-tauri

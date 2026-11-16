@@ -131,7 +131,7 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
 
 ```sh
 npm run typecheck                    # TypeScript
-(cd src-tauri && cargo test --lib)   # Rust: settings, paths, themes and their contrast rules
+(cd src-tauri && cargo test --lib --bins --tests)   # Rust: the core, the app and the edge cases (tests/edge_cases.rs)
 ```
 
 CI (`.github/workflows/ci.yml`) runs these and builds the app on Windows and macOS when a pull
