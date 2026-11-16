@@ -3,6 +3,7 @@
 
 pub mod fs;
 pub mod git;
+pub mod index;
 pub mod ops;
 pub mod paths;
 pub mod places;
