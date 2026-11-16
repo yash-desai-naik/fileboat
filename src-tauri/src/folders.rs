@@ -24,8 +24,11 @@ pub enum FolderEvent {
     Loaded { count: usize, total: usize, done: bool },
     /// The folder changed on disk (or its view was re-sorted): rows may have moved.
     Changed { count: usize, total: usize },
-    /// The folder couldn't be read, or was deleted while open.
+    /// The folder couldn't be read.
     Error { message: String },
+    /// The folder was deleted or moved while open; `to` is the nearest folder above it that
+    /// still exists, where the view goes instead.
+    Gone { message: String, to: Option<String> },
 }
 
 pub struct OpenFolder {
@@ -277,8 +280,10 @@ impl Folders {
             // watched folder, so check whenever anything in or about it changed.
             let touched = !inside.is_empty() || changes.paths.iter().any(|p| same_path(p, &path));
             if touched && !path.is_dir() {
-                let message = format!("{} was deleted or moved.", path.display());
-                let _ = shared.lock().unwrap().channel.send(FolderEvent::Error { message });
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.display().to_string());
+                let message = format!("\"{name}\" was deleted or moved.");
+                let to = path.ancestors().skip(1).find(|p| p.is_dir()).map(|p| p.display().to_string());
+                let _ = shared.lock().unwrap().channel.send(FolderEvent::Gone { message, to });
                 continue;
             }
             let mut upserts = Vec::new();

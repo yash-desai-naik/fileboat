@@ -81,7 +81,8 @@ export interface Group {
 type FolderEvent =
   | { type: "loaded"; count: number; total: number; done: boolean }
   | { type: "changed"; count: number; total: number }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "gone"; message: string; to: string | null };
 
 interface Opened {
   id: string;
@@ -116,6 +117,8 @@ export class FolderModel {
   total = 0;
   loading = true;
   error: string | null = null;
+  /** Called when the folder is deleted or moved while open, with the nearest folder above it. */
+  onGone: ((to: string, message: string) => void) | null = null;
   /** Bumped on every change, so React re-renders. */
   version = 0;
   /** Groups of rows, in order (empty when not grouping). */
@@ -147,9 +150,10 @@ export class FolderModel {
   }
 
   private onEvent(e: FolderEvent) {
-    if (e.type === "error") {
+    if (e.type === "error" || e.type === "gone") {
       this.error = e.message;
       this.loading = false;
+      if (e.type === "gone" && e.to && this.onGone) this.onGone(e.to, e.message);
     } else {
       this.count = e.count;
       this.total = e.total;

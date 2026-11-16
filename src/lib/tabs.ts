@@ -96,6 +96,12 @@ export function navigate(path: string, select: string | null = null, options: { 
   else updateTab(tab.id, { path, select, back: [...tab.back, tab.path].slice(-100), forward: [] });
 }
 
+/** The tab's folder was deleted or moved: show the nearest folder above it instead. */
+export function folderGone(tabId: string, to: string) {
+  const tab = state.tabs.find((t) => t.id === tabId);
+  if (tab) updateTab(tabId, { path: to, select: null, forward: [] });
+}
+
 /** The folder resolved to its real path (e.g. "~" → C:\Users\me): not a step in the history. */
 export function settlePath(tabId: string, path: string) {
   const tab = state.tabs.find((t) => t.id === tabId);

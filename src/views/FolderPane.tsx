@@ -12,7 +12,7 @@ import { loadTools, openInEditor, openTerminal, type Tools } from "../lib/tools"
 import { Menu, type MenuItem } from "../shell/Menu";
 import { folderMenu, itemMenu } from "./contextMenu";
 import { showToast } from "../shell/Toast";
-import { goUp, navigate, newTab, parentOf, samePath, selected, settlePath, type Tab } from "../lib/tabs";
+import { folderGone, goUp, navigate, newTab, parentOf, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
 import { SearchResults } from "./SearchResults";
 import { getSearch, useSearch } from "../lib/search";
@@ -30,6 +30,8 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   const settings = useSettings();
   const [model, setModel] = useState<FolderModel | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Shown in the next folder: why the tab moved there.
+  const goneNote = useRef<string | null>(null);
   const modelRef = useRef<FolderModel | null>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -43,9 +45,14 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
     if (current && samePath(current.path, tab.path)) return;
     current?.close();
     const m = new FolderModel(tab.path);
+    m.onGone = (to, message) => {
+      goneNote.current = `${message} This is the folder it was in.`;
+      folderGone(tab.id, to);
+    };
     modelRef.current = m;
     setModel(m);
-    setNotice(null);
+    setNotice(goneNote.current);
+    goneNote.current = null;
     m.open(viewSpec(m.path, activeRef.current))
       .then(() => settlePath(tab.id, m.path))
       .catch((err) => m.fail(String(err)));
