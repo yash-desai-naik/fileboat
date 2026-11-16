@@ -44,6 +44,10 @@ Rust, `src-tauri/src/`:
     rebase in progress (read from `.git`); status from the user's `git status --porcelain=v2`
     (no console window, `--no-optional-locks`) and what each row shows (`status.rs`); and the
     writes, each a fixed `git` command (`write.rs`);
+  - `index`: the search index (`mod.rs`: the compact store, saving and loading), its rules with
+    the developer defaults (`rules.rs`), the parallel walk that fills it and reconciles one folder
+    (`walk.rs`), and searching it with filters and fuzzy names (`query.rs`);
+  - `grep`: content search with ripgrep's crates;
   - `preview`: which viewer shows a file (by name, then by content), text in any encoding (only
     the start of big files), bytes for the hex view, archive lists, YAML/TOML/JSON for the tree,
     and a folder's summary;
@@ -63,6 +67,9 @@ Rust, `src-tauri/src/`:
     folder models and the UI hears `git-changed`. `git_cmd` holds the git commands (info, the
     panel's files, stage / commit / branches / stash, fetch / pull / push with progress events,
     diffs, web links);
+  - `indexer`: the live index (load and reconcile at start-up or build, recursive watches,
+    periodic saves, background priority) and its commands; `grep_cmd` streams content search;
+    `shell_cmd` runs the command bar's `!` commands;
   - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
     recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
@@ -97,6 +104,9 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
   are separate chunks, loaded when first needed. `lib/current.ts` is what the active tab is on.
 - `sidebar/`: Places (favourites, home folders, drives) and the git panel (`GitPanel.tsx`);
   `lib/git.ts` is the UI's side of a repository (`useGitInfo`, the `git-changed` event).
+- Search: `lib/search.ts` (per-tab search state, the index's status), `views/SearchBox.tsx` (the
+  toolbar box) and `views/SearchResults.tsx`; `settings/IndexSettings.tsx`; `lib/recents.ts`
+  (recent folders for Go to).
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.

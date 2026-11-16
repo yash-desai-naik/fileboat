@@ -112,7 +112,9 @@ Fileboat.exe
   checked against siblings while walking (`vendor` only beside `composer.json` / `go.mod`; `bin`/`obj` only
   beside a `*.csproj`; `env` only if it contains `pyvenv.cfg`; `build`/`dist`/`out` only inside a project).
 - Store: per entry `parent: u32`, `name: (offset u32, len u16)` into one UTF-8 arena, `kind: u8`,
-  `flags: u8`, `size: u64`, `mtime: i64` in parallel arrays, saved as one file and memory-mapped at start.
+  `flags: u8`, `size: u64`, `mtime: i64` in parallel arrays, saved as one file and read at start.
+  (M6: read rather than memory-mapped: ~52 bytes per entry, a 97,000-entry home folder is 5 MB and
+  loads in 27 ms, so mapping wasn't worth its complexity.)
 - Live: events from the recursive root watches insert, remove or update entries; deletions leave tombstones
   that a compaction pass removes when idle.
 - Start-up reconcile: on Windows, re-list only folders whose modified time changed since the snapshot (NTFS

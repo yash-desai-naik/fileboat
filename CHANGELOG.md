@@ -8,6 +8,20 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Search** (`Ctrl+F` here, `Ctrl+Shift+F` everywhere): results as you type, matched letters
+  highlighted, the preview following; Enter opens, `Ctrl+Enter` shows it in its folder, `Alt+Enter`
+  opens a tab. Words match fuzzily; filters narrow it down: `ext:rs,ts`, `kind:image`,
+  `size:>10mb`, `modified:<7d`, `in:src`, `src/main`, `/regex/`.
+- **A search index** of names and dates (never contents) of your home folder and the folders you
+  add, in milliseconds, kept current as files change and caught up quickly at start-up. It leaves
+  out what developers never search, each a rule you can switch off: `node_modules`, `target`,
+  `.venv`, `__pycache__`, package and tool caches, `.git`, system folders and more; `vendor`,
+  `build`, `dist`, `bin`/`obj` only where a project makes them so. `.gitignore` is honoured;
+  cloud files are never downloaded. Settings ▸ Search index, and Search Index on a folder's menu.
+- **Search inside files** (`%` in the command bar, `Ctrl+Shift+H`), ripgrep-style, `.gitignore`
+  aware, streamed as found; Enter shows the file with the preview at that line.
+- **Command bar modes:** Go to a file or folder (recent and favourite folders, then the index), a
+  typed path with completion, `@` places, `!` a shell command in this folder.
 - **Git, live:** inside a repository every file shows its status (the name in the status colour
   and M, A, D, R, U or ! for a conflict), folders with changes inside show a dot, and files git
   ignores are dimmed, hidden or shown normally (a setting). The status bar shows the branch,
