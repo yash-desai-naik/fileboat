@@ -15,7 +15,7 @@ draws what's on screen, nothing polls). Much of Tableboat's shell is reused as-i
 | Runtime | One Rust executable + the system WebView. **No Node.js at runtime** | Same budget as Tableboat |
 | Where the data lives | **Rust owns every folder listing** (entries, sort, group, filter); the UI asks for the rows on screen | A 200,000-file folder never sits in the WebView; sort and group are instant and off the UI thread (Tableboat's `ResultStore` pattern) |
 | Live updates | OS file events (`ReadDirectoryChangesW`, FSEvents) through one watcher service, debounced | No polling, no idle CPU; one source of truth for views, git status, the index and the preview |
-| Git: reading | **gitoxide (`gix`)** in-process: discover, HEAD, branches, ahead/behind, status | Fast, no process per refresh, works without `git` installed for browsing |
+| Git: reading | Repository, HEAD, branch and in-progress state read from `.git` directly; **status and ahead/behind from the user's `git status --porcelain=v2 -z --branch`** (no console window, `--no-optional-locks`), coalesced | Exactly what the user's git says: fsmonitor, the untracked cache, `core.autocrlf`, sparse checkouts, submodules and worktrees behave as in the terminal; no heavy dependency. (Changed in M5 from `gix`, whose status was the plan's main git risk.) Browsing works without `git`; badges then don't show |
 | Git: writing | **The user's `git` command** (`stage`, `commit`, `pull`, `push`, `switch`, `stash`…) | Hooks, signing, credential helpers, LFS and config behave exactly as in the terminal |
 | Search index | **Our own compact index** (struct-of-arrays + name arena, memory-mapped), built with `ignore`'s parallel walker and kept current by file events | Everything-like speed in ~45–60 bytes per entry; no database engine; rules (`node_modules`, build output…) decided while walking |
 | Content search | On demand, ripgrep's crates (`grep-searcher`, `ignore`), streamed | Indexing contents costs gigabytes; ripgrep over one project is fast enough |
@@ -37,7 +37,7 @@ Versions are picked (latest stable) when the project is created in M0, and pinne
 | Walking | `ignore` | Parallel, `.gitignore` aware, custom filters for the index rules |
 | Glob rules | `globset` | Include / exclude rules |
 | Fuzzy matching | `frizbee` (as Tableboat) | SIMD; checked against `nucleo` on a 1M-entry index in M6 |
-| Git | `gix` (read), `git` CLI (write) | Fallback to `git status --porcelain=v2 -z` if `gix` can't read a repository |
+| Git | the `git` CLI (status, writes); `.git` read directly for HEAD and state | One process per status refresh, coalesced and rested |
 | Content search | `grep-searcher`, `grep-regex` | Streamed results, cancel token, binary files skipped |
 | Trash | `trash` | Windows Recycle Bin (`IFileOperation`), macOS Trash; macOS undo uses the URL `trashItemAtURL` returns |
 | Copy / move | `CopyFileExW` (progress callback) on Windows; `clonefile` / `copyfile` on macOS | Native speed, metadata kept, instant clones on APFS |
@@ -250,7 +250,7 @@ Each becomes a test or a manual check in M9.
 | Risk | Plan |
 |---|---|
 | WebView alone is ~90 MB, the budget is tight | Measure from M0; lazy-load the preview viewers, CodeMirror and the Claude pane; low-memory mode when minimised |
-| `gix` status may be slower or incomplete on some repositories | Benchmark in M5 on large repositories; per-repository fallback to `git status --porcelain=v2 -z` |
+| Status on huge repositories takes seconds | Runs in the background, a newer run cancels an older one, a busy repository rests between runs; git's own fsmonitor and untracked cache speed it up |
 | Watcher buffers overflow under heavy writes | Detect overflow and rescan only the affected folder; coalesce git and index updates |
 | Index memory on big disks | Memory-mapped store, home + projects by default, drives opt-in, size and count shown in settings |
 | Native Explorer context menu inside a WebView window (COM, shell extensions that crash) | Runs on the UI thread in an STA; behind "Show more options" only; a separate helper process if crashes show up |

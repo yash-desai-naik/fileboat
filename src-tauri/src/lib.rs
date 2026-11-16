@@ -2,6 +2,7 @@
 //! (`src/main.rs`) and, later, the `fb` command line.
 
 pub mod fs;
+pub mod git;
 pub mod ops;
 pub mod paths;
 pub mod places;
