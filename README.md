@@ -8,7 +8,8 @@ Built with [Tauri 2](https://tauri.app) (Rust backend, and the WebView your syst
 WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 [Tableboat](https://github.com/yash-desai-naik/tableboat). No Electron and no Node.js at runtime.
 
-> Status: **in development.** You can browse folders in tabs (Columns, List and Details views,
+> Status: **0.1.0**, the first release (made and tested on Windows; see the
+> [changelog](CHANGELOG.md) for what's not on macOS yet). Browse folders in tabs (Columns, List and Details views,
 > grouping, folder sizes, a view remembered per folder), preview any file (code, Markdown, data,
 > images, media, PDFs, fonts, archives; Quick Look with Space), use git (live status on every
 > file, the branch, a git panel to stage, commit, pull and push, diffs) and work with files: copy,
@@ -16,10 +17,10 @@ WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 > menus. Search as you type here or everywhere (an index that knows what developers never search),
 > search inside files, jump anywhere from the command bar, and ask your own Claude Code about the
 > project you're browsing in a side pane. Icons are Fileboat's own, your system's or a VS Code icon
-> theme, and any file or folder can have its own. What v1 will do is in [docs/SCOPE.md](docs/SCOPE.md);
-> how and in what order it's built is in [docs/PLAN.md](docs/PLAN.md).
+> theme, and any file or folder can have its own. What v1 covers is in [docs/SCOPE.md](docs/SCOPE.md);
+> how it's built is in [docs/PLAN.md](docs/PLAN.md).
 
-## What it will do (v1)
+## What it does
 
 - **Views:** Columns (Finder style), List and Details, with sorting and grouping (type, extension,
   date, size, git status), remembered per folder.

@@ -6,6 +6,12 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-16
+
+The first release. Made and tested on Windows 11. The macOS build is made by the same workflow but
+hasn't been tried on a Mac yet, and a few things are Windows-only for now: your system's own icons,
+undoing a move to the Trash, Open With, and files on the clipboard shared with Finder.
+
 ### Added
 
 - **Files in use:** when a file can't be deleted, renamed, copied or moved because a program has it
@@ -133,3 +139,6 @@ All notable changes to Fileboat are listed here. The format follows
 - **Updates**: Fileboat checks GitHub for a new version at start-up and once a day (you can turn this
   off), and installs it with one click after checking its signature.
 - **About** box with the version, build and Fileboat's folders.
+
+[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/yash-desai-naik/fileboat/releases/tag/v0.1.0
