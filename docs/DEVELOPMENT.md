@@ -40,6 +40,9 @@ Rust, `src-tauri/src/`:
     completion);
   - `ops`: creating and renaming (`mod.rs`), deleting (`delete.rs`), copying and moving with
     progress, name clashes and cancel (`transfer.rs`), and the undo log (`undo.rs`);
+  - `preview`: which viewer shows a file (by name, then by content), text in any encoding (only
+    the start of big files), bytes for the hex view, archive lists, YAML/TOML/JSON for the tree,
+    and a folder's summary;
   - `tools`: the editors and terminals installed, and opening them;
   - `places`: home folders and drives with their free space;
   - `prefs`: `settings.json`, with validation and the help text Claude will use;
@@ -48,6 +51,9 @@ Rust, `src-tauri/src/`:
   - `folders`: open folders, one model per view, kept in Rust; the view reads only the rows on
     screen (`folder_rows`) and hears about changes on its channel;
   - `watch`: one file system watcher for the app (open folders only, events batched);
+  - `preview_cmd`: the preview's commands (read off the main thread) and the `fbpreview` scheme
+    that serves images, media, PDFs and fonts with Range support; it serves only files the
+    preview was given a token for, and the app's CSP allows it for those uses only;
   - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
     recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
@@ -76,6 +82,10 @@ UI, `src/` (React 19, no state library: small stores with `useSyncExternalStore`
   `lib/jobs.ts` and `lib/tools.ts` are the UI's side of those; `lib/pane.ts` holds what the active
   folder can do for commands (new, rename, delete, copy, paste…); `views/contextMenu.ts` builds
   the context menus.
+- `preview/`: the preview pane and Quick Look (`PreviewPane.tsx`), the viewers (`viewers.tsx`),
+  highlighted code (`CodeView.tsx`, CodeMirror 6), Markdown (`Markdown.tsx`, marked + DOMPurify)
+  and the tree and table (`structured.tsx`). The pane, the editor, Markdown and each language
+  are separate chunks, loaded when first needed. `lib/current.ts` is what the active tab is on.
 - `palette/`: the command bar. `lib/commands.ts` is every command with its shortcuts;
   `lib/shortcuts.ts` runs them from the keyboard.
 - `settings/`: the settings page and theme picker. `lib/settings.ts` is the settings store.

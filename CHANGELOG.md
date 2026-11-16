@@ -8,6 +8,14 @@ All notable changes to Fileboat are listed here. The format follows
 
 ### Added
 
+- **Preview pane** (`Alt+P`): follows the selection and updates when the file changes on disk.
+  Code with highlighting for over a hundred languages (line numbers, folding, wrap); the first
+  512 KB of big files with Load more; the encoding (UTF-8, UTF-16, legacy code pages) and line
+  endings. Markdown rendered safely (no scripts, remote images not loaded), JSON, YAML and TOML as
+  a tree, CSV as a table, images with their size, audio and video, PDFs, fonts, zip and tar
+  contents, and a hex view for anything else. With nothing selected, the folder: its counts,
+  size and README. Open, Open in editor and Copy contents from the pane; the path copies on click.
+- **Quick Look** (`Space`): the selected file large over the window; the arrow keys move on.
 - **Columns view** (`Ctrl+Shift+1`), as in Finder: the folders on the way down to the open one,
   and a peek into the selected folder. → goes into a folder, ← goes up, a click in any column
   goes there; moving around in columns doesn't fill Back's history.
