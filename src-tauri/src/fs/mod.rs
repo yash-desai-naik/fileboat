@@ -63,6 +63,13 @@ pub fn complete(input: &str, base: Option<&Path>, limit: usize) -> Vec<PathBuf> 
     found.into_iter().take(limit).map(|e| dir.join(&e.name)).collect()
 }
 
+/// A folder or file named on the command line (`fileboat .`, `fileboat D:\x`): the first argument
+/// after the program that isn't a flag, made absolute against the folder it was typed in.
+pub fn path_arg(args: &[String], cwd: &Path) -> Option<String> {
+    let arg = args.iter().skip(1).find(|a| !a.starts_with('-'))?;
+    Some(resolve(arg, Some(cwd)).display().to_string())
+}
+
 /// A path typed or pasted by the user, made absolute: `~` is the home folder, `%VAR%` / `$VAR`
 /// are expanded, `/` works on Windows, and `.`/`..` are resolved without following links.
 pub fn resolve(input: &str, base: Option<&Path>) -> PathBuf {
@@ -162,6 +169,16 @@ mod tests {
         assert_eq!(resolve("C:", None), PathBuf::from("C:\\"));
         assert_eq!(resolve("C:/Users/../Windows", None), PathBuf::from("C:\\Windows"));
         assert_eq!(resolve("C:\\..", None), PathBuf::from("C:\\"));
+    }
+
+    #[test]
+    fn command_line_path() {
+        let cwd = Path::new(if cfg!(windows) { "C:\\work" } else { "/work" });
+        let args = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(path_arg(&args(&["fileboat"]), cwd), None);
+        assert_eq!(path_arg(&args(&["fileboat", "--flag"]), cwd), None);
+        assert_eq!(path_arg(&args(&["fileboat", "."]), cwd), Some(cwd.display().to_string()));
+        assert_eq!(path_arg(&args(&["fileboat", "-x", "src"]), cwd), Some(cwd.join("src").display().to_string()));
     }
 
     #[test]

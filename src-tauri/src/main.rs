@@ -3,6 +3,7 @@
 
 mod desktop;
 mod folders;
+mod launch;
 mod navigate;
 mod places_cmd;
 mod settings;
@@ -14,15 +15,13 @@ mod window;
 use tauri::{Manager, WindowEvent};
 
 fn main() {
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let launch_path = fileboat_core::fs::path_arg(&std::env::args().collect::<Vec<_>>(), &cwd);
     tauri::Builder::default()
         // One process for every window: a second launch focuses the running app instead of
-        // starting another WebView browser process.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.webview_windows().values().next() {
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
-        }))
+        // starting another WebView browser process, and opens the path it was given in a new tab.
+        .plugin(tauri_plugin_single_instance::init(launch::second_launch))
+        .manage(launch::LaunchPath(std::sync::Mutex::new(launch_path)))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(update::UpdateState::default())
         .manage(folders::Folders::default())
@@ -63,6 +62,7 @@ fn main() {
             navigate::path_resolve,
             navigate::path_complete,
             places_cmd::places_list,
+            launch::take_launch_path,
             places_cmd::drive_space,
             state::state_read,
             state::state_write,

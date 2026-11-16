@@ -3,7 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { App } from "./App";
 import { loadSettings } from "./lib/settings";
-import { restoreTabs, saveTabs } from "./lib/tabs";
+import { openFromOutside, restoreTabs, saveTabs } from "./lib/tabs";
+import { listen } from "@tauri-apps/api/event";
 import { applyTheme, resolveTheme } from "./themes";
 // JetBrains Mono, bundled: used only when it isn't installed (the installed copy comes first).
 import "@fontsource-variable/jetbrains-mono/wght.css";
@@ -56,6 +57,11 @@ Promise.all([loadSettings(), restoreTabs(), invoke("folders_reset").catch(() => 
     applyTheme(resolveTheme(settings, prefersDark));
     document.documentElement.dataset.density = settings.density;
     createRoot(document.getElementById("root")!).render(<App />);
+    // `fileboat D:\x`: the path this launch was given, then any a second launch hands over.
+    void invoke<string | null>("take_launch_path").then((p) => {
+      if (p) void openFromOutside(p);
+    });
+    void listen<string>("open-path", (e) => void openFromOutside(e.payload));
     showWhenPainted();
   })
   .catch((err) => {

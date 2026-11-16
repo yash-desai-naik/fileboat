@@ -142,8 +142,8 @@ function lastName(from: string, to: string): string | null {
 // ---------- tabs ----------
 
 /** A new tab after the active one (the home folder unless a path is given). */
-export function newTab(path: string = HOME, activate = true) {
-  const tab = makeTab(path);
+export function newTab(path: string = HOME, activate = true, select: string | null = null) {
+  const tab = { ...makeTab(path), select };
   const at = state.tabs.findIndex((t) => t.id === state.activeId) + 1;
   const tabs = [...state.tabs.slice(0, at), tab, ...state.tabs.slice(at)];
   set({ tabs, activeId: activate ? tab.id : state.activeId });
@@ -259,4 +259,16 @@ export async function restoreTabs() {
   } finally {
     restoring = false;
   }
+}
+
+/**
+ * A folder or file given from outside (the command line, a second launch): open it in a new tab;
+ * a file opens its folder with the file selected.
+ */
+export async function openFromOutside(path: string) {
+  const r = await invoke<{ path: string; kind: string; parent: string | null; name: string | null }>("path_resolve", {
+    input: path,
+  });
+  if (r.kind === "folder") newTab(r.path);
+  else if (r.kind === "file" && r.parent) newTab(r.parent, true, r.name);
 }
