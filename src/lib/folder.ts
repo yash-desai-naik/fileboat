@@ -16,6 +16,12 @@ export interface Entry {
   readonly: boolean;
 }
 
+export interface SelectionInfo {
+  files: number;
+  folders: number;
+  bytes: number;
+}
+
 /** How a folder is sorted and filtered (src-tauri/src/fs/model.rs `View`). */
 export interface FolderViewSpec {
   sort: SortBy;
@@ -133,6 +139,11 @@ export class FolderModel {
     } catch {
       return fallback;
     }
+  }
+
+  /** How many files and folders the names are, and the files' total size. */
+  async selectionInfo(names: string[]): Promise<SelectionInfo | null> {
+    return this.ask<SelectionInfo | null>("folder_selection_info", { names }, null);
   }
 
   /** Names of rows `start..end`. */

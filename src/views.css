@@ -167,3 +167,22 @@
   border-bottom: 1px solid var(--border);
   user-select: text;
 }
+
+/* ---------- status bar ---------- */
+
+.statusbar {
+  flex: none;
+  height: var(--statusbar-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-chrome);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.status-selected {
+  color: var(--text);
+}

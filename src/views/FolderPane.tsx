@@ -4,6 +4,7 @@ import { childPath, FolderModel, viewFromSettings, type Entry } from "../lib/fol
 import { getSettings, useSettings } from "../lib/settings";
 import { navigate, newTab, samePath, selected, settlePath, type Tab } from "../lib/tabs";
 import { FileList } from "./FileList";
+import { StatusBar } from "./StatusBar";
 import { Selection } from "./selection";
 
 /**
@@ -75,6 +76,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
         active={active}
         onOpenInNewTab={(entry) => newTab(childPath(model.path, entry.name), false)}
       />
+      <StatusBar model={model} selection={selection} active={active} />
     </div>
   );
 }

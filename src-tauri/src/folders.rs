@@ -250,6 +250,32 @@ pub fn folder_rows(folders: State<'_, Folders>, id: String, start: usize, end: u
     Ok(f.folder.rows(start, end).cloned().collect())
 }
 
+/// What a selection holds, for the status bar: how many files and folders, and the files' total
+/// size (folders aren't sized here).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectionInfo {
+    pub files: usize,
+    pub folders: usize,
+    pub bytes: u64,
+}
+
+#[tauri::command]
+pub fn folder_selection_info(folders: State<'_, Folders>, id: String, names: Vec<String>) -> Result<SelectionInfo, String> {
+    let f = folders.get(&id)?;
+    let f = f.lock().unwrap();
+    let mut info = SelectionInfo { files: 0, folders: 0, bytes: 0 };
+    for e in names.iter().filter_map(|n| f.folder.get(n)) {
+        if e.kind == fs::Kind::Folder {
+            info.folders += 1;
+        } else {
+            info.files += 1;
+            info.bytes += e.size;
+        }
+    }
+    Ok(info)
+}
+
 /// Names of rows `start..end` (select all, Shift+click across rows not on screen).
 #[tauri::command]
 pub fn folder_names(folders: State<'_, Folders>, id: String, start: usize, end: usize) -> Result<Vec<String>, String> {

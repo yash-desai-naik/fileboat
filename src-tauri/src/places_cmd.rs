@@ -36,6 +36,17 @@ fn with_space(mut drives: Vec<Drive>) -> Vec<Drive> {
     drives
 }
 
+/// Free and total bytes of the drive holding `path` (for the status bar), or None if the drive
+/// doesn't answer within a moment.
+#[tauri::command]
+pub async fn drive_space(path: String) -> Option<(u64, u64)> {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(places::space(&path));
+    });
+    tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(SPACE_WAIT).ok().flatten()).await.ok().flatten()
+}
+
 #[tauri::command]
 pub async fn places_list() -> Places {
     tauri::async_runtime::spawn_blocking(|| Places { home: places::home_places(), drives: with_space(places::drives()) })
