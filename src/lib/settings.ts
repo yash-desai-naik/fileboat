@@ -21,6 +21,8 @@ export interface Settings {
   sidebarWidth: number;
   showPreview: boolean;
   previewWidth: number;
+  /** Wrap long lines in the preview's text. */
+  previewWrap: boolean;
   viewMode: ViewMode;
   sortBy: SortBy;
   sortDescending: boolean;

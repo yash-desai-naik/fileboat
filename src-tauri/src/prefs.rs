@@ -56,6 +56,8 @@ pub struct Settings {
     /// The preview pane on the right.
     pub show_preview: bool,
     pub preview_width: u32,
+    /// Wrap long lines in the preview's text.
+    pub preview_wrap: bool,
     /// How folders show: "details" | "list" | "columns".
     pub view_mode: String,
     /// "name" | "size" | "modified" | "created" | "type"
@@ -97,6 +99,7 @@ impl Default for Settings {
             sidebar_width: 240,
             show_preview: false,
             preview_width: 360,
+            preview_wrap: false,
             view_mode: "details".into(),
             sort_by: "name".into(),
             sort_descending: false,
@@ -180,7 +183,7 @@ lightTheme: colour theme used in light mode: \"fileboat-light\" (default) | \"ca
 darkTheme: colour theme used in dark mode: \"fileboat-dark\" (default) | \"catppuccin-mocha\" | \"tokyo-night\" | \"github-dark\" | \"one-dark\" | \"rose-pine\" | \"gruvbox-dark\" | \"kanagawa-wave\" | \"nord\" | \"dracula\" | \"hc-dark\"
 density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
-showSidebar, showPreview (the preview pane): true | false
+showSidebar, showPreview (the preview pane), previewWrap (wrap long lines in the preview): true | false
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
 viewMode: \"details\" | \"list\" | \"columns\" (how folders show)
 sortBy: \"name\" | \"size\" | \"modified\" | \"created\" | \"type\"; sortDescending, foldersFirst, showHidden: true | false

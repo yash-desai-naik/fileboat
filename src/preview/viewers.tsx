@@ -1,7 +1,11 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatSize } from "../lib/format";
+import { updateSettings, useSettings } from "../lib/settings";
 import type { ArchiveList, FolderPreview, Info, Text } from "./types";
+
+// Loaded with the first text file shown (images and PDFs don't need it).
+const CodeView = lazy(() => import("./CodeView"));
 
 /** The first read of a text file; "Load more" doubles it. */
 export const TEXT_START = 512 * 1024;
@@ -94,14 +98,35 @@ export function useText(path: string, reload: string) {
   return { ...state, more: () => setLimit((l) => l * 4) };
 }
 
+/** Highlighted text (plain until the editor has loaded), with Wrap. */
+export function Code({ text, name }: { text: string; name: string }) {
+  const { previewWrap } = useSettings();
+  return (
+    <Suspense fallback={<PlainText text={text} />}>
+      <CodeView text={text} name={name} wrap={previewWrap} />
+    </Suspense>
+  );
+}
+
+export function WrapToggle() {
+  const { previewWrap } = useSettings();
+  return (
+    <button className={`link-btn${previewWrap ? " on" : ""}`} aria-pressed={previewWrap} onClick={() => updateSettings({ previewWrap: !previewWrap })}>
+      Wrap
+    </button>
+  );
+}
+
 export function TextViewer({ info, reload }: { info: Info; reload: string }) {
   const { data, error, more } = useText(info.path, reload);
   if (error) return <Note>{error}</Note>;
   if (!data) return <Loading />;
   return (
     <>
-      <TextBar text={data} onMore={more} />
-      <PlainText text={data.text} />
+      <TextBar text={data} onMore={more}>
+        <WrapToggle />
+      </TextBar>
+      <Code text={data.text} name={info.name} />
     </>
   );
 }

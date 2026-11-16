@@ -237,3 +237,16 @@
 .pv-path:hover {
   color: var(--accent);
 }
+
+/* Highlighted text: CodeMirror scrolls itself. */
+.pv-code {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.pv-code .cm-editor {
+  height: 100%;
+}
+.link-btn.on {
+  text-decoration: underline;
+}
