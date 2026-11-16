@@ -209,3 +209,54 @@ fn locked_files_name_the_program() {
     drop(held);
     delete::delete_permanently(&[root, dest]).unwrap();
 }
+
+/// Worktrees and submodules (where `.git` is a file) are repositories with their own status;
+/// `core.autocrlf` doesn't make files look modified.
+#[test]
+fn worktrees_submodules_and_autocrlf() {
+    use fileboat_core::git;
+    let root = temp_dir("git");
+    let git = |dir: &Path, args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .current_dir(dir)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t", "-c", "init.defaultBranch=main", "-c", "protocol.file.allow=always", "-c", "commit.gpgsign=false"])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+    };
+    let (main, lib) = (root.join("main"), root.join("lib"));
+    for dir in [&main, &lib] {
+        fs::create_dir(dir).unwrap();
+        git(dir, &["init", "-q"]);
+        git(dir, &["config", "core.autocrlf", "true"]);
+        fs::write(dir.join("a.txt"), "one\r\ntwo\r\n").unwrap();
+        git(dir, &["add", "."]);
+        git(dir, &["commit", "-qm", "first"]);
+    }
+    git(&main, &["submodule", "add", "-q", lib.to_str().unwrap(), "vendor/lib"]);
+    git(&main, &["commit", "-qm", "submodule"]);
+    git(&main, &["worktree", "add", "-q", "-b", "side", root.join("side").to_str().unwrap()]);
+
+    let clean = |dir: &Path| {
+        let repo = git::discover(dir).expect("a repository");
+        assert_eq!(repo.root, dir, "root of {}", dir.display());
+        let status = git::status(&repo, false, || false).unwrap();
+        assert!(status.files.is_empty(), "{}: {:?}", dir.display(), status.files.iter().map(|f| &f.path).collect::<Vec<_>>());
+        repo
+    };
+    clean(&main);
+    let sub = clean(&main.join("vendor").join("lib"));
+    assert!(sub.git_dir.ends_with(Path::new("modules").join("vendor").join("lib")), "{}", sub.git_dir.display());
+    let side = clean(&root.join("side"));
+    assert_eq!(side.common_dir.canonicalize().unwrap(), main.join(".git").canonicalize().unwrap());
+    assert_eq!(git::head(&side).branch.as_deref(), Some("side"));
+
+    // A change in the worktree shows there, not in the main checkout.
+    fs::write(root.join("side").join("a.txt"), "changed\r\n").unwrap();
+    let status = git::status(&side, false, || false).unwrap();
+    assert_eq!(status.files.iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["a.txt"]);
+    clean(&main);
+    git(&main, &["worktree", "remove", "--force", root.join("side").to_str().unwrap()]);
+    let _ = delete::delete_permanently(&[root]);
+}
