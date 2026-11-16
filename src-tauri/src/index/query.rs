@@ -303,8 +303,12 @@ pub fn search(idx: &Index, q: &Query, scope: Option<u32>, limit: usize, now_ms: 
     let rank = |ids: &mut Vec<(u32, u16)>| {
         // Named as typed first; then better score; then shallower; then shorter names; then newer.
         ids.sort_by(|a, b| {
-            boost(b.0)
-                .cmp(&boost(a.0))
+            let (ba, bb) = (boost(a.0), boost(b.0));
+            // Among names exactly as typed, the shallower one (~/Downloads before
+            // ~/.claude/downloads), whatever the letter case.
+            let exact_depth = if ba == 2 && bb == 2 { idx.depth(a.0).cmp(&idx.depth(b.0)) } else { std::cmp::Ordering::Equal };
+            bb.cmp(&ba)
+                .then(exact_depth)
                 .then_with(|| b.1.cmp(&a.1))
                 .then_with(|| idx.depth(a.0).cmp(&idx.depth(b.0)))
                 .then_with(|| idx.name(a.0).len().cmp(&idx.name(b.0).len()))
