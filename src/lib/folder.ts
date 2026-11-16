@@ -48,6 +48,14 @@ interface Opened {
 
 /** Rows are fetched from Rust in blocks of this many. */
 const BLOCK = 200;
+/** Blocks kept (the ones nearest what's on screen): scrolling a huge folder doesn't pile up rows. */
+const MAX_BLOCKS = 60;
+
+interface Block {
+  /** The generation the rows were fetched in: older ones are shown until fresh ones arrive. */
+  generation: number;
+  rows: Entry[];
+}
 
 /**
  * An open folder as a view sees it. The entries stay in Rust; this keeps a few blocks of rows
@@ -67,9 +75,10 @@ export class FolderModel {
   /** Bumped on every change, so React re-renders. */
   version = 0;
 
-  private blocks = new Map<number, Entry[]>();
-  private pending = new Set<number>();
-  /** Changes whenever rows may have moved; replies fetched before that are dropped. */
+  private blocks = new Map<number, Block>();
+  /** Block → the generation it is being fetched for. */
+  private pending = new Map<number, number>();
+  /** Changes whenever rows may have moved; rows fetched before that are stale. */
   generation = 0;
   private listeners = new Set<() => void>();
   private closed = false;
@@ -99,9 +108,8 @@ export class FolderModel {
       this.count = e.count;
       this.total = e.total;
       if (e.type === "loaded") this.loading = !e.done;
-      // Rows may have moved: forget them; the view asks again for what's on screen.
-      this.blocks.clear();
-      this.pending.clear();
+      // Rows may have moved: the rows we have are stale. They stay on screen (no blank flash
+      // while a big folder loads) until the view's next look fetches fresh ones.
       this.generation++;
     }
     this.bump();
@@ -114,13 +122,15 @@ export class FolderModel {
     this.bump();
   }
 
-  /** The row at `i` if it has been fetched; otherwise fetches its block and returns undefined. */
+  /**
+   * The row at `i`: fresh if fetched since the last change; otherwise its block is fetched, and
+   * meanwhile the stale row (if any) is returned, or undefined.
+   */
   row(i: number): Entry | undefined {
     const b = Math.floor(i / BLOCK);
     const block = this.blocks.get(b);
-    if (block) return block[i - b * BLOCK];
-    this.fetch(b);
-    return undefined;
+    if (!block || block.generation !== this.generation) this.fetch(b);
+    return block?.rows[i - b * BLOCK];
   }
 
   /** Rows `start..end`, fetched now (for actions on a selection that isn't on screen). */
@@ -152,17 +162,31 @@ export class FolderModel {
   }
 
   private fetch(b: number) {
-    if (!this.id || this.pending.has(b)) return;
-    this.pending.add(b);
     const generation = this.generation;
+    if (!this.id || this.closed || this.pending.get(b) === generation) return;
+    this.pending.set(b, generation);
     void invoke<Entry[]>("folder_rows", { id: this.id, start: b * BLOCK, end: (b + 1) * BLOCK })
       .then((rows) => {
-        if (generation !== this.generation || this.closed) return;
-        this.blocks.set(b, rows);
-        this.pending.delete(b);
+        if (this.closed) return;
+        if (this.pending.get(b) === generation) this.pending.delete(b);
+        const have = this.blocks.get(b);
+        // A reply older than what we have is useless; a stale one still beats nothing, and the
+        // re-render it causes asks again for the current order.
+        if (have && have.generation >= generation) return;
+        this.blocks.set(b, { generation, rows });
+        this.evictFarFrom(b);
         this.bump();
       })
-      .catch(() => this.pending.delete(b));
+      .catch(() => {
+        if (this.pending.get(b) === generation) this.pending.delete(b);
+      });
+  }
+
+  /** Keep the blocks nearest `b` (where the view is) and drop the rest. */
+  private evictFarFrom(b: number) {
+    if (this.blocks.size <= MAX_BLOCKS) return;
+    const far = [...this.blocks.keys()].sort((x, y) => Math.abs(y - b) - Math.abs(x - b));
+    for (const k of far.slice(0, this.blocks.size - MAX_BLOCKS)) this.blocks.delete(k);
   }
 
   /** Re-sort or show hidden files (the folder may have closed meanwhile: then nothing to do). */
