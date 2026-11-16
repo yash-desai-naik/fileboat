@@ -213,11 +213,13 @@ impl Index {
         (folder + 1..self.len() as u32).filter(|&i| self.parent[i as usize] == folder && self.is_live(i)).collect()
     }
 
-    /// The entry at `path`, if indexed.
+    /// The entry at `path`, if indexed (either slash on Windows).
     pub fn find(&self, path: &Path) -> Option<u32> {
         let k = path.to_string_lossy();
+        let k = if cfg!(windows) { k.replace('/', "\\") } else { k.into_owned() };
         for (root, id) in &self.roots {
             let r = root.to_string_lossy();
+            let r = if cfg!(windows) { r.replace('/', "\\") } else { r.into_owned() };
             let rest = if same(&k, &r) {
                 ""
             } else if k.len() > r.len() && same(&k[..r.len()], &r) && k[r.len()..].starts_with(['\\', '/']) {
@@ -447,6 +449,8 @@ pub(crate) mod tests {
         assert_eq!(idx.depth(lib), 4);
         assert_eq!(idx.find(Path::new(r"c:\users\ME\Projects\APP\readme.md")).map(|i| idx.name(i)), Some("README.md"));
         let app = idx.find(Path::new(r"C:\Users\me\projects\app")).unwrap();
+        #[cfg(windows)]
+        assert_eq!(idx.find(Path::new("C:/Users/me/projects/app")), Some(app), "forward slashes");
         assert!(idx.within(lib, app));
         assert_eq!(idx.children(app).len(), 3);
         idx.remove(app);
