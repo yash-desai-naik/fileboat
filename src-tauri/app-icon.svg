@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Tableboat's boat with a folder for a sail. No tile: works on light and dark backgrounds. -->
+  <defs>
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fb4f4"/>
+      <stop offset="1" stop-color="#2f7fd3"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a63a6"/>
+      <stop offset="1" stop-color="#173d6b"/>
+    </linearGradient>
+  </defs>
+  <!-- mast -->
+  <rect x="176" y="24" width="48" height="712" rx="24" fill="#245a9b"/>
+  <!-- sail: the back of a folder with its tab -->
+  <path d="M250 94 Q250 56 288 56 H452 Q476 56 492 74 L530 118 H860 Q900 118 900 158 V660 H250 Z" fill="#245a9b"/>
+  <!-- the folder's front, open towards the wind -->
+  <path d="M250 236 Q250 196 290 196 H962 Q1004 196 996 238 L918 640 Q912 664 888 664 H250 Z" fill="url(#front)"/>
+  <!-- hull -->
+  <path d="M22 700 H1002 L886 946 Q866 990 818 990 H206 Q158 990 138 946 Z" fill="url(#hull)"/>
+</svg>
