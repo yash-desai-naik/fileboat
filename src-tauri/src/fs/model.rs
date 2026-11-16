@@ -35,6 +35,8 @@ pub struct View {
     pub tz_offset_min: i32,
     /// Work out folder sizes (in the background, by the app).
     pub folder_sizes: bool,
+    /// Leave out what git ignores (the "hide" choice for ignored files).
+    pub hide_ignored: bool,
 }
 
 impl Default for View {
@@ -48,6 +50,7 @@ impl Default for View {
             now: 0,
             tz_offset_min: 0,
             folder_sizes: false,
+            hide_ignored: false,
         }
     }
 }
@@ -188,6 +191,25 @@ impl Folder {
         self.entries.iter().filter(|e| e.kind == Kind::Folder && !e.sized && !e.link).map(|e| e.name.clone()).collect()
     }
 
+    /// Set every entry's git mark from `mark_of` (None outside a repository); re-orders when any
+    /// changed. Returns whether any did.
+    pub fn set_git(&mut self, mut mark_of: impl FnMut(&Entry) -> Option<(crate::git::Mark, bool)>) -> bool {
+        let mut changed = false;
+        for e in &mut self.entries {
+            let m = mark_of(e);
+            let (git, staged) = m.map_or((None, false), |(g, s)| (Some(g), s));
+            if e.git != git || e.staged != staged {
+                e.git = git;
+                e.staged = staged;
+                changed = true;
+            }
+        }
+        if changed {
+            self.reorder();
+        }
+        changed
+    }
+
     /// Set folder sizes (name, bytes); re-orders if that moves rows. Returns whether any changed.
     pub fn set_sizes<'a>(&mut self, sizes: impl IntoIterator<Item = (&'a str, u64)>) -> bool {
         let mut changed = false;
@@ -222,8 +244,10 @@ impl Folder {
 
     fn reorder(&mut self) {
         let show_hidden = self.view.show_hidden;
+        let hide_ignored = self.view.hide_ignored;
         let entries = &self.entries;
-        let mut order: Vec<u32> = (0..entries.len() as u32).filter(|&i| show_hidden || !entries[i as usize].hidden).collect();
+        let shown = |e: &Entry| (show_hidden || !e.hidden) && !(hide_ignored && e.git == Some(crate::git::Mark::Ignored));
+        let mut order: Vec<u32> = (0..entries.len() as u32).filter(|&i| shown(&entries[i as usize])).collect();
         let view = self.view;
         if view.group == GroupBy::None {
             order.sort_by(|&a, &b| compare(&entries[a as usize], &entries[b as usize], &view));
@@ -280,6 +304,8 @@ mod tests {
             link: false,
             readonly: false,
             sized: false,
+            git: None,
+            staged: false,
         }
     }
 
@@ -365,6 +391,25 @@ mod tests {
         assert!(f.unsized_folders() == vec![".git"]);
         f.set_view(View::default());
         assert_eq!(f.unsized_folders().len(), 3);
+    }
+
+    #[test]
+    fn git_marks_and_hiding_ignored() {
+        use crate::git::Mark;
+        let mut f = sample();
+        let mark = |e: &Entry| match e.name.as_str() {
+            "src" => Some((Mark::Changed, false)),
+            "b.txt" => Some((Mark::Ignored, false)),
+            "a9.rs" => Some((Mark::Added, true)),
+            _ => None,
+        };
+        assert!(f.set_git(mark));
+        assert!(!f.set_git(mark), "the same marks again change nothing");
+        assert_eq!((f.get("a9.rs").unwrap().git, f.get("a9.rs").unwrap().staged), (Some(Mark::Added), true));
+        f.set_view(View { hide_ignored: true, ..View::default() });
+        assert_eq!(names(&f), vec!["docs", "src", "a9.rs", "A10.rs"]);
+        assert!(f.set_git(|_| None));
+        assert_eq!(f.len(), 5, "outside a repository nothing is ignored");
     }
 
     #[test]

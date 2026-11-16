@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use tauri::ipc::Channel;
 use tauri::State;
 
+use crate::repos::{RepoState, Repos};
 use crate::sizes::Sizer;
 use crate::watch::{Changes, Watch};
 
@@ -36,6 +37,8 @@ pub struct OpenFolder {
     pub alive: bool,
     /// "Calculate Folder Sizes" was chosen here (sizes are worked out even with the setting off).
     pub sizes_requested: bool,
+    /// The git repository it's in, if any.
+    pub repo: Option<Arc<RepoState>>,
 }
 
 impl OpenFolder {
@@ -65,6 +68,10 @@ struct Inner {
     watch: OnceLock<Option<Watch>>,
     /// Started when a folder first wants sizes.
     sizer: OnceLock<Arc<Sizer>>,
+    /// Started with the first folder.
+    repos: OnceLock<Arc<Repos>>,
+    /// For events (git changes); set at start-up.
+    app: OnceLock<tauri::AppHandle>,
 }
 
 /// The same folder (see `sizes::path_key`).
@@ -85,6 +92,50 @@ impl Folders {
                 Watch::start(move |changes| folders.apply(changes)).ok()
             })
             .as_ref()
+    }
+
+    pub fn set_app(&self, app: tauri::AppHandle) {
+        let _ = self.0.app.set(app);
+    }
+
+    pub fn app(&self) -> Option<&tauri::AppHandle> {
+        self.0.app.get()
+    }
+
+    pub fn repos(&self) -> &Arc<Repos> {
+        self.0.repos.get_or_init(|| Repos::start(self.clone()))
+    }
+
+    /// Show the repository's last status on a folder's rows (or no marks outside a repository).
+    fn fill_git(&self, shared: &Shared) {
+        let mut f = shared.lock().unwrap();
+        if !f.alive {
+            return;
+        }
+        let Some(state) = f.repo.clone() else { return };
+        let snap = state.snapshot.lock().unwrap().clone();
+        let base = fileboat_core::git::relative(&state.repo, &f.folder.path);
+        let changed = match (snap, base) {
+            (Some(snap), Some(base)) => f.folder.set_git(|e| {
+                let rel = if base.is_empty() { e.name.clone() } else { format!("{base}/{}", e.name) };
+                snap.index.mark(&rel, e.kind == fs::Kind::Folder)
+            }),
+            _ => f.folder.set_git(|_| None),
+        };
+        if changed {
+            f.changed();
+        }
+    }
+
+    /// A repository's status changed: its open folders show it.
+    pub fn git_changed(&self, state: &Arc<RepoState>) {
+        let open: Vec<Shared> = self.0.open.lock().unwrap().values().cloned().collect();
+        for shared in open {
+            let mine = shared.lock().unwrap().repo.as_ref().is_some_and(|r| Arc::ptr_eq(r, state));
+            if mine {
+                self.fill_git(&shared);
+            }
+        }
     }
 
     fn sizer(&self) -> &Arc<Sizer> {
@@ -180,13 +231,16 @@ impl Folders {
 
     fn close(&self, id: &str) {
         let Some(f) = self.0.open.lock().unwrap().remove(id) else { return };
-        let path = {
+        let (path, repo) = {
             let mut f = f.lock().unwrap();
             f.alive = false;
-            f.folder.path.clone()
+            (f.folder.path.clone(), f.repo.take())
         };
         if let Some(w) = self.watch() {
             w.unwatch(&path);
+        }
+        if let Some(repo) = repo {
+            self.repos().detach(&repo);
         }
     }
 
@@ -254,6 +308,7 @@ impl Folders {
                 f.folder.apply(upserts, &removed);
                 f.changed();
             }
+            self.fill_git(&shared);
             self.fill_sizes(&shared);
         }
     }
@@ -279,6 +334,7 @@ fn relist(folders: &Folders, shared: &Shared, path: &Path) {
             }
         }
     }
+    folders.fill_git(shared);
     folders.fill_sizes(shared);
 }
 
@@ -314,12 +370,14 @@ pub fn folder_open(
         return Err(format!("{} is a file, not a folder.", path.display()));
     }
     let id = format!("f{}", folders.0.next.fetch_add(1, Ordering::Relaxed));
+    let repo = folders.repos().attach(&path);
     let shared: Shared = Arc::new(Mutex::new(OpenFolder {
         folder: Folder::new(path.clone(), view),
         window: window.label().to_string(),
         channel: on_event,
         alive: true,
         sizes_requested: false,
+        repo,
     }));
     folders.0.open.lock().unwrap().insert(id.clone(), shared.clone());
     if let Some(w) = folders.watch() {
@@ -353,6 +411,7 @@ pub fn folder_open(
         match result {
             Ok(()) => {
                 if flush(&mut pending, true) {
+                    folders.fill_git(&shared);
                     folders.fill_sizes(&shared);
                 }
             }

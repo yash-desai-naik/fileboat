@@ -22,6 +22,10 @@ pub struct Entry {
     pub size: u64,
     /// A folder whose `size` has been worked out.
     pub sized: bool,
+    /// Its git status, inside a repository (set by the app once the status is known).
+    pub git: Option<crate::git::Mark>,
+    /// Some of its change is staged.
+    pub staged: bool,
     /// Milliseconds since 1970, or 0 when unknown.
     pub modified: f64,
     pub created: f64,
@@ -93,6 +97,8 @@ impl Entry {
             kind,
             size: if kind == Kind::File { meta.len() } else { 0 },
             sized: false,
+            git: None,
+            staged: false,
             modified: millis(meta.modified()),
             created: millis(meta.created()),
             ext,

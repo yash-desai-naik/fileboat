@@ -5,6 +5,7 @@ mod clipboard;
 mod desktop;
 mod dnd;
 mod folders;
+mod git_cmd;
 mod jobs;
 mod launch;
 mod native_menu;
@@ -12,6 +13,7 @@ mod navigate;
 mod ops_cmd;
 mod places_cmd;
 mod preview_cmd;
+mod repos;
 mod settings;
 mod sizes;
 mod state;
@@ -52,6 +54,7 @@ fn main() {
                 window::place_centered(&main, None);
             }
             app.manage(settings::SettingsStore::load()?);
+            app.state::<folders::Folders>().set_app(app.handle().clone());
             update::start_background_checks(app.handle().clone());
             Ok(())
         })
@@ -76,6 +79,7 @@ fn main() {
             desktop::open_with_dialog,
             native_menu::native_menu,
             preview_cmd::preview_info,
+            git_cmd::git_info,
             preview_cmd::preview_text,
             preview_cmd::preview_bytes,
             preview_cmd::preview_archive,

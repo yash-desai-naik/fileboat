@@ -1,5 +1,6 @@
-//! One file system watcher for the whole app: open folders are watched (not their subfolders),
-//! and changes arrive as events from the OS (ReadDirectoryChangesW, FSEvents). Nothing polls.
+//! File system watching: open folders are watched (not their subfolders), repositories as a
+//! whole tree (for git status), and changes arrive as events from the OS (ReadDirectoryChangesW,
+//! FSEvents). Nothing polls.
 //!
 //! Events are collected until the folder has been quiet for a moment (or for at most half a
 //! second during a burst such as `npm install`), then handed over in one batch.
@@ -40,12 +41,23 @@ impl Watch {
         Ok(Watch { watcher: Mutex::new(watcher), counts: Mutex::new(HashMap::new()) })
     }
 
+    /// Watch a folder's own items.
     pub fn watch(&self, path: &Path) {
+        self.add(path, RecursiveMode::NonRecursive);
+    }
+
+    /// Watch a folder and everything under it (a repository's working tree, for git status).
+    /// Use a `Watch` of its own for these: counts are per path.
+    pub fn watch_tree(&self, path: &Path) {
+        self.add(path, RecursiveMode::Recursive);
+    }
+
+    fn add(&self, path: &Path, mode: RecursiveMode) {
         let mut counts = self.counts.lock().unwrap();
         let n = counts.entry(path.to_path_buf()).or_insert(0);
         if *n == 0 {
             // A folder that can't be watched (some network shares) still opens; it just isn't live.
-            let _ = self.watcher.lock().unwrap().watch(path, RecursiveMode::NonRecursive);
+            let _ = self.watcher.lock().unwrap().watch(path, mode);
         }
         *n += 1;
     }
