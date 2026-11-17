@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { showToast } from "../shell/Toast";
+import { dropFavourites } from "./favourites";
 import { activeTab } from "./tabs";
 
 /**
@@ -9,21 +10,45 @@ import { activeTab } from "./tabs";
  * a sidebar place, a breadcrumb part); the one under the cursor is highlighted while dragging.
  */
 
-let highlighted: HTMLElement | null = null;
+/**
+ * Where a drop lands: into a folder (`el` with `data-drop-path`), or into the Favourites at
+ * `fav` (the gaps between favourites, their top and bottom edges, the section's heading).
+ */
+interface Target {
+  el: HTMLElement;
+  fav?: number;
+  /** The class that shows it: "drop-target", or "insert-before"/"insert-after" on a favourite. */
+  mark: string;
+}
 
-function highlight(el: HTMLElement | null) {
-  if (el === highlighted) return;
-  highlighted?.classList.remove("drop-target");
-  highlighted = el;
-  el?.classList.add("drop-target");
+let highlighted: Target | null = null;
+
+function highlight(t: Target | null) {
+  if (t?.el === highlighted?.el && t?.mark === highlighted?.mark) return;
+  highlighted?.el.classList.remove(highlighted.mark);
+  highlighted = t;
+  t?.el.classList.add(t.mark);
 }
 
 /** The drop target under a position given in physical pixels. */
-function targetAt(position: { x: number; y: number }): HTMLElement | null {
+function targetAt(position: { x: number; y: number }): Target | null {
   // devicePixelRatio includes both the screen's scaling and the app's zoom.
   const ratio = window.devicePixelRatio || 1;
-  const el = document.elementFromPoint(position.x / ratio, position.y / ratio);
-  return (el?.closest("[data-drop-path]") as HTMLElement | null) ?? null;
+  const [x, y] = [position.x / ratio, position.y / ratio];
+  const el = document.elementFromPoint(x, y);
+  const fav = el?.closest("[data-fav-index]") as HTMLElement | null;
+  if (fav) {
+    // A favourite's top and bottom edges insert beside it; its middle drops into the folder.
+    const r = fav.getBoundingClientRect();
+    const i = Number(fav.dataset.favIndex);
+    if (y < r.top + r.height * 0.3) return { el: fav, fav: i, mark: "insert-before" };
+    if (y > r.bottom - r.height * 0.3) return { el: fav, fav: i + 1, mark: "insert-after" };
+  }
+  const into = el?.closest("[data-drop-path]") as HTMLElement | null;
+  if (into) return { el: into, mark: "drop-target" };
+  const zone = el?.closest("[data-drop-favourites]") as HTMLElement | null;
+  if (zone) return { el: zone, fav: Number(zone.dataset.dropFavourites), mark: "drop-target" };
+  return null;
 }
 
 const sameFolder = (a: string, b: string) => a.replace(/[\\/]+$/, "").toLowerCase() === b.replace(/[\\/]+$/, "").toLowerCase();
@@ -38,7 +63,11 @@ export function listenForDrops() {
     } else if (e.type === "drop") {
       const target = targetAt(e.position);
       highlight(null);
-      const dest = target?.dataset.dropPath ?? activeTab().path;
+      if (target?.fav !== undefined) {
+        void dropFavourites(e.paths, target.fav);
+        return;
+      }
+      const dest = target?.el.dataset.dropPath ?? activeTab().path;
       // Dropping items on themselves (a folder onto itself) does nothing.
       const sources = e.paths.filter((p) => !sameFolder(p, dest));
       if (!sources.length) return;

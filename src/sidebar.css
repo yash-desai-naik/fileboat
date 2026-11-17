@@ -341,3 +341,26 @@
 .git-file-letter.git-renamed {
   color: var(--git-renamed);
 }
+
+/* Favourites: where a dragged favourite goes, and drops beside a favourite. */
+.side-insert {
+  height: 2px;
+  margin: -1px 6px;
+  border-radius: 1px;
+  background: var(--accent);
+  position: relative;
+  z-index: 1;
+}
+.side-item.dragging {
+  opacity: 0.5;
+}
+.side-item.insert-before {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.side-item.insert-after {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.side-section.drop-target > .side-head {
+  background: var(--accent-soft);
+  border-radius: var(--radius-control);
+}

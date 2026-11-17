@@ -6,6 +6,19 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Favourites, by drag and drop:** drop folders on Favourites to pin them (between two, or on the
+  heading); drag a favourite up or down to reorder it (or Move Up / Move Down on its menu).
+- **Right-click a favourite or home folder** for Open in New Tab, Show in Explorer, Copy Path,
+  Change Icon…, and Add to or Remove from Favourites.
+
+### Changed
+
+- Favourites and home folders show their folder's icon, as in the list: they follow the icon theme
+  and Change Icon…. Home, Desktop, Documents, Downloads, Pictures, Music and Videos share one colour
+  and each have a mark, in the sidebar and in lists alike.
+
 ## [0.1.0] - 2026-11-16
 
 The first release. Made and tested on Windows 11. The macOS build is made by the same workflow but

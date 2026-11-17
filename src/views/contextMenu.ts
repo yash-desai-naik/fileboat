@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { pasteInto } from "../lib/clipboard";
-import { addFavourite } from "../lib/favourites";
+import { addFavourite, placeFavourites, removeFavourite } from "../lib/favourites";
 import { childPath, type Entry } from "../lib/folder";
 import { paneActions } from "../lib/pane";
 import { FILE_MANAGER, IS_MAC, fmtShortcut } from "../lib/platform";
@@ -376,4 +376,29 @@ export function folderMenu(ctx: MenuContext): MenuItem[] {
     { label: IS_MAC ? "Get Info" : "Properties", onSelect: run("show_properties", { path: folder }) },
     ...(IS_MAC ? [] : (["separator", { label: "Show More Options", onSelect: run("native_menu", { paths: [], folder }) }] as MenuItem[])),
   ];
+}
+
+// ---------- the sidebar's places ----------
+
+/** Right-click on a favourite or a home folder in the sidebar. */
+export function placeMenu(path: string, name: string, favourite: { index: number; count: number } | null): MenuItem[] {
+  const items: MenuItem[] = [
+    { label: "Open in New Tab", onSelect: () => newTab(path, true) },
+    { label: `Show in ${FILE_MANAGER}`, onSelect: run("reveal_in_file_manager", { path }) },
+    { label: "Copy Path", submenu: pathForms([path]) },
+    "separator",
+    { label: "Change Icon…", onSelect: () => uiActions.changeIcon({ path, name, ext: "", folder: true }) },
+  ];
+  if (favourite) {
+    const { index, count } = favourite;
+    items.push(
+      "separator",
+      { label: "Move Up", disabled: index === 0, onSelect: () => placeFavourites([path], index - 1) },
+      { label: "Move Down", disabled: index === count - 1, onSelect: () => placeFavourites([path], index + 2) },
+      { label: "Remove from Favourites", onSelect: () => removeFavourite(path) },
+    );
+  } else {
+    items.push("separator", { label: "Add to Favourites", onSelect: () => addFavourite(path) });
+  }
+  return items;
 }
