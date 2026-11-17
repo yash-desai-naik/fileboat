@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronIcon } from "./Icons";
 
 export type MenuItem =
@@ -87,7 +88,7 @@ export function Menu({ x, y, items, onClose, onDone, parentLeft, keyboard }: Men
     item.onSelect?.();
   };
 
-  return (
+  return createPortal(
     <>
       <div
         ref={ref}
@@ -169,6 +170,7 @@ export function Menu({ x, y, items, onClose, onDone, parentLeft, keyboard }: Men
           onDone={done}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 }
