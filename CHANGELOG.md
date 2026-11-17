@@ -6,6 +6,8 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-17
+
 ### Added
 
 - **Go to File** (`Ctrl+P`), as in VS Code: any file in the index by name. `daily_logs.ts:32` (or
@@ -172,7 +174,8 @@ undoing a move to the Trash, Open With, and files on the clipboard shared with F
   off), and installs it with one click after checking its signature.
 - **About** box with the version, build and Fileboat's folders.
 
-[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yash-desai-naik/fileboat/releases/tag/v0.1.0
