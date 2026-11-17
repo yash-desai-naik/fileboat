@@ -6,6 +6,15 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Go to File** (`Ctrl+P`), as in VS Code: any file in the index by name. `daily_logs.ts:32` (or
+  `:32:5`) opens it at that line in your editor (VS Code, Cursor, Windsurf, Zed, Sublime Text,
+  Notepad++, JetBrains IDEs); `Ctrl+Enter` shows it here with the preview at that line.
+- **Go to Symbol:** `daily_logs.ts@load` lists the file's functions, classes, types and methods
+  (or a Markdown file's headings) and jumps to one. `Ctrl+Shift+O` lists the selected file's;
+  `Ctrl+G` goes to a line in it.
+
 ## [0.3.0] - 2026-11-17
 
 ### Added

@@ -119,3 +119,15 @@ kbd {
 .palette-footer kbd {
   margin-right: 3px;
 }
+
+/* Go to: the line asked for after a file's name, and a symbol's kind. */
+.palette-line {
+  color: var(--accent);
+  margin-left: 1px;
+}
+.palette-prefix.symbol-kind {
+  width: 52px;
+  text-align: left;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}

@@ -1,3 +1,5 @@
+import { getCurrent } from "./current";
+import { showToast } from "../shell/Toast";
 import { resetPaneZoom, stepZoom } from "./zoom";
 import { getSettings, updateSettings, type Density, type GroupBy, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
 import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
@@ -126,6 +128,29 @@ export function buildCommands(): Command[] {
       run: () => uiActions.openCommandBar(">"),
     },
     { id: "commandBar.help", category: "Help", title: "Command Bar Modes", run: () => uiActions.openCommandBar("?") },
+    { id: "commandBar.goto", category: "Go", title: "Go to File… (name:line, name@symbol)", keys: ["Ctrl+P", "Ctrl+E"], run: () => uiActions.openCommandBar("") },
+    {
+      id: "commandBar.symbol",
+      category: "Go",
+      title: "Go to Symbol in File…",
+      keys: ["Ctrl+Shift+O"],
+      run: () => {
+        const file = selectedFile();
+        if (file) uiActions.openCommandBar(`${file}@`);
+        else showToast("Select a file first: its functions, classes and headings are listed.");
+      },
+    },
+    {
+      id: "commandBar.line",
+      category: "Go",
+      title: "Go to Line in File…",
+      keys: ["Ctrl+G"],
+      run: () => {
+        const file = selectedFile();
+        if (file) uiActions.openCommandBar(`${file}:`);
+        else showToast("Select a file first, then type the line.");
+      },
+    },
     { id: "settings.open", category: "Preferences", title: "Open Settings", keys: ["Ctrl+,"], run: () => uiActions.openSettings() },
     { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
     { id: "help.updates", category: "Help", title: "Check for Updates…", run: () => void checkForUpdates() },
@@ -309,4 +334,12 @@ export function buildCommands(): Command[] {
     density("comfortable", "Comfortable"),
     { id: "developer.reload", category: "Developer", title: "Reload Window", run: () => window.location.reload() },
   ];
+}
+
+/** The full path of the one file selected in the active tab, if any. */
+function selectedFile(): string | null {
+  const c = getCurrent();
+  if (!c?.entry || c.entry.kind === "folder") return null;
+  const sep = c.folder.includes("\\") ? "\\" : "/";
+  return c.folder.replace(/[\\/]+$/, "") + sep + c.entry.name;
 }

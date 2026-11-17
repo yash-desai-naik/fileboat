@@ -29,7 +29,7 @@ interface Mode {
 }
 
 const MODES: Mode[] = [
-  { prefix: "", name: "Go to", hint: "Go to a file or folder", placeholder: "Go to a file or folder, or type a path…", ready: true },
+  { prefix: "", name: "Go to", hint: "Go to a file or folder (name:line, name@symbol)", placeholder: "Go to a file or folder (name:32 for a line, name@ for symbols), or a path…", ready: true },
   { prefix: ">", name: "Commands", hint: "Run a command", placeholder: "Type a command…", ready: true },
   { prefix: "%", name: "Search contents", hint: "Search inside files in this folder", placeholder: "Text to find in files here (/regex/ for a pattern)…", ready: true },
   { prefix: "#", name: "Git", hint: "Branches, changed files and commits", placeholder: "Branches, changes, commits…", ready: true },
@@ -66,7 +66,8 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
   const mode = modeOf(text);
   // Enter's modifiers, for Ctrl+Enter (show in folder) and Alt+Enter (new tab).
   const mods = useRef({ ctrl: false, alt: false });
-  const pathMode = mode.prefix === "" && looksLikePath(text);
+  const target = mode.prefix === "" ? parseTarget(text) : null;
+  const pathMode = mode.prefix === "" && looksLikePath(text) && target?.symbol === undefined;
 
   return (
     <div className="overlay" onMouseDown={onClose}>
@@ -111,8 +112,9 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
             {mode.prefix === "?" && <HelpItems onPick={setText} />}
             {mode.prefix === "#" && <GitItems onClose={onClose} />}
             {mode.prefix === "%" && <ContentItems query={queryOf(text)} onClose={onClose} />}
-            {mode.prefix === "" && !pathMode && <GoToItems query={text} mods={mods} onClose={onClose} />}
-            {pathMode && <PathItems text={text} mods={mods} onClose={onClose} />}
+            {target?.symbol !== undefined && <SymbolItems file={target.name} query={target.symbol} mods={mods} onClose={onClose} />}
+            {mode.prefix === "" && !pathMode && target?.symbol === undefined && <GoToItems query={target?.name ?? text} at={target} mods={mods} onClose={onClose} />}
+            {pathMode && <PathItems text={target?.line ? target.name : text} at={target} mods={mods} onClose={onClose} />}
             {mode.prefix === "@" && <PlaceItems mods={mods} onClose={onClose} />}
             {mode.prefix === "!" && <ShellItems line={queryOf(text)} />}
             {!mode.ready && (
@@ -395,6 +397,43 @@ function ContentItems({ query, onClose }: { query: string; onClose: () => void }
 
 type Mods = MutableRefObject<{ ctrl: boolean; alt: boolean }>;
 
+/** What the Go to box asks for: a name, maybe with a line ("daily_logs.ts:32", ":32:5") or a symbol ("daily_logs.ts@load"). */
+interface Target {
+  name: string;
+  line?: number;
+  column?: number;
+  /** Set (maybe "") for name@symbol. */
+  symbol?: string;
+}
+
+function parseTarget(text: string): Target {
+  const at = text.lastIndexOf("@");
+  if (at > 0) return { name: text.slice(0, at).trim(), symbol: text.slice(at + 1).trim() };
+  const m = /^(.*\S):(\d+)(?::(\d+))?$/.exec(text);
+  if (m && !/^[a-z]$/i.test(m[1])) return { name: m[1].trim(), line: Number(m[2]), column: m[3] ? Number(m[3]) : undefined };
+  return { name: text };
+}
+
+/**
+ * A file at a line: Enter opens it in your editor there, Ctrl+Enter shows it here (selected, the
+ * preview at that line), Alt+Enter does that in a new tab.
+ */
+function openAt(path: string, line: number, column: number | undefined, mods: Mods, onClose: () => void) {
+  const { ctrl, alt } = mods.current;
+  mods.current = { ctrl: false, alt: false };
+  onClose();
+  if (!ctrl && !alt) {
+    void invoke("open_in_editor_at", { path, line, column: column ?? null, editor: null }).catch((err) => showToast(String(err), "error"));
+    return;
+  }
+  const parent = parentOf(path) ?? path;
+  const name = path.slice(parent.replace(/[\\/]+$/, "").length).replace(/^[\\/]+/, "");
+  updateSettings({ showPreview: true });
+  if (alt) newTab(parent, true, name);
+  else navigate(parent, name);
+  requestLine(path, line);
+}
+
 /** Go to a file or folder: Enter opens it (a folder: goes there), Ctrl+Enter shows it in its folder, Alt+Enter opens a tab. */
 function go(path: string, folder: boolean, mods: Mods, onClose: () => void) {
   const { ctrl, alt } = mods.current;
@@ -433,7 +472,8 @@ function HitName({ h }: { h: Hit }) {
 }
 
 /** (nothing): recent folders and favourites first, then the index. */
-function GoToItems({ query, mods, onClose }: { query: string; mods: Mods; onClose: () => void }) {
+function GoToItems({ query, at, mods, onClose }: { query: string; at: Target | null; mods: Mods; onClose: () => void }) {
+  const line = at?.line;
   const [hits, setHits] = useState<Hit[]>([]);
   const q = query.trim();
   useEffect(() => {
@@ -470,24 +510,33 @@ function GoToItems({ query, mods, onClose }: { query: string; mods: Mods; onClos
       {hits.length > 0 && (
         <Cmdk.Group heading="Files and folders">
           {hits.map((h) => (
-            <Cmdk.Item key={`h:${h.path}`} value={`h:${h.path}`} onSelect={() => go(h.path, h.folder, mods, onClose)}>
+            <Cmdk.Item
+              key={`h:${h.path}`}
+              value={`h:${h.path}`}
+              onSelect={() => (line && !h.folder ? openAt(h.path, line, at?.column, mods, onClose) : go(h.path, h.folder, mods, onClose))}
+            >
               <span className="palette-title">
                 <HitName h={h} />
-                {h.folder ? "/" : ""}
+                {h.folder ? "/" : line ? <span className="palette-line">:{line}</span> : ""}
               </span>
               <span className="palette-category">{parentOf(h.path)}</span>
             </Cmdk.Item>
           ))}
         </Cmdk.Group>
       )}
-      {!q && <div className="palette-note">Type a name, or a path (C:\\, ~/, ..). Ctrl+Enter shows it in its folder, Alt+Enter opens a tab.</div>}
+      {!q && (
+        <div className="palette-note">
+          Type a name, or a path (C:\\, ~/, ..). Add :32 to open a file at line 32 in your editor, or @ for its functions, classes and headings. Ctrl+Enter shows it here, Alt+Enter in a new tab.
+        </div>
+      )}
+      {q && line && <div className="palette-note">Enter opens the file at line {line} in your editor; Ctrl+Enter shows it here with the preview at that line.</div>}
       {q && !places.length && !hits.length && <div className="palette-note">No matches in the index.</div>}
     </>
   );
 }
 
 /** A path typed: each part completed (Tab takes the highlighted one), Enter goes there. */
-function PathItems({ text, mods, onClose }: { text: string; mods: Mods; onClose: () => void }) {
+function PathItems({ text, at, mods, onClose }: { text: string; at: Target | null; mods: Mods; onClose: () => void }) {
   const [list, setList] = useState<string[]>([]);
   const base = activeTab().path;
   useEffect(() => {
@@ -499,14 +548,18 @@ function PathItems({ text, mods, onClose }: { text: string; mods: Mods; onClose:
   }, [text, base]);
   const goTyped = async () => {
     const r = await invoke<{ path: string; kind: "folder" | "file" | "missing" }>("path_resolve", { input: text, base }).catch(() => null);
-    if (r && r.kind !== "missing") go(r.path, r.kind === "folder", mods, onClose);
+    if (r && r.kind === "file" && at?.line) openAt(r.path, at.line, at.column, mods, onClose);
+    else if (r && r.kind !== "missing") go(r.path, r.kind === "folder", mods, onClose);
     else showToast(`${text} doesn't exist.`, "error");
   };
   return (
     <>
       <Cmdk.Group heading="Path">
         <Cmdk.Item value="typed" onSelect={() => void goTyped()}>
-          <span className="palette-title">Go to {text}</span>
+          <span className="palette-title">
+            Go to {text}
+            {at?.line ? `, line ${at.line}` : ""}
+          </span>
         </Cmdk.Item>
         {list.map((p) => (
           <Cmdk.Item key={p} value={p} data-path={p} onSelect={() => go(p, true, mods, onClose)}>
@@ -611,4 +664,89 @@ function ShellItems({ line }: { line: string }) {
       )}
     </>
   );
+}
+
+interface FileSymbol {
+  name: string;
+  kind: string;
+  line: number;
+  column: number;
+  depth: number;
+}
+
+const KIND_LABEL: Record<string, string> = {
+  function: "fn",
+  method: "method",
+  class: "class",
+  interface: "interface",
+  type: "type",
+  enum: "enum",
+  struct: "struct",
+  trait: "trait",
+  module: "module",
+  constant: "const",
+  variable: "var",
+  heading: "#",
+  selector: "css",
+  macro: "macro",
+  impl: "impl",
+};
+
+/** name@symbol: the functions, classes, headings… of the file the name finds, filtered by symbol. */
+function SymbolItems({ file, query, mods, onClose }: { file: string; query: string; mods: Mods; onClose: () => void }) {
+  const [found, setFound] = useState<{ path: string; symbols: FileSymbol[] } | null | "none">(null);
+  useEffect(() => {
+    if (!file) return setFound("none");
+    let stale = false;
+    const timer = window.setTimeout(async () => {
+      let path: string | null = null;
+      if (looksLikePath(file)) {
+        const r = await invoke<{ path: string; kind: string }>("path_resolve", { input: file, base: activeTab().path }).catch(() => null);
+        if (r?.kind === "file") path = r.path;
+      } else {
+        const r = await invoke<SearchResult>("index_search", { query: file, scope: null, limit: 20 }).catch(() => null);
+        path = r?.hits.find((h) => !h.folder)?.path ?? null;
+      }
+      if (stale) return;
+      if (!path) return setFound("none");
+      const symbols = await invoke<FileSymbol[]>("file_symbols", { path }).catch(() => []);
+      if (!stale) setFound({ path, symbols });
+    }, 80);
+    return () => {
+      stale = true;
+      window.clearTimeout(timer);
+    };
+  }, [file]);
+
+  if (found === null) return <div className="palette-note">Reading…</div>;
+  if (found === "none") return <div className="palette-note">No file named like "{file}" in the index.</div>;
+  const q = query.toLowerCase();
+  const shown = !q
+    ? found.symbols
+    : found.symbols
+        .filter((s) => fuzzy(s.name, q))
+        // Names that start with what's typed first, then those containing it, then the rest; each in file order.
+        .sort((a, b) => rank(a.name, q) - rank(b.name, q) || a.line - b.line);
+  const name = found.path.slice(Math.max(found.path.lastIndexOf("\\"), found.path.lastIndexOf("/")) + 1);
+  return (
+    <>
+    <Cmdk.Group heading={`Symbols in ${name} · ${parentOf(found.path) ?? ""}`}>
+      {shown.slice(0, 300).map((s) => (
+        <Cmdk.Item key={`${s.line}:${s.column}:${s.name}`} value={`s:${s.line}:${s.column}:${s.name}`} onSelect={() => openAt(found.path, s.line, s.column, mods, onClose)}>
+          <span className="palette-prefix mono symbol-kind">{KIND_LABEL[s.kind] ?? s.kind}</span>
+          <span className="palette-title" style={{ paddingLeft: q ? 0 : Math.min(s.depth, 6) * 12 }}>
+            {s.name}
+          </span>
+          <span className="palette-category mono">:{s.line}</span>
+        </Cmdk.Item>
+      ))}
+    </Cmdk.Group>
+    {!shown.length && <div className="palette-note">{found.symbols.length ? `No symbol like "${query}" in ${name}.` : `Fileboat doesn't find symbols in ${name} (it knows code in common languages, Markdown headings and CSS).`}</div>}
+    </>
+  );
+}
+
+function rank(name: string, q: string): number {
+  const n = name.toLowerCase();
+  return n.startsWith(q) ? 0 : n.includes(q) ? 1 : 2;
 }
