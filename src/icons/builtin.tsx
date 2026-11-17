@@ -52,6 +52,11 @@ const FOLDER_MARK = {
   gear: <path d="M8 8.5v.5M8 11.4v.5M6.6 10.2h.5M9 10.2h.5M8 9.4a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6z" />,
   blocks: <path d="M6 8.8h1.6v1.6H6zM8.4 8.8H10v1.6H8.4zM6 11h1.6v1.2H6z" />,
   globe: <path d="M8 8.4a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8zM6.1 10.3h3.8M8 8.4c.6.6.6 3.2 0 3.8" />,
+  home: <path d="M5.8 10.2 8 8.4l2.2 1.8M6.5 9.7v2.3h3V9.7" />,
+  desktop: <path d="M5.7 8.7h4.6v2.5H5.7zM8 11.2v.9M6.9 12.1h2.2" />,
+  download: <path d="M8 8.4v3.2M6.7 10.4 8 11.7l1.3-1.3M6.2 12.3h3.6" />,
+  music: <path d="M7.2 11.6V8.8l2.6-.5v2.7M7.2 11.6a.7.7 0 1 1-1.4 0 .7.7 0 0 1 1.4 0zM9.8 11a.7.7 0 1 1-1.4 0 .7.7 0 0 1 1.4 0z" />,
+  play: <path d="M7 8.7v3.2l2.7-1.6z" />,
 } satisfies Record<string, ReactNode>;
 
 export type FolderMark = keyof typeof FOLDER_MARK;
@@ -228,6 +233,17 @@ folders([".claude"], C.zig, "gear");
 
 /** The plain folder colour (from the theme's accent, as before). */
 export const FOLDER_PLAIN: FolderLook = { color: "var(--folder, var(--accent))", mark: "none" };
+
+/** The home folder and its usual folders (by kind from the sidebar's places): one colour, a mark each. */
+export const PLACE_LOOKS: Record<string, FolderLook> = {
+  home: { color: FOLDER_PLAIN.color, mark: "home" },
+  desktop: { color: FOLDER_PLAIN.color, mark: "desktop" },
+  documents: { color: FOLDER_PLAIN.color, mark: "lines" },
+  downloads: { color: FOLDER_PLAIN.color, mark: "download" },
+  pictures: { color: FOLDER_PLAIN.color, mark: "image" },
+  music: { color: FOLDER_PLAIN.color, mark: "music" },
+  videos: { color: FOLDER_PLAIN.color, mark: "play" },
+};
 
 /** How a folder looks in the built-in theme. */
 export function folderLook(name: string): FolderLook {

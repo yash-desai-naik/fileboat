@@ -2,9 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { getSettings, updateSettings, useSettings } from "../lib/settings";
 import { Dialog } from "../shell/Dialog";
-import { FileGlyph, FolderGlyph, fileLook, folderLook, type FolderMark, type Mark } from "./builtin";
+import { FileGlyph, FolderGlyph, fileLook, folderLook, PLACE_LOOKS, type FolderMark, type Mark } from "./builtin";
 import { EntryIcon } from "./EntryIcon";
-import { customImage, themeIconUrl, useIconsVersion, vsTheme, type IconRule } from "./icons";
+import { customImage, placeKind, themeIconUrl, useIconsVersion, vsTheme, type IconRule } from "./icons";
 
 /** What Change icon… was opened for. */
 export interface IconTarget {
@@ -16,7 +16,7 @@ export interface IconTarget {
 
 const COLORS = ["#e5534b", "#e0823d", "#d4a917", "#5aa64b", "#3fa38b", "#3fb3d6", "#4a8fd8", "#7b5fc0", "#c6538c", "#8a8f98"];
 const FILE_MARKS = ["none", "code", "braces", "lines", "table", "image", "play", "zip", "window", "font", "gear", "key", "lock", "info", "check", "dollar", "git", "pkg", "db"] as const;
-const FOLDER_MARKS = ["none", "code", "check", "lines", "git", "pkg", "image", "dollar", "box", "gear", "blocks", "globe"] as const;
+const FOLDER_MARKS = ["none", "code", "check", "lines", "git", "pkg", "image", "dollar", "box", "gear", "blocks", "globe", "home", "desktop", "download", "music", "play"] as const;
 
 /** Right-click → Change Icon…: an icon or colour for this item, its name, or its extension. */
 export function ChangeIconDialog({ target, onClose }: { target: IconTarget; onClose: () => void }) {
@@ -72,7 +72,8 @@ export function ChangeIconDialog({ target, onClose }: { target: IconTarget; onCl
 
   const previewRule: IconRule = { match: "path", value: target.path, icon: picture.trim() ? `file:${picture.trim()}` : icon, color };
   const previewPicture = previewRule.icon?.startsWith("file:") ? customImage(previewRule.icon.slice(5)) : null;
-  const base = target.folder ? folderLook(target.name) : fileLook(target.name, target.ext);
+  const place = target.folder ? placeKind(target.path) : undefined;
+  const base = target.folder ? ((place ? PLACE_LOOKS[place] : undefined) ?? folderLook(target.name)) : fileLook(target.name, target.ext);
   // The mark shown: the chosen one (not a picture), else the theme's.
   const mark = icon && !icon.startsWith("file:") ? icon : base.mark;
 

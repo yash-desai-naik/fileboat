@@ -151,6 +151,22 @@ export function customImage(path: string): string | null | undefined {
   return undefined;
 }
 
+const placeKinds = new Map<string, string>();
+const placeKey = (path: string) => path.replace(/[\\/]+$/, "").replace(/\//g, "\\").toLowerCase();
+
+/** The home folder and its usual folders, by kind ("downloads"…), as the sidebar lists them. */
+export function setPlaces(places: { path: string; kind: string }[]) {
+  const before = JSON.stringify([...placeKinds]);
+  placeKinds.clear();
+  for (const p of places) placeKinds.set(placeKey(p.path), p.kind);
+  if (JSON.stringify([...placeKinds]) !== before) emit();
+}
+
+/** The kind of place this folder is ("home", "downloads"…), if it's one. */
+export function placeKind(path: string | null): string | undefined {
+  return path ? placeKinds.get(placeKey(path)) : undefined;
+}
+
 /** The first rule for this entry: the exact path, then its name, then its extension. */
 export function ruleFor(path: string | null, name: string, ext: string, rules: IconRule[] = getSettings().iconAssociations): IconRule | undefined {
   if (!rules.length) return undefined;

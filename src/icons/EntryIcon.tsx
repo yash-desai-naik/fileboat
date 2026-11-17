@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { useSettings } from "../lib/settings";
 import { usePrefersDark, shownMode } from "../lib/themeMode";
-import { FileGlyph, FolderGlyph, fileLook, folderLook, FOLDER_PLAIN, type FileLook, type FolderLook, type FolderMark, type Mark } from "./builtin";
-import { customImage, ruleFor, systemIcon, themeIconUrl, useIconsVersion, vsIconId, vsTheme } from "./icons";
+import { FileGlyph, FolderGlyph, fileLook, folderLook, FOLDER_PLAIN, PLACE_LOOKS, type FileLook, type FolderLook, type FolderMark, type Mark } from "./builtin";
+import { customImage, placeKind, ruleFor, systemIcon, themeIconUrl, useIconsVersion, vsIconId, vsTheme } from "./icons";
 
 interface Props {
   name: string;
@@ -50,7 +50,8 @@ export const EntryIcon = memo(function EntryIcon({ name, ext, folder, path = nul
   // Built in (also while a theme or system icon loads).
   const minimal = themeId === "minimal" || themeId === "system";
   if (folder) {
-    const base: FolderLook = minimal ? FOLDER_PLAIN : folderLook(name);
+    const place = placeKind(path);
+    const base: FolderLook = minimal ? FOLDER_PLAIN : ((place ? PLACE_LOOKS[place] : undefined) ?? folderLook(name));
     const mark = rule?.icon && !rule.icon.startsWith("file:") ? (rule.icon as FolderMark) : base.mark;
     return <FolderGlyph look={{ color: rule?.color ?? base.color, mark }} size={size} open={open} />;
   }
