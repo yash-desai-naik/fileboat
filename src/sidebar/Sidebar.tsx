@@ -256,9 +256,9 @@ function Places() {
 
 /** The sidebar: places (favourites, home, drives) or the git panel. */
 export function Sidebar() {
-  const { sidebarView } = useSettings();
+  const { sidebarView, paneZoom } = useSettings();
   return (
-    <div className="sidebar-inner">
+    <div className="sidebar-inner" data-zoom="sidebar" style={{ zoom: paneZoom.sidebar }}>
       <div className="segmented sidebar-switch" role="tablist" aria-label="Sidebar">
         <button className={`seg${sidebarView === "places" ? " active" : ""}`} role="tab" aria-selected={sidebarView === "places"} onClick={() => updateSettings({ sidebarView: "places" })}>
           Places

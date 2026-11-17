@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import { childPath, type Entry, type FolderModel, type GitMark, type Group } from "../lib/folder";
 import { isCut, useCutPaths } from "../lib/clipboard";
 import { dragOut } from "../lib/dnd";
+import { zoomOf } from "../lib/zoom";
 import { describeType, formatDate, formatSize } from "../lib/format";
 import { modPressed } from "../lib/platform";
 import { updateSettings, useSettings, type Settings, type SortBy, type ViewMode } from "../lib/settings";
@@ -604,7 +605,7 @@ function GroupHeader({ group, top, height, onToggle }: { group: Group; top: numb
 
 /** The grab area at a column header's right edge. Double-click restores the default width. */
 function ColumnResizer({ width, onResize, onReset }: { width: number; onResize: (w: number) => void; onReset: () => void }) {
-  const start = useRef<{ x: number; w: number } | null>(null);
+  const start = useRef<{ x: number; w: number; zoom: number } | null>(null);
   return (
     <span
       className="fl-resizer"
@@ -613,11 +614,11 @@ function ColumnResizer({ width, onResize, onReset }: { width: number; onResize: 
       onPointerDown={(e) => {
         e.stopPropagation();
         e.currentTarget.setPointerCapture(e.pointerId);
-        start.current = { x: e.clientX, w: width };
+        start.current = { x: e.clientX, w: width, zoom: zoomOf(e.currentTarget) };
         document.body.classList.add("resizing");
       }}
       onPointerMove={(e) => {
-        if (start.current) onResize(Math.round(Math.max(40, Math.min(2000, start.current.w + e.clientX - start.current.x))));
+        if (start.current) onResize(Math.round(Math.max(40, Math.min(2000, start.current.w + (e.clientX - start.current.x) / start.current.zoom))));
       }}
       onPointerUp={(e) => {
         e.currentTarget.releasePointerCapture(e.pointerId);

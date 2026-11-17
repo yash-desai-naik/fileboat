@@ -633,3 +633,24 @@ table.kv td {
   align-items: center;
   gap: 8px;
 }
+
+/* ---------- zoom level, briefly ---------- */
+
+.zoom-badge {
+  position: fixed;
+  z-index: 300;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  background: var(--bg-elevated, var(--bg));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow, 0 4px 16px rgba(0, 0, 0, 0.25));
+  color: var(--text);
+  font-size: var(--fs-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.zoom-badge.on {
+  opacity: 1;
+}

@@ -1,3 +1,4 @@
+import { listenForWheelZoom } from "./lib/zoom";
 import { createRoot } from "react-dom/client";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -68,6 +69,7 @@ Promise.all([loadSettings(), restoreTabs(), loadFolderViews(), loadRecents(), in
     });
     void listen<string>("open-path", (e) => void openFromOutside(e.payload));
     listenForDrops();
+    listenForWheelZoom();
     // Another window may have changed folder views meanwhile.
     window.addEventListener("focus", () => void loadFolderViews());
     showWhenPainted();

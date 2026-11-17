@@ -1,3 +1,4 @@
+import { resetPaneZoom, stepZoom } from "./zoom";
 import { getSettings, updateSettings, type Density, type GroupBy, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
 import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
@@ -38,17 +39,6 @@ export interface Command {
   /** Shortcut-only commands that would clutter the command bar (e.g. Ctrl+1..9). */
   hidden?: boolean;
   run: () => void;
-}
-
-const ZOOM_STEPS = [0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
-
-function stepZoom(direction: 1 | -1) {
-  const zoom = getSettings().uiZoom;
-  const next =
-    direction > 0
-      ? ZOOM_STEPS.find((z) => z > zoom + 0.001)
-      : [...ZOOM_STEPS].reverse().find((z) => z < zoom - 0.001);
-  if (next !== undefined) updateSettings({ uiZoom: next });
 }
 
 /** The colour theme the window shows now for these settings. */
@@ -290,6 +280,7 @@ export function buildCommands(): Command[] {
     { id: "view.zoomIn", category: "View", title: "Zoom In", keys: ["Ctrl+=", "Ctrl+Shift+="], run: () => stepZoom(1) },
     { id: "view.zoomOut", category: "View", title: "Zoom Out", keys: ["Ctrl+-"], run: () => stepZoom(-1) },
     { id: "view.zoomReset", category: "View", title: "Reset Zoom", keys: ["Ctrl+0"], run: () => updateSettings({ uiZoom: 1 }) },
+    { id: "view.paneZoomReset", category: "View", title: "Reset Section Zoom (Alt+Wheel)", run: resetPaneZoom },
     theme("system", `Match ${OS_NAME}`),
     theme("light", "Light"),
     theme("dark", "Dark"),

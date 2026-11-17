@@ -11,6 +11,7 @@ import { ThemePicker } from "./ThemePicker";
 import { IndexSettings } from "./IndexSettings";
 import { loadTools, type Tool } from "../lib/tools";
 import { newTab } from "../lib/tabs";
+import { ZOOM_STEPS } from "../lib/zoom";
 
 type Def =
   | { key: keyof Settings; type: "select"; options: [string | number, string][] }
@@ -69,8 +70,8 @@ const ENTRIES: Entry[] = [
     key: "uiZoom",
     type: "select",
     label: "Zoom",
-    help: `${fmtShortcut("Ctrl+=")} / ${fmtShortcut("Ctrl+-")} / ${fmtShortcut("Ctrl+0")}`,
-    options: [0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2].map((z) => [z, `${Math.round(z * 100)}%`]),
+    help: `${fmtShortcut("Ctrl+=")} / ${fmtShortcut("Ctrl+-")} / ${fmtShortcut("Ctrl+0")}, or ${fmtShortcut("Ctrl")}+wheel. Alt+wheel zooms just the section under the pointer (sidebar, files, preview, Claude); "Reset Section Zoom" in the command bar undoes that.`,
+    options: ZOOM_STEPS.map((z) => [z, `${Math.round(z * 100)}%`]),
   },
 
   {

@@ -6,6 +6,12 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Zoom with the wheel:** `Ctrl`+wheel (or a pinch) zooms the whole window. `Alt`+wheel zooms just
+  the section under the pointer (the sidebar, the files, the preview or the Claude pane), and each
+  keeps its level; Reset Section Zoom in the command bar puts them back.
+
 ## [0.2.0] - 2026-11-17
 
 ### Added

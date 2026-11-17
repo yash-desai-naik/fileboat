@@ -38,6 +38,22 @@ fn check_theme_ids(patch: &Value) -> Result<(), String> {
     Ok(())
 }
 
+/// The sections' own zoom levels (1 = as the window).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct PaneZoom {
+    pub sidebar: f64,
+    pub files: f64,
+    pub preview: f64,
+    pub claude: f64,
+}
+
+impl Default for PaneZoom {
+    fn default() -> Self {
+        PaneZoom { sidebar: 1.0, files: 1.0, preview: 1.0, claude: 1.0 }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -49,8 +65,10 @@ pub struct Settings {
     pub dark_theme: String,
     /// "compact" | "default" | "comfortable"
     pub density: String,
-    /// Whole-UI zoom factor (Ctrl+= / Ctrl+-).
+    /// Whole-UI zoom factor (Ctrl+= / Ctrl+-, Ctrl+wheel).
     pub ui_zoom: f64,
+    /// Each section's own zoom on top of that (Alt+wheel over it).
+    pub pane_zoom: PaneZoom,
     pub show_sidebar: bool,
     /// What the sidebar shows: "places" | "git".
     pub sidebar_view: String,
@@ -134,6 +152,7 @@ impl Default for Settings {
             dark_theme: DEFAULT_DARK_THEME.into(),
             density: "default".into(),
             ui_zoom: 1.0,
+            pane_zoom: PaneZoom::default(),
             show_sidebar: true,
             sidebar_view: "places".into(),
             sidebar_width: 240,
@@ -190,6 +209,9 @@ impl Settings {
             self.ui_zoom = d.ui_zoom;
         }
         self.ui_zoom = self.ui_zoom.clamp(0.5, 3.0);
+        for z in [&mut self.pane_zoom.sidebar, &mut self.pane_zoom.files, &mut self.pane_zoom.preview, &mut self.pane_zoom.claude] {
+            *z = if z.is_finite() { z.clamp(0.5, 3.0) } else { 1.0 };
+        }
         self.sidebar_width = self.sidebar_width.clamp(160, 900);
         self.preview_width = self.preview_width.clamp(240, 1600);
         if !matches!(self.view_mode.as_str(), "details" | "list" | "columns") {
@@ -251,6 +273,7 @@ lightTheme: colour theme used in light mode: \"fileboat-light\" (default) | \"ca
 darkTheme: colour theme used in dark mode: \"fileboat-dark\" (default) | \"catppuccin-mocha\" | \"tokyo-night\" | \"github-dark\" | \"one-dark\" | \"rose-pine\" | \"gruvbox-dark\" | \"kanagawa-wave\" | \"nord\" | \"dracula\" | \"hc-dark\"
 density: \"compact\" | \"default\" | \"comfortable\"
 uiZoom: 0.5 to 3.0 (whole window zoom)
+paneZoom: { sidebar, files, preview, claude }, each 0.5 to 3.0 (one section's zoom on top of uiZoom)
 showSidebar, showPreview (the preview pane), showClaude (the Claude pane), previewWrap (wrap long lines in the preview): true | false
 claudeModel: \"\" (Claude Code's default) | \"opus\" | \"sonnet\" | \"haiku\" | a full model id
 sidebarWidth: 160 to 900; previewWidth: 240 to 1600 (pixels)
@@ -390,6 +413,8 @@ mod tests {
         let s = Settings::default();
         assert_eq!(s.merged(&json!({ "sidebarWidth": 5 })).unwrap().sidebar_width, 160);
         assert_eq!(s.merged(&json!({ "uiZoom": 9.0 })).unwrap().ui_zoom, 3.0);
+        let z = s.merged(&json!({ "paneZoom": { "files": 1.25, "preview": 9.0 } })).unwrap().pane_zoom;
+        assert_eq!(z, PaneZoom { sidebar: 1.0, files: 1.25, preview: 3.0, claude: 1.0 });
         assert!(s.merged(&json!({ "nope": 1 })).unwrap_err().contains("unknown setting"));
         assert!(s.merged(&json!({ "showSidebar": "yes" })).is_err());
         // Strict changes refuse what would be clamped.

@@ -11,6 +11,8 @@ export type GitIgnored = "dim" | "hide" | "show";
 export type GroupBy = "none" | "type" | "modified" | "size" | "letter" | "git";
 
 /** Mirrors `Settings` in src-tauri/src/prefs.rs. */
+export type ZoomSection = "sidebar" | "files" | "preview" | "claude";
+
 export interface Settings {
   theme: Theme;
   /** Theme id (src/themes/themes.json) used when the mode is light. */
@@ -19,6 +21,8 @@ export interface Settings {
   darkTheme: string;
   density: Density;
   uiZoom: number;
+  /** Each section's own zoom (Alt+wheel over it), on top of uiZoom. */
+  paneZoom: Record<ZoomSection, number>;
   showSidebar: boolean;
   /** What the sidebar shows: places or the git panel. */
   sidebarView: "places" | "git";

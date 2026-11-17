@@ -110,7 +110,7 @@ export function App() {
           </>
         )}
 
-        <main className="center">
+        <main className="center" data-zoom="files" style={{ zoom: settings.paneZoom.files }}>
           <Toolbar />
           {tabs.map((t) => (
             <FolderPane key={t.id} tab={t} active={t.id === tab.id} />
@@ -129,7 +129,7 @@ export function App() {
               onReset={() => updateSettings({ previewWidth: PREVIEW_DEFAULT })}
             />
             <div className="rightpane-slot" style={{ width: settings.previewWidth }}>
-              <div className="rightpane-stack">
+              <div className="rightpane-stack" data-zoom={right} style={{ zoom: settings.paneZoom[right] }}>
                 {settings.showPreview && settings.showClaude && (
                   <div className="right-tabs" role="tablist">
                     <button role="tab" aria-selected={right === "preview"} className={right === "preview" ? "on" : ""} onClick={() => setRightTab("preview")}>
