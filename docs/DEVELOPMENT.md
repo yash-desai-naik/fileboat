@@ -56,6 +56,7 @@ Rust, `src-tauri/src/`:
   - `tools`: the editors and terminals installed, and opening them;
   - `places`: home folders and drives with their free space;
   - `prefs`: `settings.json`, with validation and the help text Claude will use;
+  - `symbols`: a file's outline for Go to symbol (patterns per language, line by line);
   - `icons`: VS Code icon themes in `<data>/icon-themes` (listed, loaded, and served over the
     `fbicon:` scheme from inside the theme's folder only), custom pictures, and Windows' own icon
     for a file type (`SHGetFileInfoW`, as PNG);

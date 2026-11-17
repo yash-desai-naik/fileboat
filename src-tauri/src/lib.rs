@@ -12,6 +12,7 @@ pub mod osfs;
 pub mod paths;
 pub mod places;
 pub mod prefs;
+pub mod symbols;
 pub mod preview;
 pub mod themes;
 pub mod tools;

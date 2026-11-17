@@ -196,6 +196,35 @@ pub fn open_in_editor(t: &Tool, paths: &[PathBuf]) -> Result<(), String> {
     spawn(t, args, cwd)
 }
 
+/// Open one file at a line (and column) in an editor that can be told where: VS Code and its
+/// kin, Zed, Sublime Text, Notepad++ and JetBrains IDEs. Others just open the file.
+pub fn open_at_line(t: &Tool, path: &Path, line: u32, column: u32) -> Result<(), String> {
+    let cwd = path.parent().unwrap_or(Path::new("."));
+    let shown = path.display().to_string();
+    let (line, column) = (line.max(1), column.max(1));
+    let at: Option<Vec<String>> = match t.id.as_str() {
+        "vscode" | "vscode-insiders" | "cursor" | "windsurf" | "vscodium" => {
+            if cfg!(target_os = "macos") {
+                // `open -a` can't pass arguments to an app that's already running: use its URL.
+                let scheme = t.id.as_str();
+                return std::process::Command::new("open")
+                    .arg(format!("{scheme}://file{}:{line}:{column}", if shown.starts_with('/') { shown.clone() } else { format!("/{shown}") }))
+                    .spawn()
+                    .map(|_| ())
+                    .map_err(|e| format!("Couldn't start {}: {e}", t.name));
+            }
+            Some(vec!["-g".into(), format!("{shown}:{line}:{column}")])
+        }
+        "zed" | "sublime" if cfg!(windows) => Some(vec![format!("{shown}:{line}:{column}")]),
+        "notepad++" => Some(vec![format!("-n{line}"), format!("-c{column}"), shown.clone()]),
+        id if id.starts_with("jetbrains-") && cfg!(windows) => Some(vec!["--line".into(), line.to_string(), "--column".into(), column.to_string(), shown.clone()]),
+        _ => None,
+    };
+    let mut args = t.args.clone();
+    args.extend(at.unwrap_or_else(|| vec![shown]));
+    spawn(t, args, cwd)
+}
+
 /// Open a terminal in a folder.
 pub fn open_terminal(t: &Tool, dir: &Path) -> Result<(), String> {
     let shown = dir.display().to_string();

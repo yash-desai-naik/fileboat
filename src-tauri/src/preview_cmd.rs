@@ -38,6 +38,12 @@ pub async fn preview_bytes(path: String, offset: u64, len: usize) -> Result<Vec<
     blocking(move || preview::read_bytes(&PathBuf::from(path), offset, len)).await
 }
 
+/// A file's outline (functions, classes, headings…) for Go to symbol.
+#[tauri::command]
+pub async fn file_symbols(path: String) -> Result<Vec<fileboat_core::symbols::Symbol>, String> {
+    blocking(move || fileboat_core::symbols::symbols(&PathBuf::from(path))).await
+}
+
 /// Bring a cloud file (OneDrive, iCloud) onto this computer by reading it through, so it can be
 /// previewed. Only on request: nothing else in Fileboat downloads cloud files.
 #[tauri::command]
