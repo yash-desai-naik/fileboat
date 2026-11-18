@@ -2,9 +2,9 @@ import { getCurrent } from "./current";
 import { showToast } from "../shell/Toast";
 import { resetPaneZoom, stepZoom } from "./zoom";
 import { getSettings, updateSettings, type Density, type GroupBy, type Settings, type SortBy, type Theme, type ViewMode } from "./settings";
-import { pickTheme, THEMES, themesFor, type ThemeData } from "../themes";
+import { pickTheme, resolveTheme, THEMES, themesFor, type ThemeData } from "../themes";
 import { OS_NAME } from "./platform";
-import { shownMode } from "./themeMode";
+import { prefersDark, shownMode } from "./themeMode";
 import { uiActions } from "./ui";
 import { openSearch } from "./search";
 import { invoke } from "@tauri-apps/api/core";
@@ -40,6 +40,8 @@ export interface Command {
   checked?: boolean;
   /** Shortcut-only commands that would clutter the command bar (e.g. Ctrl+1..9). */
   hidden?: boolean;
+  /** A colour theme id the command bar shows while this command is highlighted, without saving it. */
+  previewTheme?: string;
   run: () => void;
 }
 
@@ -57,11 +59,14 @@ function chooseColorTheme(t: ThemeData) {
 }
 
 /** The next theme (in themes.json order) of the mode showing now. */
-function nextColorTheme() {
-  const current = shownTheme(getSettings());
+function nextColorTheme(s: Settings): ThemeData {
+  const current = shownTheme(s);
   const list = themesFor(current.mode);
-  chooseColorTheme(list[(list.findIndex((t) => t.id === current.id) + 1) % list.length]);
+  return list[(list.findIndex((t) => t.id === current.id) + 1) % list.length];
 }
+
+/** Light or dark, whichever the window doesn't show now. */
+const otherMode = (s: Settings) => (shownMode(s.theme) === "dark" ? "light" : "dark");
 
 const toggle = (key: "showSidebar" | "showPreview") => () => updateSettings({ [key]: !getSettings()[key] });
 
@@ -77,6 +82,7 @@ export function buildCommands(): Command[] {
     category: "Theme",
     title,
     checked: s.theme === value,
+    previewTheme: resolveTheme({ ...s, theme: value }, prefersDark()).id,
     run: () => updateSettings({ theme: value }),
   });
 
@@ -313,19 +319,25 @@ export function buildCommands(): Command[] {
       id: "theme.toggle",
       category: "Theme",
       title: "Toggle Light / Dark",
-      run: () => {
-        const dark = document.documentElement.dataset.theme === "dark";
-        updateSettings({ theme: dark ? "light" : "dark" });
-      },
+      previewTheme: resolveTheme({ ...s, theme: otherMode(s) }, prefersDark()).id,
+      // From the settings, not `data-theme`: the command bar's preview changes that while this is highlighted.
+      run: () => updateSettings({ theme: otherMode(getSettings()) }),
     },
     // The command bar shows "Theme: <title>", so these read "Theme: Catppuccin Mocha" and "Theme: Next Theme".
-    { id: "theme.next", category: "Theme", title: "Next Theme", run: nextColorTheme },
+    {
+      id: "theme.next",
+      category: "Theme",
+      title: "Next Theme",
+      previewTheme: nextColorTheme(s).id,
+      run: () => chooseColorTheme(nextColorTheme(getSettings())),
+    },
     ...THEMES.map(
       (t): Command => ({
         id: `theme.set.${t.id}`,
         category: "Theme",
         title: t.name,
         checked: t.id === showing,
+        previewTheme: t.id,
         run: () => chooseColorTheme(t),
       }),
     ),

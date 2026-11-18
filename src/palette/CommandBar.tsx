@@ -13,6 +13,7 @@ import { askConfirm } from "../shell/Confirm";
 import type { Hit, SearchResult } from "../lib/search";
 import { requestLine } from "../lib/current";
 import { updateSettings } from "../lib/settings";
+import { previewTheme } from "../themes";
 
 /**
  * The command bar: one box for everything, VS Code style. The first character picks the mode
@@ -61,6 +62,18 @@ function looksLikePath(text: string): boolean {
   return /^([a-z]:[\\/]?|~|\.\.?([\\/]|$)|\/|\\\\)/i.test(text);
 }
 
+/** The theme the bar is previewing (null: the saved one), to skip repeat repaints. */
+let previewing: string | null = null;
+
+function setPreview(id: string | null) {
+  if (id === previewing) return;
+  previewing = id;
+  previewTheme(id);
+}
+
+/** What cmdk calls a command item: `${category}: ${title}`. */
+const commandValue = (cmd: Command) => `${cmd.category}: ${cmd.title}`;
+
 export function CommandBar({ commands, initialText, onClose }: Props) {
   const [text, setText] = useState(initialText);
   const mode = modeOf(text);
@@ -68,6 +81,14 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
   const mods = useRef({ ctrl: false, alt: false });
   const target = mode.prefix === "" ? parseTarget(text) : null;
   const pathMode = mode.prefix === "" && looksLikePath(text) && target?.symbol === undefined;
+
+  // Like VS Code, a highlighted theme command (arrows or mouse) shows its theme until another is
+  // highlighted; Enter keeps it, Esc or leaving the commands puts the saved theme back.
+  const inCommands = mode.prefix === ">";
+  useEffect(() => {
+    if (!inCommands) setPreview(null);
+  }, [inCommands]);
+  useEffect(() => () => setPreview(null), []);
 
   return (
     <div className="overlay" onMouseDown={onClose}>
@@ -77,6 +98,10 @@ export function CommandBar({ commands, initialText, onClose }: Props) {
           loop
           // Content search results are already matches: no filtering on top.
           shouldFilter={!["%", "", "!"].includes(mode.prefix)}
+          onValueChange={(value) => {
+            if (!inCommands) return;
+            setPreview(commands.find((c) => !c.hidden && commandValue(c) === value)?.previewTheme ?? null);
+          }}
           // Match on what follows the prefix: ">zoom" finds "View: Zoom In".
           filter={(value, search, keywords) => {
             const q = queryOf(search);
@@ -160,7 +185,7 @@ function CommandItems({ commands, onClose }: { commands: Command[]; onClose: () 
           {items.map((cmd) => (
             <Cmdk.Item
               key={cmd.id}
-              value={`${cmd.category}: ${cmd.title}`}
+              value={commandValue(cmd)}
               onSelect={() => {
                 onClose();
                 cmd.run();
