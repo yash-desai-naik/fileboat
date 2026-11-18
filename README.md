@@ -8,7 +8,7 @@ Built with [Tauri 2](https://tauri.app) (Rust backend, and the WebView your syst
 WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 [Tableboat](https://github.com/yash-desai-naik/tableboat). No Electron and no Node.js at runtime.
 
-> Status: **0.4.0** (made and tested on Windows; see the
+> Status: **0.5.0** (made and tested on Windows; see the
 > [changelog](CHANGELOG.md) for what's not on macOS yet). Browse folders in tabs (Columns, List and Details views,
 > grouping, folder sizes, a view remembered per folder), preview any file (code, Markdown, data,
 > images, media, PDFs, fonts, archives; Quick Look with Space), use git (live status on every

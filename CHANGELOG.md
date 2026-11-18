@@ -6,6 +6,14 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-18
+
+### Added
+
+- **Live theme preview in the command bar,** as in VS Code: arrowing or pointing at a Theme command
+  shows its theme at once; `Enter` keeps it, `Esc` puts yours back. Light, Dark, Toggle and Next
+  Theme preview the theme they would switch to.
+
 ## [0.4.0] - 2026-11-17
 
 ### Added
@@ -174,7 +182,8 @@ undoing a move to the Trash, Open With, and files on the clipboard shared with F
   off), and installs it with one click after checking its signature.
 - **About** box with the version, build and Fileboat's folders.
 
-[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.1.0...v0.2.0
