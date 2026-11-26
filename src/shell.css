@@ -201,6 +201,19 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg-chrome);
 }
+.refresh-btn.spinning svg {
+  animation: refresh-turn 0.45s ease-out;
+}
+@keyframes refresh-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn.spinning svg {
+    animation: none;
+  }
+}
 .icon-btn:disabled {
   color: var(--text-3);
   opacity: 0.5;

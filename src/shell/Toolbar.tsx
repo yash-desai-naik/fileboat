@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { fmtShortcut } from "../lib/platform";
 import { setFolderView, useFolderView } from "../lib/folderViews";
 import { goBack, goForward, goUp, navigate, parentOf, useTabs } from "../lib/tabs";
 import { AddressBar } from "../views/AddressBar";
 import { SearchBox } from "../views/SearchBox";
-import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, ListIcon } from "./Icons";
+import { paneActions } from "../lib/pane";
+import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ColumnsIcon, DetailsIcon, ListIcon, RefreshIcon } from "./Icons";
 
-/** Under the title bar: Back, Forward, Up, the address bar and the view switch. */
+/** Under the title bar: Back, Forward, Up, Refresh, the address bar and the view switch. */
 export function Toolbar() {
   const { tabs, activeId } = useTabs();
   const tab = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const view = useFolderView(tab.path);
+  const [spinning, setSpinning] = useState(false);
 
   return (
     <div className="toolbar">
@@ -22,6 +25,18 @@ export function Toolbar() {
         </button>
         <button className="icon-btn" title={`Up (${fmtShortcut("Alt+Up")})`} disabled={!parentOf(tab.path)} onClick={() => goUp()}>
           <ArrowUpIcon />
+        </button>
+        <button
+          className={`icon-btn refresh-btn${spinning ? " spinning" : ""}`}
+          title={`Refresh (${fmtShortcut("F5")})`}
+          onClick={() => {
+            paneActions.refresh();
+            // A turn of the arrow says it happened (a watched folder usually looks the same).
+            setSpinning(true);
+            window.setTimeout(() => setSpinning(false), 450);
+          }}
+        >
+          <RefreshIcon />
         </button>
       </div>
       <AddressBar path={tab.path} onNavigate={(p, select) => navigate(p, select ?? null)} />

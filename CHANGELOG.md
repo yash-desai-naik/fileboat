@@ -6,6 +6,10 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A Refresh button** beside Up in the toolbar (or `F5`): reads the folder again.
+
 ## [0.5.0] - 2026-11-18
 
 ### Added
