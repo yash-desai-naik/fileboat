@@ -37,6 +37,7 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
   activeRef.current = active;
   const selection = useMemo(() => new Selection(), [model]);
   const view = useFolderView(tab.path);
+  const listKey = useMemo(() => ++listKeys, [model]);
 
   // A new path opens a new folder; the same folder under its real name ("~" becomes the home
   // folder's path once opened) doesn't.
@@ -279,8 +280,10 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
 
   const list = (
     <FileList
-      // A new view starts afresh (its scroll and sizes are not the old one's).
-      key={model.path + (model.id ?? "") + view.viewMode}
+      // A new folder or view starts afresh (its scroll and sizes are not the old one's). Not keyed
+      // by the folder's id: that arrives after the list has selected the folder you came up from,
+      // and starting afresh then lost the scroll to it.
+      key={`${listKey}:${view.viewMode}`}
       model={model}
       selection={selection}
       mode={view.viewMode}
@@ -320,6 +323,9 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
     </div>
   );
 }
+
+/** Keys for the file list: one per folder model. */
+let listKeys = 0;
 
 /** The selected names, or the item at the cursor when nothing is selected. */
 async function selectedNames(model: FolderModel, selection: Selection): Promise<string[]> {

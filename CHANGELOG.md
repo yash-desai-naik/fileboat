@@ -27,6 +27,8 @@ All notable changes to Fileboat are listed here. The format follows
 
 - **A long path no longer fills the whole address bar:** a strip at its end always stays free to
   click for typing a path (as does `Ctrl+L`).
+- **Up (and Back) scroll to the folder you came from** in a big folder; it was selected but could be
+  left off screen.
 
 ## [0.5.0] - 2026-11-18
 
