@@ -9,6 +9,12 @@ All notable changes to Fileboat are listed here. The format follows
 ### Added
 
 - **A Refresh button** beside Up in the toolbar (or `F5`): reads the folder again.
+- **`fileboat` in a terminal,** as VS Code's `code`: `fileboat .` opens the folder you're in,
+  `fileboat D:\x` or `fileboat notes.md` work too, and the terminal is free at once. Install it
+  from the command bar (**Shell Command: Install the 'fileboat' Command in PATH**), then open a new
+  terminal; it works in PowerShell, cmd and Git Bash. **Remove the 'fileboat' Command from PATH**
+  takes it away again (do that before uninstalling Fileboat). On Windows the launchers go in
+  `%LOCALAPPDATA%\Fileboat\bin`, added to your user PATH; on macOS in `/usr/local/bin`.
 
 ### Changed
 

@@ -81,7 +81,8 @@ Rust, `src-tauri/src/`:
   - `sizes`: folder sizes in the background for the folder in front (two walkers, a cache of
     recent sizes, results handed to the views in batches, a rest before re-walking a busy folder);
   - `navigate` (the address bar), `places_cmd` (the sidebar), `launch` (a path on the command
-    line or from a second launch), `state` (tabs and folder views kept between runs);
+    line or from a second launch), `cli_cmd` (the `fileboat` launcher for terminals and the
+    user's PATH), `state` (tabs and folder views kept between runs);
   - `ops_cmd` (new, rename, delete, undo), `jobs` (copies and moves on their own threads, with
     progress events and name-clash questions), `clipboard` (files on the clipboard, shared with
     Explorer), `dnd` (drag and drop), `tools_cmd` (editor, terminal), `native_menu` (Explorer's own

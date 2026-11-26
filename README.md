@@ -38,6 +38,10 @@ WebView2 on Windows, WebKit on macOS), on the same foundations as its sibling,
 - **Context menus** made for developers (copy path in every form, open in editor or terminal, git
   actions, the native Explorer menu one click away), **19 themes**, and **customisable icons**
   (VS Code icon themes work).
+- **From a terminal:** `fileboat .` opens the folder you're in (`fileboat D:\x`, `fileboat notes.md`
+  work too). Set it up once from the command bar: **Shell Command: Install the 'fileboat' Command in
+  PATH**, then open a new terminal. It works in PowerShell, cmd and Git Bash; on macOS it goes in
+  `/usr/local/bin`.
 
 ## Build from source
 

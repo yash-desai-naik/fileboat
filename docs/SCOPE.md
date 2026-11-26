@@ -45,6 +45,8 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done and checked by you.
 - [ ] Changes made by other programs appear immediately (file system events, no refresh needed)
 - [ ] Status bar: item count, selection count and size, free space, git branch, indexing progress
 - [ ] Several windows; a second launch with a path (`fileboat D:\x`) opens it in the running app
+- [ ] `fileboat` on the PATH from the command bar (install / remove): `fileboat .` in a terminal
+      opens that folder, without holding the terminal
 - [ ] Settings page (searchable) saved to `settings.json`, editable by hand
 - [ ] Updates built in (signed, verified, one click), About box
 
