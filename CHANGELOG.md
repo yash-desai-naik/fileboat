@@ -6,6 +6,8 @@ All notable changes to Fileboat are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-26
+
 ### Added
 
 - **A Refresh button** beside Up in the toolbar (or `F5`): reads the folder again.
@@ -14,7 +16,7 @@ All notable changes to Fileboat are listed here. The format follows
   from the command bar (**Shell Command: Install the 'fileboat' Command in PATH**), then open a new
   terminal; it works in PowerShell, cmd and Git Bash. **Remove the 'fileboat' Command from PATH**
   takes it away again (do that before uninstalling Fileboat). On Windows the launchers go in
-  `%LOCALAPPDATA%\Fileboat\bin`, added to your user PATH; on macOS in `/usr/local/bin`.
+  `%LOCALAPPDATA%\Fileboat\bin`, added to your user PATH; on macOS in `/usr/local/bin` (not yet tried on a Mac).
 
 ### Changed
 
@@ -27,8 +29,8 @@ All notable changes to Fileboat are listed here. The format follows
 
 - **A long path no longer fills the whole address bar:** a strip at its end always stays free to
   click for typing a path (as does `Ctrl+L`).
-- **Up (and Back) scroll to the folder you came from** in a big folder; it was selected but could be
-  left off screen.
+- **Up scrolls to the folder you came from** in a big folder; it was selected but could be left off
+  screen.
 
 ## [0.5.0] - 2026-11-18
 
@@ -206,7 +208,8 @@ undoing a move to the Trash, Open With, and files on the clipboard shared with F
   off), and installs it with one click after checking its signature.
 - **About** box with the version, build and Fileboat's folders.
 
-[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/yash-desai-naik/fileboat/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yash-desai-naik/fileboat/compare/v0.2.0...v0.3.0

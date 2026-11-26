@@ -1,6 +1,6 @@
 [package]
 name = "fileboat"
-version = "0.5.0"
+version = "0.6.0"
 description = "A small, fast file explorer for developers"
 license = "MIT"
 repository = "https://github.com/yash-desai-naik/fileboat"
