@@ -120,6 +120,8 @@ export function FileList(props: Props) {
     layout.lines <= rowsFit * colsFit ? Math.min(rowsFit, Math.max(8, Math.ceil(layout.lines / colsFit))) : rowsFit;
   const flowCols = Math.ceil(layout.lines / perCol);
   const flowW = flowCols * nameW <= box.w ? Math.max(nameW, Math.floor(box.w / flowCols)) : nameW;
+  // Until List knows its height it can't tell which column a row is in: requested rows wait.
+  const measuring = flow && box.h === 0;
 
   const virtualizer = useVirtualizer({
     horizontal: flow,
@@ -156,7 +158,7 @@ export function FileList(props: Props) {
   // Select the requested name once it's listed; give up when the listing ends without it.
   // (The first rows can arrive before the folder's id does: wait for both.)
   useEffect(() => {
-    if (!select) return;
+    if (!select || measuring) return;
     if (!model.id || model.count === 0) {
       if (model.id && !model.loading) onSelected?.();
       return;
@@ -173,14 +175,14 @@ export function FileList(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [select, model, model.id, model.count, model.loading, selection, virtualizer, onSelected]);
+  }, [select, model, model.id, model.count, model.loading, selection, virtualizer, onSelected, measuring]);
 
   // The name being renamed in place (F2, or a new folder), or null.
   const [renaming, setRenaming] = useState<string | null>(null);
 
   // Select (and maybe rename) a requested name once it's listed (new items appear through the watcher).
   useEffect(() => {
-    if (!request || !model.id || model.count === 0) return;
+    if (!request || measuring || !model.id || model.count === 0) return;
     let cancelled = false;
     void model.rowOf(request.name).then((row) => {
       if (cancelled || row === null) return;
@@ -192,7 +194,7 @@ export function FileList(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [request, model, model.id, model.count, model.generation, selection, virtualizer, onRequestDone]);
+  }, [request, model, model.id, model.count, model.generation, selection, virtualizer, onRequestDone, measuring]);
 
   const finishRename = (focusList = true) => {
     setRenaming(null);
