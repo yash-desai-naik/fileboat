@@ -10,6 +10,13 @@ All notable changes to Fileboat are listed here. The format follows
 
 - **A Refresh button** beside Up in the toolbar (or `F5`): reads the folder again.
 
+### Changed
+
+- **List view uses the whole width,** as Explorer's List does: names flow down a column and on into
+  the next, and a big folder scrolls sideways (the wheel scrolls it too; `←` `→` move a column).
+  A folder that fits on screen is spread over the width, so long names show in full. Columns are
+  at least as wide as Details' Name column.
+
 ### Fixed
 
 - **A long path no longer fills the whole address bar:** a strip at its end always stays free to

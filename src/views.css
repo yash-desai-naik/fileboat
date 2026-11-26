@@ -1,4 +1,4 @@
-/* Folder views: Details and List. */
+/* Folder views: Details, List and the columns of Columns. */
 
 .filelist {
   flex: 1;
@@ -338,6 +338,30 @@
 .fl-group-meta {
   color: var(--text-3);
   font-size: var(--fs-sm);
+}
+
+/* List: columns of names side by side, scrolled sideways; a group header takes one slot. */
+.filelist.list .fl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.filelist.list .fl-group {
+  align-items: center;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.filelist.list .fl-group svg {
+  flex: none;
+  margin-bottom: 0;
+}
+.filelist.list .fl-group-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filelist.list .fl-group-meta {
+  flex: none;
 }
 
 /* ---------- Columns view ---------- */

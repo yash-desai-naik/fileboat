@@ -54,7 +54,8 @@ Every tab has a view mode, remembered per folder (with a default for new folders
 
 - [ ] **Columns** (macOS Finder style): parent → child columns that scroll sideways; selecting a folder opens
       the next column; arrow keys move across columns; each column resizable; the preview can be the last column
-- [ ] **List**: compact names in a single column with icons and git badges
+- [ ] **List**: names with icons and git badges in columns that flow down and across (as in Explorer),
+      scrolled sideways; a folder that fits on screen is spread over the width
 - [ ] **Details**: a table with resizable, reorderable columns you choose: Name, Git, Size, Modified, Created,
       Accessed, Type (description), Extension, Attributes/permissions, Path (in search results)
 - [ ] Folder sizes in Details (computed in the background on request or by setting, cached, updated by events)

@@ -1,6 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type Key, type KeyboardEvent, type MouseEvent } from "react";
 import { childPath, type Entry, type FolderModel, type GitMark, type Group } from "../lib/folder";
 import { isCut, useCutPaths } from "../lib/clipboard";
 import { dragOut } from "../lib/dnd";
@@ -47,6 +47,7 @@ function useRowHeight(density: Settings["density"]): number {
 interface Props {
   model: FolderModel;
   selection: Selection;
+  /** "columns": one column of names (a column of Columns view). */
   mode: ViewMode;
   /** Double-click or Enter. */
   onOpen: (entry: Entry, row: number) => void;
@@ -76,7 +77,8 @@ interface Props {
 
 /**
  * A folder's rows, drawn only where they're on screen. Details shows columns you can sort and
- * resize; List shows names only. Selection, keyboard and type-ahead work the same in both.
+ * resize; List shows names flowing down and across in columns; in Columns view each folder is one
+ * column of names. Selection, keyboard and type-ahead work the same in all of them.
  */
 export function FileList(props: Props) {
   const { model, selection, mode, onOpen, select, onSelected, active, onOpenInNewTab } = props;
@@ -94,18 +96,45 @@ export function FileList(props: Props) {
   // Group headers are lines of their own between the rows.
   const layout = useMemo(() => makeLayout(model.count, model.groups), [model.count, model.groups]);
   const groupH = rowH + 10;
+  const widths = COLUMNS.map((c) => settings.columnWidths[c.id] ?? c.width);
+
+  // List flows the lines down a column as tall as the view, then into the next one to the right
+  // (as Explorer's List does), so a folder fills the width instead of one narrow strip. Columns
+  // are at least as wide as Details' Name column. A folder that fits on screen is spread over the
+  // columns that fit (at least 8 lines in each), and they share the width.
+  const flow = mode === "list";
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!flow || !el) return;
+    const measure = () => setBox((v) => (v.w === el.clientWidth && v.h === el.clientHeight ? v : { w: el.clientWidth, h: el.clientHeight }));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [flow]);
+  const nameW = widths[0];
+  const rowsFit = Math.max(1, Math.floor(box.h / rowH));
+  const colsFit = Math.max(1, Math.floor(box.w / nameW));
+  const perCol =
+    layout.lines <= rowsFit * colsFit ? Math.min(rowsFit, Math.max(8, Math.ceil(layout.lines / colsFit))) : rowsFit;
+  const flowCols = Math.ceil(layout.lines / perCol);
+  const flowW = flowCols * nameW <= box.w ? Math.max(nameW, Math.floor(box.w / flowCols)) : nameW;
+
   const virtualizer = useVirtualizer({
-    count: layout.lines,
+    horizontal: flow,
+    count: flow ? flowCols : layout.lines,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (line) => ("group" in layout.at(line) ? groupH : rowH),
-    overscan: 12,
+    estimateSize: (i) => (flow ? flowW : "group" in layout.at(i) ? groupH : rowH),
+    overscan: flow ? 2 : 12,
     scrollMargin: headerH,
     scrollPaddingStart: headerH,
   });
 
-  useEffect(() => virtualizer.measure(), [rowH, headerH, layout, virtualizer]);
+  useEffect(() => virtualizer.measure(), [rowH, headerH, layout, virtualizer, flow, flowW, perCol]);
   /** Scroll so a folder row shows. */
-  const scrollToRow = (row: number, align: "auto" | "center" = "auto") => virtualizer.scrollToIndex(layout.lineOf(row), { align });
+  const scrollToRow = (row: number, align: "auto" | "center" = "auto") =>
+    virtualizer.scrollToIndex(flow ? Math.floor(layout.lineOf(row) / perCol) : layout.lineOf(row), { align });
 
   // Rows moved (files changed, sort changed): find the cursor's name again.
   useEffect(() => {
@@ -170,7 +199,6 @@ export function FileList(props: Props) {
     if (focusList) scrollRef.current?.focus();
   };
 
-  const widths = COLUMNS.map((c) => settings.columnWidths[c.id] ?? c.width);
   const template = mode === "details" ? widths.map((w) => `${w}px`).join(" ") : "minmax(0, 1fr)";
   const innerWidth = mode === "details" ? widths.reduce((a, b) => a + b, 0) + 16 : undefined;
 
@@ -241,6 +269,14 @@ export function FileList(props: Props) {
       }
       void go(to, e.shiftKey);
     };
+    if (flow && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+      // Into the next (or previous) column, beside the cursor; a group header there gives way to
+      // its first row.
+      if (at < 0) return move(0);
+      const line = Math.max(0, Math.min(layout.lines - 1, layout.lineOf(at) + (e.key === "ArrowRight" ? perCol : -perCol)));
+      const there = layout.at(line);
+      return move("row" in there ? there.row : Math.min(there.group.start, model.count - 1));
+    }
     if (e.key === "ArrowRight" && onRight && !mod) {
       e.preventDefault();
       return onRight();
@@ -336,6 +372,15 @@ export function FileList(props: Props) {
       view.sortBy === sort ? { sortDescending: !view.sortDescending } : { sortBy: sort, sortDescending: DESCENDING_FIRST.includes(sort) },
     );
 
+  // The lines on screen and where each goes: one under another, or (List) down each column shown.
+  const placed: { line: number; key: Key; x: number; y: number }[] = [];
+  for (const v of virtualizer.getVirtualItems()) {
+    if (!flow) placed.push({ line: v.index, key: v.key, x: 0, y: v.start - headerH });
+    else
+      for (let s = 0, line = v.index * perCol; s < perCol && line < layout.lines; s++, line++)
+        placed.push({ line, key: line, x: v.start, y: s * rowH });
+  }
+
   let empty: string | null = null;
   if (model.error) empty = model.error;
   else if (!model.loading && model.count === 0) {
@@ -344,7 +389,7 @@ export function FileList(props: Props) {
   }
 
   return (
-    <div className={`filelist ${mode}`}>
+    <div className={`filelist ${mode === "columns" ? "names" : mode}`}>
       <div
         ref={scrollRef}
         className="fl-scroll"
@@ -355,6 +400,12 @@ export function FileList(props: Props) {
         aria-rowcount={model.count}
         aria-multiselectable="true"
         onKeyDown={onKeyDown}
+        onWheel={(e) => {
+          // List scrolls sideways: the wheel moves along the columns (Ctrl and Alt still zoom).
+          if (!flow || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || e.deltaX || !e.deltaY) return;
+          const px = e.deltaMode === 1 ? e.deltaY * rowH : e.deltaMode === 2 ? e.deltaY * e.currentTarget.clientWidth : e.deltaY;
+          e.currentTarget.scrollLeft += px;
+        }}
         onMouseDown={(e) => {
           // Clicking empty space clears the selection.
           if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains("fl-rows")) selection.clear();
@@ -391,16 +442,21 @@ export function FileList(props: Props) {
             ))}
           </div>
         )}
-        <div className="fl-rows" style={{ height: virtualizer.getTotalSize(), width: innerWidth }}>
-          {virtualizer.getVirtualItems().map((v) => {
-            const at = layout.at(v.index);
+        <div
+          className="fl-rows"
+          style={flow ? { height: perCol * rowH, width: virtualizer.getTotalSize() } : { height: virtualizer.getTotalSize(), width: innerWidth }}
+        >
+          {placed.map(({ line, key, x, y }) => {
+            const at = layout.at(line);
             if ("group" in at) {
               return (
                 <GroupHeader
                   key={`g:${at.group.key}`}
                   group={at.group}
-                  top={v.start - headerH}
-                  height={groupH}
+                  x={x}
+                  y={y}
+                  width={flow ? flowW - 8 : undefined}
+                  height={flow ? rowH : groupH}
                   onToggle={() => void model.collapse(at.group.key, !at.group.collapsed)}
                 />
               );
@@ -411,7 +467,7 @@ export function FileList(props: Props) {
             const focused = row === selection.focus;
             return (
               <div
-                key={v.key}
+                key={key}
                 data-drop-path={entry?.kind === "folder" ? childPath(model.path, entry.name) : undefined}
                 onClick={(e) => {
                   if (!entry || e.button !== 0 || modPressed(e) || e.shiftKey) return;
@@ -427,7 +483,12 @@ export function FileList(props: Props) {
                 role="row"
                 aria-selected={selected}
                 aria-rowindex={row + 1}
-                style={{ transform: `translateY(${v.start - headerH}px)`, height: rowH, gridTemplateColumns: template }}
+                style={{
+                  transform: `translate(${x}px, ${y}px)`,
+                  height: rowH,
+                  gridTemplateColumns: template,
+                  ...(flow && { right: "auto", width: flowW - 8 }),
+                }}
                 onMouseDown={(e) => onRowMouseDown(e, row)}
                 onDoubleClick={() => entry && onOpen(entry, row)}
               >
@@ -506,7 +567,7 @@ function Cells({ entry, path, mode, rename }: { entry: Entry; path: string; mode
       {entry.git && !rename && <GitBadge mark={entry.git} staged={entry.staged} />}
     </span>
   );
-  if (mode === "list") return name;
+  if (mode !== "details") return name;
   return (
     <>
       {name}
@@ -587,12 +648,19 @@ function RenameInput({ name, folder, submit, cancel }: { name: string; folder: b
 }
 
 /** A group's header line: click to collapse or expand it. Extensions are named ("Rust source"). */
-function GroupHeader({ group, top, height, onToggle }: { group: Group; top: number; height: number; onToggle: () => void }) {
+function GroupHeader(props: { group: Group; x: number; y: number; width?: number; height: number; onToggle: () => void }) {
+  const { group, x, y, width, height, onToggle } = props;
   const label = group.key.startsWith("ext:")
     ? `${describeType({ kind: "file", ext: group.label, link: false, name: `x.${group.label}` })} (.${group.label})`
     : group.label;
   return (
-    <div className="fl-group" role="row" style={{ transform: `translateY(${top}px)`, height }} onClick={onToggle}>
+    <div
+      className="fl-group"
+      role="row"
+      title={label}
+      style={{ transform: `translate(${x}px, ${y}px)`, height, ...(width !== undefined && { right: "auto", width }) }}
+      onClick={onToggle}
+    >
       <ChevronIcon open={!group.collapsed} size={10} />
       <span className="fl-group-label">{label}</span>
       <span className="fl-group-meta">

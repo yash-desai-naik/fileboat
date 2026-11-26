@@ -43,7 +43,7 @@ function SideColumn({ path, highlight, onPick }: { path: string; highlight: stri
       <FileList
         model={model}
         selection={selection}
-        mode="list"
+        mode="columns"
         active={false}
         select={highlight}
         onSelected={() => {}}

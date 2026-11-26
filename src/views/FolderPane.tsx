@@ -279,10 +279,11 @@ export function FolderPane({ tab, active }: { tab: Tab; active: boolean }) {
 
   const list = (
     <FileList
-      key={model.path + (model.id ?? "")}
+      // A new view starts afresh (its scroll and sizes are not the old one's).
+      key={model.path + (model.id ?? "") + view.viewMode}
       model={model}
       selection={selection}
-      mode={columnsMode ? "list" : view.viewMode}
+      mode={view.viewMode}
       onOpen={open}
       // Only for the folder it belongs to: for one render after navigating, the old folder is
       // still shown and would give up on a name it doesn't have.
