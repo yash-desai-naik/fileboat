@@ -10,6 +10,11 @@ All notable changes to Fileboat are listed here. The format follows
 
 - **A Refresh button** beside Up in the toolbar (or `F5`): reads the folder again.
 
+### Fixed
+
+- **A long path no longer fills the whole address bar:** a strip at its end always stays free to
+  click for typing a path (as does `Ctrl+L`).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added

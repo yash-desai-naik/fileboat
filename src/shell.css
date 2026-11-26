@@ -234,11 +234,12 @@
 .address:hover {
   background: var(--control-fill-hover);
 }
+/* However long the path, a strip at the end stays free to click for typing a path. */
 .crumbs {
   display: flex;
   align-items: center;
   min-width: 0;
-  max-width: 100%;
+  max-width: calc(100% - 48px);
   overflow: hidden;
   padding: 0 4px;
 }
