@@ -160,6 +160,25 @@ export function buildCommands(): Command[] {
     { id: "settings.open", category: "Preferences", title: "Open Settings", keys: ["Ctrl+,"], run: () => uiActions.openSettings() },
     { id: "help.about", category: "Help", title: "About Fileboat (version)", run: () => uiActions.openAbout() },
     { id: "help.updates", category: "Help", title: "Check for Updates…", run: () => void checkForUpdates() },
+    // `fileboat .` in a terminal opens that folder here (a launcher on the PATH, as VS Code's `code`).
+    {
+      id: "shell.installCommand",
+      category: "Shell Command",
+      title: "Install the 'fileboat' Command in PATH",
+      run: () =>
+        void invoke<string>("cli_install")
+          .then((msg) => showToast(msg))
+          .catch((err) => showToast(String(err), "error")),
+    },
+    {
+      id: "shell.removeCommand",
+      category: "Shell Command",
+      title: "Remove the 'fileboat' Command from PATH",
+      run: () =>
+        void invoke<string>("cli_uninstall")
+          .then((msg) => showToast(msg))
+          .catch((err) => showToast(String(err), "error")),
+    },
     {
       id: "view.toggleClaude",
       category: "View",

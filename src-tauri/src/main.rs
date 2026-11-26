@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ai;
+mod cli_cmd;
 mod clipboard;
 mod desktop;
 mod dnd;
@@ -179,6 +180,8 @@ fn main() {
             navigate::path_complete,
             places_cmd::places_list,
             launch::take_launch_path,
+            cli_cmd::cli_install,
+            cli_cmd::cli_uninstall,
             places_cmd::drive_space,
             state::state_read,
             state::state_write,
